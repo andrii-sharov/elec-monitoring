@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current focus: v2
 
 v1 is released. The active product plan is the [v2 specification](docs/PROJECT_V2.md),
-which describes the multi-user platform and the migration from v1.
+which describes the multi-user platform.
 
 ## docs/
 
@@ -13,6 +13,8 @@ The specs are the source of truth. Read the relevant section before
 changing behaviour, and update the spec if a decision changes.
 
 - [PROJECT_V2.md](docs/PROJECT_V2.md) covers active requirements and milestones.
+- [API.md](docs/API.md) is the source of truth for all API endpoints,
+  auth, errors, rate limits and payloads. Update it when an endpoint changes.
 - [PROJECT_V1.md](docs/archived/PROJECT_V1.md) records the released v1 design.
 - [DEVICE_STATUS.md](docs/DEVICE_STATUS.md) covers LED states and serial log
   messages. Update it when firmware LED or log behaviour changes.
@@ -21,7 +23,7 @@ changing behaviour, and update the spec if a decision changes.
 
 - `server/` contains the Node.js/Express API and the background worker.
   PostgreSQL is the source of truth for accounts, devices, monitoring state
-  and notification deliveries. Preserve `/ping` for migrated v1 devices.
+  and notification deliveries.
 - Server stack: Express 5 (async errors reach the error handler without
   try/catch), TypeScript built with `tsc`, run in dev with `tsx`, tests in
   Vitest. Where the `node` skill suggests `node:test` or type stripping,

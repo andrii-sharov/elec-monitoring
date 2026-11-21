@@ -1,0 +1,750 @@
+# Electricity Monitor — API (v2)
+
+The source of truth for every v2 API endpoint: paths, auth, request and
+response shapes, status codes and behaviour. Product behaviour behind
+the endpoints (state machine, OTA rules, notifications) is in
+[PROJECT_V2.md](PROJECT_V2.md).
+
+Endpoints marked **(proposed)** fill gaps found in review and are not
+agreed yet. See [§9](#9-review-gaps-and-open-questions). Remove the
+marker once a proposal is accepted.
+
+## 1. Conventions
+
+### Hosts and prefixes
+
+| Prefix                        | Callers                   | Auth                               |
+| ----------------------------- | ------------------------- | ---------------------------------- |
+| `/api/v1/device/*`            | ESP devices (v2 firmware) | Device token (claim: pairing code) |
+| `/api/auth/*`                 | Client and admin apps     | Credentials, refresh cookie        |
+| `/api/v1/*` (other paths)     | Client app, scripts       | Access JWT or API token            |
+| `/api/admin/*` **(proposed)** | Admin app                 | Access JWT + platform admin role   |
+| `/telegram/webhook/:secret`   | Telegram                  | Secret in path                     |
+| `/health`                     | Render, CI smoke tests    | None                               |
+
+All hosted at `https://api.<domain>`. JSON bodies, UTF-8.
+
+### Auth headers
+
+| Caller     | Header                                        |
+| ---------- | --------------------------------------------- |
+| Device     | `Authorization: Bearer <device token>`        |
+| Client app | `Authorization: Bearer <access JWT>` (15 min) |
+| Script     | `Authorization: Bearer em_live_<token>`       |
+
+The client app and scripts call the same `/api/v1` endpoints. The
+server tells an API token from a JWT by the `em_live_` prefix. API
+tokens have scope `read` or `read write`. API tokens cannot manage API
+tokens, invites or the account. Those endpoints are "JWT only" and
+reject API tokens with `403 jwt_required`.
+
+### Errors
+
+```json
+{ "error": { "code": "not_found", "message": "Device not found" } }
+```
+
+`message` is English and for developers. Apps translate by `code`.
+Validation errors add `details`:
+
+```json
+{
+  "error": {
+    "code": "validation_error",
+    "message": "Invalid request",
+    "details": [{ "path": "ping_interval_s", "code": "too_small", "min": 15 }]
+  }
+}
+```
+
+| HTTP | `code`               | When                                                                       |
+| ---- | -------------------- | -------------------------------------------------------------------------- |
+| 400  | `validation_error`   | Body, query or path fails the schema                                       |
+| 401  | `unauthorized`       | Missing, invalid or expired token                                          |
+| 403  | `forbidden`          | Authenticated, but the role does not allow it (e.g. viewer edits settings) |
+| 403  | `jwt_required`       | API token used on a JWT-only endpoint                                      |
+| 403  | `insufficient_scope` | `read` token on a `write` endpoint                                         |
+| 403  | `email_not_verified` | Unverified account creates a device                                        |
+| 404  | `not_found`          | Missing, or the caller has no access (do not leak existence)               |
+| 409  | `conflict`           | State does not allow the action (see each endpoint)                        |
+| 410  | `expired`            | Pairing code, invite or email link expired or used                         |
+| 429  | `rate_limited`       | Limit exceeded, with `Retry-After`                                         |
+| 500  | `internal`           | Unexpected error                                                           |
+
+### Formats
+
+- Timestamps: ISO 8601 UTC, e.g. `2026-11-21T16:42:00Z`.
+- Durations: integer seconds, fields end with `_s`.
+- IDs: UUID strings for all resources.
+- Enums in API payloads are lowercase: `online`, `power`, `short`.
+- Lists use cursor pagination: `?limit=50&cursor=<opaque>` →
+  `{ "items": [...], "next_cursor": "..." | null }`. Max `limit` 100.
+
+### Rate limits
+
+| Who             | Limit              |
+| --------------- | ------------------ |
+| Device check-in | 6 / min per device |
+| API token       | 60 / min per token |
+| Client app JWT  | 120 / min per user |
+| Auth / claim    | 10 / min per IP    |
+
+Responses include `Retry-After` on `429`.
+
+## 2. Device API
+
+| Method | Path                                              | Purpose                                                 |
+| ------ | ------------------------------------------------- | ------------------------------------------------------- |
+| POST   | `/api/v1/device/claim`                            | Pairing code → device token (once)                      |
+| POST   | `/api/v1/device/ping`                             | `boot` or `ping` check-in                               |
+| GET    | `/api/v1/device/settings` **(proposed)**          | Current device settings                                 |
+| POST   | `/api/v1/device/settings/applied` **(proposed)**  | Report applied settings version                         |
+| GET    | `/api/v1/device/updates/pending`                  | Pending OTA attempt and signed release info, if any     |
+| GET    | `/api/v1/device/firmware/:version` **(proposed)** | Download the signed firmware image                      |
+| POST   | `/api/v1/device/updates/:id/start`                | `update_started`, requests the maintenance window       |
+| POST   | `/api/v1/device/updates/:id/result`               | `update_finished`, reports outcome and running firmware |
+
+### `POST /api/v1/device/claim`
+
+Exchanges a pairing code for the permanent device token. Auth: none
+(the pairing code is the credential). Rate limit: auth / claim.
+
+```json
+{ "pairing_code": "K7Q2M9XD", "fw": "2.0.0" }
+```
+
+`200`:
+
+```json
+{
+  "device_id": "4c0f…",
+  "device_token": "<64 hex chars>",
+  "settings": { "version": 1, "ping_interval_s": 30 }
+}
+```
+
+- The code is single use and valid 30 min. Used or expired → `410 expired`.
+  Unknown → `404 not_found`.
+- Claiming replaces any previous device token. Only the SHA-256 hash is stored.
+- If the response is lost, the device cannot claim again with the same
+  code. The owner generates a new code (`POST /devices/:id/pairing-code`).
+
+### `POST /api/v1/device/ping`
+
+One endpoint for `boot` and `ping` check-ins.
+
+Body:
+
+```json
+{
+  "type": "ping",
+  "boot_id": "b738bb72-4172-4edd-8b30-8d5219d8f5f3",
+  "seq": 42,
+  "uptime_s": 1260,
+  "reset_reason": "power_on",
+  "rssi": -61,
+  "fw": "2.0.0",
+  "settings_version": 3,
+  "wifi": {
+    "evicted": 0,
+    "events": [
+      {
+        "id": 7,
+        "kind": "wifi",
+        "start_uptime_s": 900,
+        "end_uptime_s": 948,
+        "reason": 201
+      }
+    ]
+  }
+}
+```
+
+- `type`: `boot` | `ping`. `reset_reason`: `power_on` | `brownout` |
+  `software` | `watchdog` | `panic` | `unknown`.
+- `wifi` is only sent with `ping`. `kind` is `wifi` (Wi-Fi disconnected)
+  or `api` (Wi-Fi up, HTTPS failed). `reason` is the driver reason code.
+- `settings_version` is the settings version the device has applied.
+
+Responses:
+
+| Status | Meaning                               |
+| ------ | ------------------------------------- |
+| `204`  | Accepted, or a duplicate acknowledged |
+| `400`  | Invalid body                          |
+| `401`  | Unknown or rotated token              |
+| `429`  | Rate limited, with `Retry-After`      |
+
+Response headers on `204`:
+
+| Header                                   | When                                                                                           |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `X-Firmware-Update: pending`             | An install command is queued. Device calls `GET /api/v1/device/updates/pending`                |
+| `X-Settings-Version: <n>` **(proposed)** | Always. If it differs from the applied version, the device calls `GET /api/v1/device/settings` |
+
+Processing (one transaction, device row locked):
+
+1. Same `boot_id` and `seq` ≤ last seen → duplicate. `204`, no state
+   change, `last_seen_at` not advanced.
+2. Apply OTA deadline rules (PROJECT_V2 §4). While `UPDATING`, a check-in
+   does not end the state.
+3. `PENDING` → `ONLINE` silently.
+4. `OFFLINE` → `ONLINE`. Close the open outage, classify cause and kind,
+   queue the recovery notification.
+5. `ONLINE` with a new `boot_id` and `power_on`/`brownout` → record a
+   power blip. Contact gap = previous check-in → now.
+6. Gap past the offline timeout but the worker has not run yet → record
+   the completed outage here and queue one summary.
+7. Store Wi-Fi diagnostics, dedupe by device + `boot_id` + event `id`.
+   Keep the highest `evicted` per boot.
+8. Update `last_seen_at`, `boot_id`, `seq`, `uptime_s`, `rssi`, `fw`.
+
+The `204` acknowledges the Wi-Fi events in that request. The device
+removes only those events.
+
+### `GET /api/v1/device/settings` **(proposed)**
+
+`200`:
+
+```json
+{ "version": 3, "ping_interval_s": 30 }
+```
+
+Only device-applied settings are returned. Server-side settings
+(thresholds, notification rules) stay on the server.
+
+### `POST /api/v1/device/settings/applied` **(proposed)**
+
+```json
+{ "version": 3 }
+```
+
+`204`. Marks the settings version applied. Until then the worker allows
+both the old and the new ping interval. An older version than the
+current applied one is ignored.
+
+### `GET /api/v1/device/updates/pending`
+
+`200` when an attempt is queued or automatic OTA offers a release:
+
+```json
+{
+  "attempt_id": "a1b2…",
+  "version": "2.1.0",
+  "url": "https://api.<domain>/api/v1/device/firmware/2.1.0",
+  "size": 1183744,
+  "sha256": "…",
+  "signature": "…"
+}
+```
+
+`204` when there is nothing to install. The device checks after boot or
+reconnect, then about once an hour with jitter.
+
+### `GET /api/v1/device/firmware/:version` **(proposed)**
+
+Streams the signed firmware image (`application/octet-stream`). Supports
+`Range` so the device can resume. Device token required. The device
+verifies `sha256` and the signature before switching slots.
+
+### `POST /api/v1/device/updates/:id/start`
+
+`update_started`. Requests the maintenance window.
+
+```json
+{ "version": "2.1.0", "boot_id": "…" }
+```
+
+`200`:
+
+```json
+{ "attempt_id": "a1b2…", "window_ends_at": "2026-11-21T16:52:00Z" }
+```
+
+- Device goes `UPDATING`. Does not advance `last_seen_at`.
+- Retries with the same attempt return the original deadline.
+- `409 conflict` if the attempt was cancelled, already finished, or the
+  device is not `ONLINE`. `410 expired` if the window already passed.
+- The device installs only after an unexpired `200`.
+
+### `POST /api/v1/device/updates/:id/result`
+
+`update_finished`.
+
+```json
+{
+  "outcome": "succeeded",
+  "running_version": "2.1.0",
+  "boot_id": "…"
+}
+```
+
+`outcome`: `succeeded` | `failed` | `rolled_back`. `204`.
+
+- Before the deadline: close the window, device → `ONLINE`, fresh
+  offline timeout. The reported `boot_id` becomes the new baseline, so
+  the reboot is not a power blip.
+- After the deadline: record the outcome and close the matching outage.
+  The recorded downtime stays.
+- Idempotent: repeats return `204` without a second state change or
+  notification. A result for an old attempt does not change a newer one.
+
+## 3. Auth API
+
+The refresh token lives in an `httpOnly`, `Secure`, `SameSite=Lax` cookie
+scoped to `api.<domain>`. Apps call auth endpoints with
+`credentials: "include"`. CORS allows credentials only from `CLIENT_URL`
+and `ADMIN_URL`. Cookie-authenticated endpoints (`refresh`, `logout`)
+also check the `Origin` header, because `SameSite` does not block
+requests from sibling subdomains.
+
+Successful sign-in responses set the refresh cookie and return:
+
+```json
+{ "access_token": "<jwt>", "expires_in": 900, "user": { "...": "see GET /me" } }
+```
+
+| Method | Path                                           | Body                                                | Success                                                                                                            |
+| ------ | ---------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| POST   | `/api/auth/signup`                             | `email`, `password`, `name`, `language`, `timezone` | `201`, sends verification email. Existing email → also `201` and an email to the existing account (no enumeration) |
+| POST   | `/api/auth/verify-email`                       | `token`                                             | `204`. Used or older than 24 h → `410`                                                                             |
+| POST   | `/api/auth/resend-verification` **(proposed)** | — (JWT)                                             | `204`                                                                                                              |
+| POST   | `/api/auth/login`                              | `email`, `password`                                 | `200` session. Wrong credentials → `401 invalid_credentials`                                                       |
+| GET    | `/api/auth/google`                             | query `app=client\|admin`, `intent=login\|link`     | `302` to Google with PKCE and `state`                                                                              |
+| GET    | `/api/auth/google/callback`                    | from Google                                         | Sets refresh cookie, `302` to the app. The app then calls `refresh`                                                |
+| POST   | `/api/auth/refresh`                            | cookie                                              | `200` session, rotates the cookie. Reused token → revoke session, `401`                                            |
+| POST   | `/api/auth/logout`                             | cookie                                              | `204`, clears the cookie                                                                                           |
+| POST   | `/api/auth/logout-all`                         | JWT                                                 | `204`, revokes all refresh tokens                                                                                  |
+| POST   | `/api/auth/forgot-password`                    | `email`                                             | Always `204`                                                                                                       |
+| POST   | `/api/auth/reset-password`                     | `token`, `password`                                 | `204`, logs out all sessions. Used or older than 1 h → `410`                                                       |
+| POST   | `/api/auth/change-password` **(proposed)**     | `current_password`, `new_password` (JWT)            | `204`. Revokes other sessions                                                                                      |
+| DELETE | `/api/auth/google` **(proposed)**              | JWT                                                 | `204`. `409` if it is the only sign-in method                                                                      |
+
+Google callback redirect targets come from an allowlist
+(`CLIENT_URL`, `ADMIN_URL`). Never redirect to a URL from the query.
+
+## 4. Client and public REST API (`/api/v1`)
+
+Scope column: `read`, `write`, or "JWT" (JWT only). Role: who may call
+it for a given device.
+
+### Devices
+
+| Method | Path                        | Scope | Role          | Purpose                           |
+| ------ | --------------------------- | ----- | ------------- | --------------------------------- |
+| GET    | `/devices`                  | read  | owner, viewer | Own and shared devices with state |
+| POST   | `/devices`                  | write | verified user | Create device → pairing code      |
+| GET    | `/devices/:id`              | read  | owner, viewer | Device details                    |
+| PATCH  | `/devices/:id`              | write | owner         | Name and settings                 |
+| DELETE | `/devices/:id`              | write | owner         | Delete device                     |
+| POST   | `/devices/:id/pairing-code` | write | owner         | New pairing code (re-pair)        |
+| POST   | `/devices/:id/rotate-token` | write | owner         | Invalidate device token           |
+
+`POST /devices` body `{ "name": "Home" }` → `201`:
+
+```json
+{
+  "device": { "id": "4c0f…", "name": "Home", "state": "pending" },
+  "pairing_code": "K7Q2M9XD",
+  "pairing_code_expires_at": "2026-11-21T17:12:00Z"
+}
+```
+
+Device object (`GET /devices/:id`, items of `GET /devices`):
+
+```json
+{
+  "id": "4c0f…",
+  "name": "Home",
+  "role": "owner",
+  "state": "online",
+  "state_since": "2026-11-21T14:02:00Z",
+  "last_seen_at": "2026-11-21T16:41:30Z",
+  "open_outage": null,
+  "telemetry": { "rssi": -61, "uptime_s": 9420, "reset_reason": "power_on" },
+  "settings": {
+    "ping_interval_s": 30,
+    "offline_timeout_s": 120,
+    "short_outage_threshold_s": 180,
+    "notify_short_outages": true,
+    "notify_network_outages": true,
+    "quiet_hours": { "start": "23:00", "end": "07:00" },
+    "auto_update": false
+  },
+  "settings_sync": { "desired_version": 3, "applied_version": 2, "pending": true },
+  "firmware": {
+    "version": "2.0.0",
+    "available": "2.1.0",
+    "update": {
+      "attempt_id": "a1b2…",
+      "version": "2.1.0",
+      "status": "queued",
+      "window_ends_at": null,
+      "outcome": null,
+      "finished_at": null
+    }
+  }
+}
+```
+
+- `state`: `pending` | `online` | `offline` | `updating`.
+- `update.status`: `queued` | `installing` | `finished` | `timed_out`.
+- `firmware`, `settings_sync` and `telemetry` are hidden in `GET /devices`
+  list items to keep it small. The client polls `GET /devices/:id` in
+  the add-device wizard until `state` leaves `pending`.
+
+`PATCH /devices/:id` accepts any subset of `name` and `settings`.
+Validation:
+
+- `ping_interval_s`: at least 15 (to fit 6 pings/min with room for
+  retries), and well under `offline_timeout_s`. Default 30.
+- `offline_timeout_s` ≥ 2 × `ping_interval_s`. Default 120.
+- `short_outage_threshold_s`: default 180.
+- Changing `ping_interval_s` increments `desired_version`.
+
+`POST /devices/:id/pairing-code` → `201` with a new code. Earlier unused
+codes are invalidated. The current device token keeps working until the
+code is claimed.
+
+`POST /devices/:id/rotate-token` → `204`. The current token stops working
+immediately. The device gets `401` and needs re-pairing with a new code.
+
+`DELETE /devices/:id` → `204`. Removes outages, memberships, channel
+links and queued notifications for the device.
+
+### Firmware
+
+| Method | Path                                          | Scope | Role     | Purpose                                      |
+| ------ | --------------------------------------------- | ----- | -------- | -------------------------------------------- |
+| POST   | `/devices/:id/firmware-update`                | write | owner    | Queue or explicitly retry a firmware install |
+| DELETE | `/devices/:id/firmware-update` **(proposed)** | write | owner    | Cancel a queued install                      |
+| GET    | `/firmware/releases` **(proposed)**           | read  | any user | Published releases                           |
+| GET    | `/firmware/manifest.json` **(proposed)**      | none  | public   | ESP Web Tools manifest                       |
+
+`POST /devices/:id/firmware-update` body `{ "version": "2.1.0" }`
+(optional, default latest compatible) → `202` with the `update` object.
+
+- Queues a new attempt. Next ping returns `X-Firmware-Update: pending`.
+- Also used to retry a failed or timed-out version explicitly.
+- `409 conflict` if an attempt is already installing, or the version is
+  not compatible.
+
+`DELETE` cancels a queued attempt that has not started. `409` once
+installing.
+
+`/firmware/manifest.json` is the ESP Web Tools manifest for browser
+flashing. It points to the latest stable image.
+
+### Outages and stats
+
+| Method | Path                                      | Scope | Role          | Purpose                                              |
+| ------ | ----------------------------------------- | ----- | ------------- | ---------------------------------------------------- |
+| GET    | `/devices/:id/outages`                    | read  | owner, viewer | Outages and power blips, filtered, cursor pagination |
+| GET    | `/devices/:id/stats`                      | read  | owner, viewer | Stats for `day`, `week` or `month`                   |
+| GET    | `/devices/:id/diagnostics` **(proposed)** | read  | owner         | Wi-Fi and API reachability diagnostics               |
+
+`GET /devices/:id/outages?from&to&kind&cause&type&limit&cursor`, newest
+first:
+
+```json
+{
+  "items": [
+    {
+      "id": "9e1d…",
+      "type": "outage",
+      "started_at": "2026-11-21T16:42:00Z",
+      "ended_at": "2026-11-21T18:57:00Z",
+      "duration_s": 8100,
+      "cause": "power",
+      "kind": "long",
+      "ota_attempt_id": null
+    }
+  ],
+  "next_cursor": null
+}
+```
+
+- `type`: `outage` | `power_blip`. `cause`: `power` | `network` |
+  `unknown` (null while open). `kind`: `short` | `long` (null while open).
+- An open outage has `ended_at: null`.
+
+`GET /devices/:id/stats?period=week&from=…`:
+
+```json
+{
+  "period": "week",
+  "from": "2026-11-16T00:00:00Z",
+  "to": "2026-11-23T00:00:00Z",
+  "outages": 7,
+  "long_outages": 3,
+  "power_blips": 2,
+  "by_cause": { "power": 5, "network": 1, "unknown": 1 },
+  "total_downtime_s": 28800,
+  "avg_outage_s": 4114,
+  "longest_outage_s": 14400,
+  "availability_pct": 95.24,
+  "buckets": [
+    {
+      "from": "2026-11-16T00:00:00Z",
+      "outages": 1,
+      "total_downtime_s": 3600,
+      "availability_pct": 95.83
+    }
+  ]
+}
+```
+
+- Day and week boundaries use the caller's timezone from `/me`.
+- `buckets`: hours for `day`, days for `week` and `month`. Used for charts.
+- Planned OTA windows are excluded. Power blips count in `power_blips`,
+  not in `outages` or downtime.
+
+### Sharing
+
+| Method | Path                                            | Scope | Role                 | Purpose                |
+| ------ | ----------------------------------------------- | ----- | -------------------- | ---------------------- |
+| GET    | `/devices/:id/members`                          | read  | owner, viewer        | Owner and viewers      |
+| POST   | `/devices/:id/invites`                          | JWT   | owner                | Invite by email        |
+| GET    | `/devices/:id/invites` **(proposed)**           | JWT   | owner                | Pending invites        |
+| DELETE | `/devices/:id/invites/:inviteId` **(proposed)** | JWT   | owner                | Revoke an invite       |
+| DELETE | `/devices/:id/members/:userId`                  | write | owner, viewer (self) | Remove viewer or leave |
+| GET    | `/invites/:token` **(proposed)**                | none  | public               | Invite preview         |
+| POST   | `/invites/:token/accept`                        | JWT   | invitee              | Accept invite          |
+
+- `POST /devices/:id/invites` `{ "email": "…" }` → `201`. Sends the email
+  in the recipient's language, or `uk` if they have no account. Already a
+  member → `409`.
+- `GET /invites/:token` returns device name, inviter name and expiry, so
+  the page can show "Andrii invited you to Home" before sign-up.
+- `accept` → `200` with the device. Valid 7 days (`410` after). The
+  account email must match the invite email (else `403`).
+- The owner cannot be removed with `DELETE /members`.
+
+### Notification channels
+
+| Method | Path                                         | Scope | Purpose                                   |
+| ------ | -------------------------------------------- | ----- | ----------------------------------------- |
+| GET    | `/channels`                                  | read  | List my channels                          |
+| POST   | `/channels`                                  | write | Add own bot or webhook                    |
+| POST   | `/channels/telegram-link` **(proposed)**     | write | Link to connect the platform Telegram bot |
+| PATCH  | `/channels/:id`                              | write | Update, enable, disable                   |
+| DELETE | `/channels/:id`                              | write | Delete channel                            |
+| POST   | `/channels/:id/test`                         | write | Send test message                         |
+| POST   | `/channels/:id/rotate-secret` **(proposed)** | write | New webhook secret                        |
+| GET    | `/devices/:id/channels` **(proposed)**       | read  | My channels used by this device           |
+| PUT    | `/devices/:id/channels`                      | write | Set which of my channels this device uses |
+| GET    | `/channels/:id/deliveries`                   | read  | Delivery log                              |
+| POST   | `/deliveries/:id/redeliver`                  | write | Retry a delivery                          |
+
+Channels belong to the caller. Viewers attach their own channels to
+shared devices.
+
+`POST /channels/telegram-link` → `201`:
+
+```json
+{ "url": "https://t.me/<PlatformBot>?start=<link_code>", "expires_at": "…" }
+```
+
+The bot receives `/start <link_code>` and creates a `telegram_platform`
+channel. The client polls `GET /channels` until it appears.
+
+`POST /channels`, own bot:
+
+```json
+{ "type": "telegram_bot", "name": "My bot", "bot_token": "…", "chat_id": "-100123" }
+```
+
+The server calls `getMe` and sends a test message. Failure →
+`400 telegram_check_failed`. The token is never returned again.
+
+`POST /channels`, webhook:
+
+```json
+{
+  "type": "webhook",
+  "name": "Home Assistant",
+  "url": "https://…",
+  "events": ["device.offline", "device.online"]
+}
+```
+
+`201` returns `secret` **once**. Non-HTTPS or private IP after DNS →
+`400 url_not_allowed`.
+
+Channel object:
+
+```json
+{
+  "id": "…",
+  "type": "webhook",
+  "name": "Home Assistant",
+  "enabled": true,
+  "disabled_reason": null,
+  "config": { "url": "https://…", "events": ["device.offline"] },
+  "created_at": "…"
+}
+```
+
+`disabled_reason`: `null` | `user` | `too_many_failures`. `PATCH` with
+`enabled: true` re-enables and resets the failure counter.
+
+`PUT /devices/:id/channels` `{ "channel_ids": ["…"] }` replaces the
+caller's channel set for that device. Other users' links are untouched.
+
+`GET /channels/:id/deliveries?limit&cursor`:
+
+```json
+{
+  "items": [
+    {
+      "id": "…",
+      "event": "device.offline",
+      "device_id": "…",
+      "status": "failed",
+      "attempts": 6,
+      "last_attempt_at": "…",
+      "last_error": "HTTP 502",
+      "created_at": "…"
+    }
+  ],
+  "next_cursor": null
+}
+```
+
+`status`: `queued` | `sent` | `retrying` | `failed`. `redeliver` queues
+the same delivery ID again (`202`).
+
+### API tokens (JWT only)
+
+| Method | Path          | Body             | Success                                                                                     |
+| ------ | ------------- | ---------------- | ------------------------------------------------------------------------------------------- |
+| GET    | `/tokens`     | —                | `200` list: `id`, `name`, `scopes`, `prefix` (`em_live_ab12`), `last_used_at`, `created_at` |
+| POST   | `/tokens`     | `name`, `scopes` | `201` with `token`, shown once                                                              |
+| DELETE | `/tokens/:id` | —                | `204`                                                                                       |
+
+### Account
+
+| Method | Path  | Scope | Purpose                  |
+| ------ | ----- | ----- | ------------------------ |
+| GET    | `/me` | read  | Profile                  |
+| PATCH  | `/me` | JWT   | Name, timezone, language |
+| DELETE | `/me` | JWT   | Delete account           |
+
+`GET /me`:
+
+```json
+{
+  "id": "…",
+  "email": "user@example.com",
+  "email_verified": true,
+  "name": "Andrii",
+  "language": "uk",
+  "timezone": "Europe/Kyiv",
+  "has_password": true,
+  "google_linked": false,
+  "is_admin": false
+}
+```
+
+`PATCH /me` accepts `name`, `language` (`uk` | `en` | `ru`), `timezone`
+(IANA name). `DELETE /me` needs `{ "password": "…" }`, or a sign-in
+within the last 5 min for Google-only accounts. Deletes owned devices,
+outages, channels, tokens and memberships.
+
+## 5. Admin API (proposed)
+
+JWT with the platform admin role. Not in the public OpenAPI document.
+Read-only.
+
+| Method | Path                         | Purpose                                                                       |
+| ------ | ---------------------------- | ----------------------------------------------------------------------------- |
+| GET    | `/api/admin/health`          | API instances, DB, worker heartbeat, recent API error rate                    |
+| GET    | `/api/admin/devices/summary` | Device counts by state and firmware version                                   |
+| GET    | `/api/admin/devices`         | Search by name, ID, owner email; filter by state, firmware; cursor pagination |
+| GET    | `/api/admin/devices/:id`     | Last check-in, firmware, last update result, recent outages                   |
+| GET    | `/api/admin/notifications`   | Queue depth by channel type, recent delivery failures                         |
+
+## 6. Telegram webhook
+
+`POST /telegram/webhook/:secret`. `:secret` must equal
+`TELEGRAM_WEBHOOK_SECRET`, else `404`. Also check
+`X-Telegram-Bot-Api-Secret-Token`. Always reply `200` fast. Handles
+`/start <code>`, `/status`, `/stats`, `/stop`. Replies use the linked
+user's language.
+
+## 7. Health and docs
+
+| Method | Path                   | Purpose                                                                        |
+| ------ | ---------------------- | ------------------------------------------------------------------------------ |
+| GET    | `/health`              | `200 {"status":"ok"}` when the DB is reachable. Used by Render and smoke tests |
+| GET    | `/api/v1/openapi.json` | Generated OpenAPI 3.1 document for `/api/v1`, `/api/auth` and device endpoints |
+| GET    | `/api/docs`            | Swagger UI                                                                     |
+
+The server generates the OpenAPI document from route and request and
+response schemas, including authentication, errors and examples. Swagger
+UI loads it so integrators can read the reference and try requests with
+their own API token. Admin endpoints are not included.
+
+## 8. Outgoing webhooks
+
+See [PROJECT_V2.md §7](PROJECT_V2.md#webhooks). Payload `device`,
+`outage` and enum values use the same shapes and lowercase values as
+the REST API above. `device.power_blip` sends the outage object with
+`type: "power_blip"`.
+
+## 9. Review: gaps and open questions
+
+Reviewed the endpoints from the original spec §8 against the features
+in PROJECT_V2.md §3–§12. Section numbers below refer to PROJECT_V2.md.
+
+### Missing endpoints (needed for spec features)
+
+| Feature in spec                                                      | Gap                                                                             | Proposal                                                                                                |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| §4 Remote configuration: device fetches settings and reports applied | No endpoints, only a sentence                                                   | `GET /api/v1/device/settings`, `POST /api/v1/device/settings/applied`, `X-Settings-Version` ping header |
+| §4 OTA: device downloads the signed image                            | No download location                                                            | `GET /api/v1/device/firmware/:version` (or signed storage URL in `pending`)                             |
+| §4 Browser flashing with ESP Web Tools                               | No manifest or image source                                                     | `GET /api/v1/firmware/manifest.json`                                                                    |
+| §9 "Update available" in the client                                  | Nothing lists releases                                                          | `GET /api/v1/firmware/releases`, `firmware.available` in device details                                 |
+| §7 Connect platform Telegram                                         | `POST /channels` covers only own bot and webhook                                | `POST /channels/telegram-link`                                                                          |
+| §7 Telegram bot webhook                                              | Only in §12                                                                     | Listed in §6 here                                                                                       |
+| §9 Admin app                                                         | No admin endpoints at all                                                       | §5 here                                                                                                 |
+| §12 CI checks "API health endpoint"                                  | `/health` not listed in v2                                                      | §7 here                                                                                                 |
+| Swagger UI                                                           | No paths                                                                        | `/api/v1/openapi.json`, `/api/docs`                                                                     |
+| §3 Verification email                                                | No resend if the link expires                                                   | `POST /api/auth/resend-verification`                                                                    |
+| §9 Account "linked Google"                                           | No link / unlink                                                                | `intent=link` on `/api/auth/google`, `DELETE /api/auth/google`                                          |
+| Account settings                                                     | No change password                                                              | `POST /api/auth/change-password`                                                                        |
+| §6 Invites                                                           | Owner can't see or revoke pending invites. Invitee can't see what the invite is | `GET` / `DELETE /devices/:id/invites`, `GET /invites/:token`                                            |
+| §7 Webhook secret                                                    | No rotation if leaked                                                           | `POST /channels/:id/rotate-secret`                                                                      |
+| `PUT /devices/:id/channels`                                          | No matching `GET`                                                               | `GET /devices/:id/channels`                                                                             |
+| §5 Wi-Fi diagnostics stored                                          | No way to read them                                                             | `GET /devices/:id/diagnostics` (owner)                                                                  |
+| OTA queued by mistake                                                | No cancel                                                                       | `DELETE /devices/:id/firmware-update`                                                                   |
+
+### Inconsistencies
+
+- **ID types.** The webhook example has `"id": 123` for outages, devices
+  use string IDs. Pick one (this file assumes UUIDs).
+- **Enum case.** The spec uses `ONLINE`, `POWER`, `SHORT`; the webhook
+  example and ping body use lowercase. This file uses lowercase in JSON.
+- **Stats response** has no power blips, no cause breakdown and no series
+  for charts. §5 says blips count "once in history and statistics".
+  Proposed fields in [Outages and stats](#outages-and-stats).
+- **Invites.** The original table gave invites `write` scope, but the
+  text said API tokens can't manage invites. This file uses JWT only.
+  Member removal stays `write`, so a script can remove a viewer but not
+  invite one. Fine if intended.
+- **Ping interval vs rate limit.** 6 pings/min allows 10 s, but boot
+  retries share the limit. A 15 s minimum leaves room.
+
+### Open questions (need a decision)
+
+1. **Notification rules for viewers.** Quiet hours, "notify on short
+   outages" and "notify on network outages" are device settings (owner
+   only). Should a viewer have their own copy of these rules per device,
+   or follow the owner's?
+2. **Quiet hours timezone.** Owner's, or each recipient's? Spec §7 says
+   messages use the recipient's timezone, so per-recipient seems natural.
+3. **Who publishes firmware releases?** The admin app is read-only. A CI
+   step or CLI script with an admin token, or an admin endpoint?
+4. **Where are firmware images stored?** Not in the §12 deployment table
+   (Supabase Storage is an option since Supabase is already used).
+5. **Email change.** Not in the spec. Out of scope for v2?

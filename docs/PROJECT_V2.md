@@ -114,13 +114,13 @@ only sends emails.
   - home Wi-Fi name and password,
   - **pairing code** from the client app.
 - On first connect the ESP exchanges the pairing code for its permanent
-  **device token** (`POST /api/device/claim`) and stores it in flash.
+  **device token** (`POST /api/v1/device/claim`) and stores it in flash.
 - The server URL is built into the firmware.
 
 ### Monitoring signals
 
 The ESP32-C3 runs from the monitored power supply. It sends two types of
-authenticated HTTPS check-in to `POST /ping`:
+authenticated HTTPS check-in to `POST /api/v1/device/ping`:
 
 | Type | When | What it tells the server |
 | ---- | ---- | ------------------------ |
@@ -315,10 +315,6 @@ Use the following evidence when contact resumes. Apply the OTA rules in
 | Same `boot_id` across an offline gap | `NETWORK` (the device stayed up, but the Wi-Fi, internet or API path was unavailable). An overlapping Wi-Fi diagnostic confirms a local disconnect occurred during the gap. |
 | Software, watchdog, panic, unknown reset or missing boot evidence | `UNKNOWN` |
 
-For migrated v1 devices, use `uptime_s` to infer whether the device stayed
-up across an offline gap. Record `NETWORK` if it did and `UNKNOWN` if the
-evidence is inconclusive or only indicates a reboot.
-
 For an outage or power blip, measure the observed contact gap from the
 last accepted check-in before the interruption to the recovery check-in.
 An expired OTA window uses its deadline as the start. Classify the gap
@@ -369,7 +365,7 @@ power blip.
 - Use a controlled clock to cover first boot, regular pings, sustained loss
   of contact, recovery before the next worker check, a power reset before
   the timeout, a Wi-Fi-only interruption, a software reset, duplicate
-  check-ins and legacy pings. For OTA, cover successful installation,
+  check-ins. For OTA, cover successful installation,
   rollback, duplicate start and result requests, and a result arriving
   after the deadline. Verify that OTA reports never update the last ping
   timestamp and that a planned reboot creates no power blip.
@@ -476,109 +472,16 @@ in their documented machine-readable formats across all languages.
 
 ## 8. API
 
-### Device endpoints (device token)
+[API.md](API.md) defines every endpoint: device, auth, client and public
+REST, admin, Telegram webhook, health and docs. It also covers auth,
+errors, rate limits, and request and response shapes.
 
-| Method | Path | Purpose |
-| ------ | ---- | ------- |
-| POST | `/api/device/claim` | Pairing code → device token (once) |
-| POST | `/ping` | `boot` or `ping` check-in, including the legacy v1 ping payload |
-| GET | `/api/device/updates/pending` | Get the pending OTA attempt and signed release information, if available |
-| POST | `/api/device/updates/:id/start` | `update_started`, requests the maintenance window |
-| POST | `/api/device/updates/:id/result` | `update_finished`, reports the outcome and running firmware |
-
-Updated firmware also uses the device token to fetch remote settings and
-report applied settings. The v1 ping remains supported for migrated devices.
-
-### Auth endpoints
-
-| Method | Path                        | Purpose                     |
-| ------ | --------------------------- | --------------------------- |
-| POST   | `/api/auth/signup`          | Email + password sign up    |
-| POST   | `/api/auth/verify-email`    | Confirm email with token    |
-| POST   | `/api/auth/login`           | Email + password log in     |
-| GET    | `/api/auth/google`          | Start Google sign-in        |
-| GET    | `/api/auth/google/callback` | Google redirect target      |
-| POST   | `/api/auth/refresh`         | New access token (cookie)   |
-| POST   | `/api/auth/logout`          | End this session            |
-| POST   | `/api/auth/logout-all`      | End all sessions            |
-| POST   | `/api/auth/forgot-password` | Send reset email            |
-| POST   | `/api/auth/reset-password`  | Set new password with token |
-
-### Client app + public REST API
-
-Same endpoints for both. Auth:
-
-- client app → access JWT (`Authorization: Bearer <jwt>`),
-- scripts → API token (`Authorization: Bearer em_live_...`).
-
-Base path `/api/v1`. JSON. Errors:
-`{"error": {"code": "not_found", "message": "..."}}`.
-
-| Method | Path                           | Scope | Purpose                                                            |
-| ------ | ------------------------------ | ----- | ------------------------------------------------------------------ |
-| GET    | `/devices`                     | read  | Own + shared devices with state                                    |
-| POST   | `/devices`                     | write | Create device → pairing code                                       |
-| GET    | `/devices/:id`                 | read  | Device details                                                     |
-| PATCH  | `/devices/:id`                 | write | Settings (owner only)                                              |
-| DELETE | `/devices/:id`                 | write | Delete device (owner only)                                         |
-| POST   | `/devices/:id/pairing-code`    | write | New pairing code (owner only)                                      |
-| POST   | `/devices/:id/rotate-token`    | write | Invalidate device token (owner)                                    |
-| POST   | `/devices/:id/firmware-update` | write | Queue or explicitly retry a firmware install (owner only)          |
-| GET    | `/devices/:id/outages`         | read  | Outages, filters: `from`, `to`, `kind`, `cause`; cursor pagination |
-| GET    | `/devices/:id/stats`           | read  | Period (`day`, `week`, `month`), `from`, `to`                        |
-| GET    | `/devices/:id/members`         | read  | Owner + viewers                                                    |
-| POST   | `/devices/:id/invites`         | write | Invite by email (owner only)                                       |
-| DELETE | `/devices/:id/members/:userId` | write | Remove viewer / leave                                              |
-| POST   | `/invites/:token/accept`       | —     | Accept invite (JWT only)                                           |
-| GET    | `/channels`                    | read  | List channels                                                      |
-| POST   | `/channels`                    | write | Add channel (own bot, webhook)                                     |
-| PATCH  | `/channels/:id`                | write | Update / enable / disable                                          |
-| DELETE | `/channels/:id`                | write | Delete channel                                                     |
-| POST   | `/channels/:id/test`           | write | Send test message                                                  |
-| PUT    | `/devices/:id/channels`        | write | Set which of my channels this device uses                          |
-| GET    | `/channels/:id/deliveries`     | read  | Delivery log                                                       |
-| POST   | `/deliveries/:id/redeliver`    | write | Retry a delivery                                                   |
-| GET    | `/tokens`                      | —     | List API tokens (JWT only)                                         |
-| POST   | `/tokens`                      | —     | Create token, shown **once** (JWT only)                            |
-| DELETE | `/tokens/:id`                  | —     | Revoke token (JWT only)                                            |
-| GET    | `/me`                          | read  | Profile                                                            |
-| PATCH  | `/me`                          | —     | Name, timezone, language (JWT only)                                |
-| DELETE | `/me`                          | —     | Delete account (JWT only)                                          |
-
-API tokens can't manage other API tokens, invites or the account — only
-a logged-in user (JWT) can.
-
-Stats response example:
-
-```json
-{
-  "period": "week",
-  "from": "2026-11-16T00:00:00Z",
-  "to": "2026-11-23T00:00:00Z",
-  "outages": 7,
-  "long_outages": 3,
-  "total_downtime_s": 28800,
-  "avg_outage_s": 4114,
-  "longest_outage_s": 14400,
-  "availability_pct": 95.24
-}
-```
-
-The Express server generates the public OpenAPI document from route and
-request/response schemas, including authentication, errors and examples.
-Swagger UI loads the generated document so integrators can read the API
-reference and try requests with their own API token.
-
-### Rate limits
-
-| Who            | Limit              |
-| -------------- | ------------------ |
-| `/ping`        | 6 / min per device |
-| API token      | 60 / min per token |
-| Client app JWT | 120 / min per user |
-| Auth / claim   | 10 / min per IP    |
-
-`429` with `Retry-After` when exceeded.
+- One Express API serves devices, both React apps and scripts.
+- The client app and scripts use the same `/api/v1` endpoints, with an
+  access JWT or an API token.
+- Device endpoints, including the check-in, live under `/api/v1/device/*`.
+- The server generates the public OpenAPI document from its schemas and
+  serves it through Swagger UI.
 
 ## 9. Client app (React)
 
@@ -726,15 +629,7 @@ ADMIN_URL=https://admin.<domain>
 API_URL=https://api.<domain>
 ```
 
-## 13. Migration from v1
-
-- The v1 device becomes the first device of the owner's account.
-- Its existing `DEVICE_TOKEN` is hashed and stored, so the ESP keeps
-  working without reflashing. Boot signals, power blip detection, remote
-  configuration and OTA require a one-time firmware upgrade.
-- v1 has no database or saved event history. Outage history starts in v2.
-
-## 14. Repo layout
+## 13. Repo layout
 
 ```
 elec-monitoring/
@@ -746,15 +641,14 @@ elec-monitoring/
   admin/
 ```
 
-## 15. Milestones
+## 14. Milestones
 
 Set up CI with the first packages and add each package's checks as the
 implementation lands.
 
 1. **Auth:** email + password, email verification and reset (Resend),
    Google sign-in, sessions.
-2. **Devices:** CRUD, `boot` and `ping`, Wi-Fi diagnostics, legacy pings,
-   state in DB.
+2. **Devices:** CRUD, `boot` and `ping`, Wi-Fi diagnostics, state in DB.
 3. **Worker:** checker, outages, power blips, classification, platform Telegram bot.
 4. **Client app:** log in, devices list, device page, add-device flow.
 5. **Device setup:** captive portal + pairing code + browser flashing.
@@ -768,5 +662,5 @@ implementation lands.
 11. **Remote device management:** settings sync, signed manual and automatic
     OTA, separate update signals, rollback and maintenance monitoring.
 12. **Launch readiness:** rate limits, access tests, Render and Vercel
-    staging and production releases, smoke tests, v1 migration, keyed
+    staging and production releases, smoke tests, keyed
     translations (uk / en / ru).
