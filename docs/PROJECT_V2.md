@@ -2,15 +2,15 @@
 
 ## 1. Goal
 
-Turn v1 (`PROJECT_V1.md`) into a platform for many users.
+Turn [v1](archived/PROJECT_V1.md) into a platform for many users.
 
 Anyone can buy a pre-flashed device from us, or buy their own ESP32-C3
 and flash our firmware. They connect it to their home Wi-Fi and get
-power OFF / ON alerts through our server. Advanced users get a REST
+alerts when their device loses and restores contact. Advanced users get a REST
 API, their own Telegram bots, webhooks and more control.
 
-The core idea stays the same: the device pings every 30 s; if the pings
-stop, the power is off.
+The device pings every 30 s by default. Missing pings indicate a loss of
+contact. The server estimates the cause after the device reconnects.
 
 The platform is **free** for all users for now.
 
@@ -28,14 +28,26 @@ The platform is **free** for all users for now.
   - Telegram via the **platform bot** (simple, default),
   - Telegram via the **user's own bot** (advanced),
   - **Webhooks** (signed, with retries).
-- Public **REST API** with user-generated API tokens.
+- Public **REST API** with user-generated API tokens and Swagger UI
+  backed by a generated OpenAPI document.
 - Outage classification:
   - **short** (blip) vs **long** outage, threshold adjustable per device,
-  - **power** vs **network** outage (using `uptime_s`).
+  - estimated **power** vs **network** outage (using `uptime_s`).
 - Statistics: number of outages, total / average downtime, availability
   % per day / week / month.
-- React client app (dashboard).
-- Languages: Ukrainian, English, Russian.
+- Separate React apps for users and platform administrators.
+- Remote device settings and signed firmware updates over Wi-Fi (OTA).
+- Ukrainian, English and Russian translations stored by key in the repo.
+
+### Architecture
+
+- The React client, React admin app, ESP devices and external integrations
+  connect to one Node.js/Express API. The API enforces access for each caller.
+- PostgreSQL stores accounts, device ownership and sharing, device state and
+  settings, outage history, update status and the notification queue.
+- A separate worker uses the same database to detect missed pings, check
+  update deadlines and deliver notifications. React apps and devices access
+  platform data through the API.
 
 ## 3. Auth (custom)
 
@@ -106,6 +118,45 @@ Same ping logic as v1, plus:
   ```
 - The server URL is built into the firmware.
 
+### Remote configuration
+
+The owner saves changes in the client app. The API stores the desired
+settings in PostgreSQL. On its next check-in, the ESP fetches the current
+settings and reports what it applied. The client app shows pending and
+applied changes. Changes for an offline device wait for reconnection.
+
+The ping interval defaults to 30 s and can be changed by the owner. The
+server validates it against both the ping rate limit and the offline
+timeout. Until the device confirms the change, the server allows for both
+the previous and the new interval when checking for missed pings. Server
+settings such as notification rules apply as soon as they are saved.
+
+### Firmware distribution and OTA updates
+
+Keep the firmware source private. A pre-flashed board ships with the
+firmware installed. A user flashing their own board downloads the compiled
+image in the browser. The initial firmware supports OTA so later releases
+can be installed over Wi-Fi. Remote settings take effect independently of
+firmware releases.
+
+1. The device downloads a compatible signed release over HTTPS and verifies
+   it before installation. It continues its normal check-ins while preparing
+   the update.
+2. Before rebooting, the device sends an authenticated update-start request
+   with the target version. The server records the attempt and confirms a
+   bounded update window. The device waits for that confirmation before
+   rebooting. Retries reuse the same attempt and deadline.
+3. During the window, the client and admin apps show `UPDATING`. The worker
+   treats the planned interruption as maintenance and excludes it from
+   outage notifications and statistics.
+4. A check-in after reboot reporting the confirmed target version marks the
+   update successful. If the new firmware fails its startup checks, the ESP
+   rolls back. A return with the previous version marks the update as failed
+   and the device as online.
+5. If the device does not return before the deadline, it goes offline and
+   the user receives an update-specific notification. Unplanned downtime
+   starts at the deadline. Recovery follows the normal offline flow.
+
 ### Adding a device (user flow)
 
 1. Client app → "Add device" → enter a name ("Home", "Dacha").
@@ -128,6 +179,8 @@ Same ping logic as v1, plus:
 - `PENDING`: created, never pinged.
 - On ping: update last seen, uptime, RSSI, firmware version. If
   `OFFLINE` → `ONLINE`, close the open outage, queue notifications.
+- `UPDATING` is shown while a confirmed OTA window is active. The worker
+  also checks expired windows as described in §4.
 - Worker checker (every 10 s): finds `ONLINE` devices whose last ping is
   older than their `offline_timeout` → `OFFLINE`, opens an outage,
   queues notifications. Rows are locked (`for update skip locked`) so a
@@ -138,11 +191,14 @@ instance can handle any ping; restarts lose nothing.
 
 ### Outage classification
 
-When an outage closes (power is back):
+When the device reconnects, estimate the cause from its reported uptime:
 
 - **cause**:
-  - `POWER` — the ESP rebooted (`uptime_s` < gap length),
-  - `NETWORK` — the ESP stayed on (`uptime_s` ≥ gap length).
+  - `POWER` — suspected power loss if `uptime_s` indicates a reboot.
+    Other kinds of reboot can produce the same signal.
+  - `NETWORK` — suspected network loss if `uptime_s` indicates the ESP
+    stayed on throughout the gap.
+  - `UNKNOWN` — insufficient uptime data or a missed update deadline.
 - **kind**:
   - `SHORT` — duration < short-outage threshold
     (default **3 min**, adjustable per device),
@@ -151,14 +207,15 @@ When an outage closes (power is back):
 ### Device settings
 
 - Name.
+- Ping interval (30 s by default), applied by the device.
 - Offline timeout (default 120 s).
 - Short-outage threshold (default 3 min).
 - Notify on short outages:
   - if off, the OFF alert is delayed until the threshold has passed,
   - if power returns before that → no messages, the outage is only
     stored.
-- Notify on network outages (known only when power returns, so this
-  affects the ON message).
+- Notify on suspected network outages. The cause is estimated once the
+  device reconnects, so this setting affects the recovery message.
 - Quiet hours (optional): messages are sent silently
   (Telegram `disable_notification`).
 
@@ -232,11 +289,11 @@ Bot commands: `/status` (all devices), `/stats` (last 7 days),
 Same as v1, plus device name and classification:
 
 ```
-🔴 Home — power is OFF
+🔴 Home — device stopped checking in
 Last signal: 21 Nov 18:42
 
-🟢 Home — power is ON
-Was off for 2 h 15 min (18:42 → 20:57) · power outage
+🟢 Home — device is back online
+Offline for 2 h 15 min (18:42 → 20:57) · suspected power outage
 ```
 
 Texts in the user's language (uk / en / ru), times in the user's
@@ -250,6 +307,10 @@ timezone.
 | ------ | ------------------- | ---------------------------------------- |
 | POST   | `/api/device/claim` | Pairing code → device token (once)       |
 | POST   | `/ping`             | Ping (same as v1, so old firmware works) |
+
+Updated firmware also uses the device token to fetch remote settings and
+release information, report applied settings and announce an OTA update
+before reboot. The v1 ping remains supported for migrated devices.
 
 ### Auth endpoints
 
@@ -286,7 +347,7 @@ Base path `/api/v1`. JSON. Errors:
 | POST   | `/devices/:id/pairing-code`    | write | New pairing code (owner only)                                      |
 | POST   | `/devices/:id/rotate-token`    | write | Invalidate device token (owner)                                    |
 | GET    | `/devices/:id/outages`         | read  | Outages, filters: `from`, `to`, `kind`, `cause`; cursor pagination |
-| GET    | `/devices/:id/stats`           | read  | `period=day                                                        | week | month`, `from`, `to` |
+| GET    | `/devices/:id/stats`           | read  | Period (`day`, `week`, `month`), `from`, `to`                        |
 | GET    | `/devices/:id/members`         | read  | Owner + viewers                                                    |
 | POST   | `/devices/:id/invites`         | write | Invite by email (owner only)                                       |
 | DELETE | `/devices/:id/members/:userId` | write | Remove viewer / leave                                              |
@@ -325,8 +386,10 @@ Stats response example:
 }
 ```
 
-OpenAPI spec lives in the server and is shown in the client app as API
-docs.
+The Express server generates the public OpenAPI document from route and
+request/response schemas, including authentication, errors and examples.
+Swagger UI loads the generated document so integrators can read the API
+reference and try requests with their own API token.
 
 ### Rate limits
 
@@ -350,19 +413,35 @@ Pages:
 - **Devices** — cards with 🟢 / 🔴 / ⚪, "since", last seen; shared
   devices marked.
 - **Device** — status, timeline of outages, stats (day / week / month),
-  settings, members & invites, channels, "re-pair", "rotate token",
-  "delete".
+  settings and their applied status, firmware version and update result,
+  members & invites, channels, "re-pair", "rotate token", "delete".
 - **Add device** — wizard: name → pairing code → (flash) → wait for
   first ping.
 - **Flash firmware** — ESP Web Tools.
 - **Notifications** — connect platform Telegram bot, add own bot, add
   webhook, delivery log.
 - **API tokens** — create (shown once), list, revoke.
-- **API docs** — rendered OpenAPI.
+- **API docs** — Swagger UI backed by the generated OpenAPI document.
 - **Account** — name, timezone, language, linked Google, log out
   everywhere, delete account.
 
-UI languages: Ukrainian, English, Russian.
+### Admin app (React)
+
+A separate app for platform staff uses the same Express API. Admin routes
+require a signed-in account with a platform administrator role checked by
+the server. The initial app is read-only and shows:
+
+- Platform health, API errors and background worker status.
+- Device counts by state and a searchable device list with last check-in,
+  firmware version and update result.
+- Notification queue depth and recent delivery failures.
+
+### Localization
+
+Keep keyed dictionaries for Ukrainian (`uk`), English (`en`) and Russian
+(`ru`) in the repository. Use them for both React apps and server-generated
+messages, including emails and Telegram notifications. Translations ship
+with the app and server releases.
 
 ## 10. Security
 
@@ -401,6 +480,7 @@ Rough numbers to plan for:
 | API        | Render Web Service (paid) |
 | Worker     | Render Background Worker  |
 | Client app | Render Static Site        |
+| Admin app  | Render Static Site        |
 | Database   | Supabase (Postgres)       |
 | Emails     | Resend                    |
 
@@ -410,7 +490,8 @@ Rough numbers to plan for:
 - API and worker share one codebase, started with different commands
   (`npm run start:api`, `npm run start:worker`).
 - `render.yaml` blueprint for all Render services.
-- Custom domain: `app.<domain>` (client), `api.<domain>` (server).
+- Custom domains for the React apps and API: `app.<domain>`, `admin.<domain>`,
+  and `api.<domain>`.
 - Supabase: use the pooler connection string.
 - Two environments: `staging` and `production`.
 - Migrations: SQL files in the server, run on deploy.
@@ -437,7 +518,8 @@ API_URL=https://api.<domain>
 
 - The v1 device becomes the first device of the owner's account.
 - Its existing `DEVICE_TOKEN` is hashed and stored, so the ESP keeps
-  working without reflashing.
+  working without reflashing. Remote configuration and OTA require a one-time
+  upgrade to firmware that supports those features.
 - v1 has no database or saved event history. Outage history starts in v2.
 
 ## 14. Repo layout
@@ -445,9 +527,11 @@ API_URL=https://api.<domain>
 ```
 elec-monitoring/
   docs/
+    archived/
   firmware/
   server/
   client/
+  admin/
 ```
 
 ## 15. Milestones
@@ -459,8 +543,13 @@ elec-monitoring/
 4. **Client app:** log in, devices list, device page, add-device flow.
 5. **Device setup:** captive portal + pairing code + browser flashing.
 6. **Sharing:** invites, viewer role.
-7. **API tokens + public REST API + OpenAPI docs.**
+7. **API integrations:** API tokens, public REST API, generated OpenAPI and
+   Swagger UI.
 8. **Own Telegram bot + webhooks** with delivery log and retries.
 9. **Statistics** in API, client app and `/stats` bot command.
-10. **Hardening:** rate limits, access tests, staging, v1 migration,
-    translations (uk / en / ru).
+10. **Admin app:** read-only monitoring of the API, worker, devices and
+    notification queue.
+11. **Remote device management:** settings sync, signed OTA, update-start
+    confirmation, rollback and monitoring through the update window.
+12. **Launch readiness:** rate limits, access tests, staging, v1 migration,
+    keyed translations (uk / en / ru).

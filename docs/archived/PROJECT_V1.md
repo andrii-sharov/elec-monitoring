@@ -1,4 +1,7 @@
-# Electricity Monitor — Project Spec (v1)
+# Electricity Monitor — Project Spec (v1, archived)
+
+The [v2 specification](../PROJECT_V2.md) is the active plan. This document
+records the released v1 design.
 
 ## 1. Goal
 
@@ -14,8 +17,7 @@ message.
 We don't detect an outage directly — we detect that the pings stopped.
 
 **v1 is for testing the idea:** one owner, one device, as little code as
-possible. If it works well, we move to v2 — the multi-user platform
-(`PROJECT_V2.md`).
+possible. The next version is the [multi-user platform](../PROJECT_V2.md).
 
 ## 2. Scope
 
