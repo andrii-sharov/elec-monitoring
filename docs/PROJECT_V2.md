@@ -10,7 +10,10 @@ alerts when their device loses and restores contact. Advanced users get a REST
 API, their own Telegram bots, webhooks and more control.
 
 The device pings every 30 s by default. Missing pings indicate a loss of
-contact. The server estimates the cause after the device reconnects.
+contact. The device also checks in immediately after boot, as soon as it
+can reach the API. The server uses boot information to estimate the cause
+of a gap and can record a suspected power blip even if the device never
+went offline.
 
 The platform is **free** for all users for now.
 
@@ -31,8 +34,9 @@ The platform is **free** for all users for now.
 - Public **REST API** with user-generated API tokens and Swagger UI
   backed by a generated OpenAPI document.
 - Outage classification:
-  - **short** (blip) vs **long** outage, threshold adjustable per device,
-  - estimated **power** vs **network** outage (using `uptime_s`).
+  - **short** vs **long** interruption, threshold adjustable per device,
+  - suspected **power** loss, a **network** interruption, or an **unknown**
+    cause, based on boot information and uptime.
 - Statistics: number of outages, total / average downtime, availability
   % per day / week / month.
 - Separate React apps for users and platform administrators.
@@ -78,16 +82,17 @@ only sends emails.
   `httpOnly`, `Secure`, `SameSite=Lax` cookie. Rotated on every use;
   reuse of an old refresh token revokes the whole session.
 - "Log out everywhere" in account settings.
-- Needs a **custom domain** (e.g. `app.<domain>` for the client,
-  `api.<domain>` for the server) so the cookie is first-party.
-  `*.onrender.com` subdomains count as different sites, so cookies
-  between them won't work reliably.
+- Use HTTPS custom domains under a shared parent domain for the apps and
+  API (see §12). The refresh cookie stays scoped to the API host. Both apps
+  send credentialed auth requests, and the API allows credentials only from
+  the explicit app origins for that environment.
 
 ### Emails (Resend)
 
 - Verify email, reset password, device-sharing invite, "webhook
   disabled" notice.
-- Templates in all 3 languages.
+- Templates in all 3 languages. Choose the language using the recipient's
+  profile preference or the default described in §9.
 
 ## 4. Device
 
@@ -102,8 +107,6 @@ only sends emails.
 
 ### Firmware
 
-Same ping logic as v1, plus:
-
 - **Setup mode (captive portal).** On first boot (or after holding the
   BOOT button for 5 s) the ESP starts its own Wi-Fi network
   `ElecMonitor-XXXX`. The user connects with a phone, a setup page opens,
@@ -112,11 +115,78 @@ Same ping logic as v1, plus:
   - **pairing code** from the client app.
 - On first connect the ESP exchanges the pairing code for its permanent
   **device token** (`POST /api/device/claim`) and stores it in flash.
-- Ping payload:
-  ```json
-  { "uptime_s": 12345, "rssi": -61, "fw": "2.0.0" }
-  ```
 - The server URL is built into the firmware.
+
+### Monitoring signals
+
+The ESP32-C3 runs from the monitored power supply. It sends two types of
+authenticated HTTPS check-in to `POST /ping`:
+
+| Type | When | What it tells the server |
+| ---- | ---- | ------------------------ |
+| `boot` | Immediately after Wi-Fi connects and the API is reachable on each boot | The device started a new boot session and reports the reset reason |
+| `ping` | Every 30 s by default, and promptly after reconnecting within the same boot session | The device is reachable and reports telemetry |
+
+```json
+{
+  "type": "boot",
+  "boot_id": "b738bb72-4172-4edd-8b30-8d5219d8f5f3",
+  "seq": 1,
+  "uptime_s": 8,
+  "reset_reason": "power_on",
+  "rssi": -61,
+  "fw": "2.0.0"
+}
+```
+
+- Generate a fresh `boot_id` in memory on each boot. Include it, the
+  increasing `seq`, current `uptime_s`, `rssi` and `fw` on every check-in.
+- Read the startup reason using ESP-IDF's `esp_reset_reason()` and include
+  it in `boot` and `ping` messages. Map power-on, brownout, software,
+  watchdog and panic reasons explicitly. Use `unknown` for unrecognized
+  values. See the [ESP32-C3 system API](https://docs.espressif.com/projects/esp-idf/en/release-v5.4/esp32c3/api-reference/system/misc_system_api.html).
+- Retry the boot check-in on transient failures with backoff and honor
+  `Retry-After`. Keep the same `boot_id` and `seq` on retry and refresh
+  telemetry. Send one request at a time. The API returns `204` for a
+  successful check-in and acknowledges duplicates without advancing
+  last-seen time or duplicating events.
+- When power drops and the board shuts down, it stops sending. The server
+  detects the silence (§5). If a brief drop resets the board, the next
+  boot check-in carries the evidence for a suspected power blip. If the
+  power adapter absorbs the dip and the board stays up, this hardware may
+  miss it. Direct detection of those dips would need a separate power sensor.
+
+### Wi-Fi disconnect diagnostics
+
+- After the device first gets an IP, log an unexpected Wi-Fi disconnect
+  locally with the boot ID, uptime and driver reason code. Coalesce failed
+  reconnect attempts into the same interruption. When the device gets an
+  IP again, record the recovery uptime and duration. Ignore planned
+  disconnects during setup or OTA.
+- Keep one in-progress interruption and a fixed ring buffer of 16 completed
+  interruptions in RAM. Store the boot ID once and use compact numeric
+  fields per record. Budget up to 512 bytes for the 16 completed records.
+  If the buffer is full, overwrite the oldest record and increment a
+  saturating per-boot eviction counter.
+- Send the buffered records and eviction counter with the next successful
+  `ping`. On acknowledgement, remove only the records included in that
+  request. The server deduplicates by device, boot ID and local event ID
+  and keeps the highest reported eviction counter per boot. It stores
+  diagnostics even if the device stayed `ONLINE` throughout.
+- Skip missed periodic pings and send one fresh `ping` after reconnecting.
+  The Wi-Fi buffer and counter reset on reboot or power loss. The server
+  keeps diagnostics it has already received.
+- A failed HTTPS request with Wi-Fi still connected is an API reachability
+  failure. Preserve that distinction in the device diagnostics.
+
+### Flash storage
+
+- Store Wi-Fi credentials, the device token, applied settings and the
+  current OTA attempt or unacknowledged OTA result in non-volatile storage
+  (NVS). Write on configuration changes or OTA state changes. Regular
+  pings and Wi-Fi diagnostic records do not write to flash.
+- Stream the firmware download in bounded chunks to the inactive OTA
+  flash partition. The full image does not need to fit in RAM.
 
 ### Remote configuration
 
@@ -139,23 +209,56 @@ image in the browser. The initial firmware supports OTA so later releases
 can be installed over Wi-Fi. Remote settings take effect independently of
 firmware releases.
 
-1. The device downloads a compatible signed release over HTTPS and verifies
-   it before installation. It continues its normal check-ins while preparing
-   the update.
-2. Before rebooting, the device sends an authenticated update-start request
-   with the target version. The server records the attempt and confirms a
-   bounded update window. The device waits for that confirmation before
-   rebooting. Retries reuse the same attempt and deadline.
-3. During the window, the client and admin apps show `UPDATING`. The worker
-   treats the planned interruption as maintenance and excludes it from
-   outage notifications and statistics.
-4. A check-in after reboot reporting the confirmed target version marks the
-   update successful. If the new firmware fails its startup checks, the ESP
-   rolls back. A return with the previous version marks the update as failed
-   and the device as online.
-5. If the device does not return before the deadline, it goes offline and
-   the user receives an update-specific notification. Unplanned downtime
-   starts at the deadline. Recovery follows the normal offline flow.
+#### Update discovery and installation policy
+
+- The platform publishes a compatible signed release. The device checks
+  for pending updates on first contact after boot or reconnect and then
+  roughly once an hour, with jitter and backoff. The device makes each
+  request to the API.
+- **Manual by default.** The owner sees **Update available** in the client
+  app and selects **Install**. The server queues the requested version.
+  While the command is pending, the API includes
+  `X-Firmware-Update: pending` in its `204` ping response to trigger an
+  immediate update check. A command for an offline device waits until it
+  reconnects. Checking for a release or waiting for an install command
+  leaves normal pings running.
+- **Automatic OTA (opt-in per device).** The owner enables automatic
+  installation of compatible stable releases. The server offers an
+  eligible release on the next firmware check, without an Install click.
+  Both modes use the same update flow. A failed or timed-out release
+  requires a new explicit retry before that version is attempted again.
+
+#### Update signals and maintenance window
+
+1. The device saves the attempt ID across reboot and sends `update_started`
+   with the target version. The API confirms a bounded update window for
+   an online device. Retries reuse the attempt ID and original deadline.
+   The device starts installation only after receiving an unexpired
+   confirmation.
+2. The device pauses `ping` while it downloads the signed image over HTTPS,
+   writes it to the inactive slot, verifies it before switching slots, and
+   reboots. The apps show `UPDATING`. The worker excludes the planned gap
+   from outage notifications and statistics.
+3. After local startup checks, the device confirms the new firmware or
+   rolls back. As soon as it can reach the API, it sends `update_finished`
+   with the attempt ID, outcome (`succeeded`, `failed` or `rolled_back`),
+   running version and boot ID. A download or verification failure reports
+   `failed` while the old firmware is still running. The device keeps the
+   result across reboot until acknowledged. Retrying a result cannot
+   create a second state change or notification.
+4. `update_started` and `update_finished` are separate API requests.
+   Neither advances the last ping timestamp. A result received before the
+   deadline closes the maintenance window and returns the device to
+   `ONLINE`, with a fresh offline timeout for the next monitoring signal.
+   The device then sends its normal `boot` after reboot or a `ping` if it
+   never rebooted. The reported OTA boot establishes the new boot baseline
+   so the reboot does not register as a power blip.
+5. If no result arrives by the deadline, the device goes `OFFLINE`, the
+   user receives an update-specific notification, and unplanned downtime
+   starts at the deadline. A late result can record the outcome and close
+   the matching outage without removing the recorded downtime or changing
+   a newer attempt. A normal `boot` or `ping` after expiry can also restore
+   contact if the result is unavailable.
 
 ### Adding a device (user flow)
 
@@ -169,55 +272,114 @@ firmware releases.
 
 ## 5. Device state machine
 
-```
-          ping                         no ping for offline_timeout
- PENDING ──────► ONLINE ───────────────────────────────────────► OFFLINE
-                   ▲                                                │
-                   └──────────────────── ping ──────────────────────┘
+```mermaid
+stateDiagram-v2
+    PENDING --> ONLINE: boot or ping
+    ONLINE --> OFFLINE: check-in timeout
+    OFFLINE --> ONLINE: contact restored
+    ONLINE --> UPDATING: update_started
+    UPDATING --> ONLINE: update_finished in time
+    UPDATING --> OFFLINE: update deadline missed
 ```
 
 - `PENDING`: created, never pinged.
-- On ping: update last seen, uptime, RSSI, firmware version. If
-  `OFFLINE` → `ONLINE`, close the open outage, queue notifications.
-- `UPDATING` is shown while a confirmed OTA window is active. The worker
-  also checks expired windows as described in §4.
-- Worker checker (every 10 s): finds `ONLINE` devices whose last ping is
-  older than their `offline_timeout` → `OFFLINE`, opens an outage,
-  queues notifications. Rows are locked (`for update skip locked`) so a
-  device is never processed twice.
+- On the first check-in, start monitoring silently. On later accepted
+  check-ins, compare the previous check-in and current boot data before
+  updating last seen. If the device was `OFFLINE`, close the open outage.
+- If contact returns after the timeout but before the worker's next check,
+  record the completed outage in the check-in transaction. Send one
+  summary under the notification rules below because no live OFF alert
+  was queued.
+- `UPDATING` is shown while a confirmed OTA window is active. An ordinary
+  check-in cannot end this state. The API and worker both apply the OTA
+  deadline rules in §4 before processing recovery.
+- The worker checks every 10 s. An `ONLINE` device goes `OFFLINE` after
+  `offline_timeout` (default 120 s) since the last accepted check-in or
+  the end of the OTA window reported by `update_finished`, whichever is
+  later. The worker opens an outage and queues any due notification.
+  Check-in, OTA and worker handlers lock the same device row when writing
+  state, outages and queue entries. The worker skips rows already locked
+  by another transaction.
 
 **State lives in the DB**, not in memory (unlike v1). Any server
 instance can handle any ping; restarts lose nothing.
 
 ### Outage classification
 
-When the device reconnects, estimate the cause from its reported uptime:
+Use the following evidence when contact resumes. Apply the OTA rules in
+§4 first. An outage opened at a missed OTA deadline keeps cause `UNKNOWN`.
 
-- **cause**:
-  - `POWER` — suspected power loss if `uptime_s` indicates a reboot.
-    Other kinds of reboot can produce the same signal.
-  - `NETWORK` — suspected network loss if `uptime_s` indicates the ESP
-    stayed on throughout the gap.
-  - `UNKNOWN` — insufficient uptime data or a missed update deadline.
-- **kind**:
-  - `SHORT` — duration < short-outage threshold
-    (default **3 min**, adjustable per device),
-  - `LONG` — otherwise.
+| Evidence | Cause |
+| -------- | ----- |
+| Previously known `boot_id` changed, with `power_on` or `brownout` | `POWER` (suspected power interruption) |
+| Same `boot_id` across an offline gap | `NETWORK` (the device stayed up, but the Wi-Fi, internet or API path was unavailable). An overlapping Wi-Fi diagnostic confirms a local disconnect occurred during the gap. |
+| Software, watchdog, panic, unknown reset or missing boot evidence | `UNKNOWN` |
+
+For migrated v1 devices, use `uptime_s` to infer whether the device stayed
+up across an offline gap. Record `NETWORK` if it did and `UNKNOWN` if the
+evidence is inconclusive or only indicates a reboot.
+
+For an outage or power blip, measure the observed contact gap from the
+last accepted check-in before the interruption to the recovery check-in.
+An expired OTA window uses its deadline as the start. Classify the gap
+as `SHORT` when it is below the device's short-outage threshold (default
+3 min) and `LONG` otherwise. The gap is an estimate for display and stats.
+It includes time spent booting and reconnecting. The exact duration of
+power loss is unavailable.
+
+### Power blips before the offline timeout
+
+When an `ONLINE` device reports a new boot with a `POWER` cause before
+the offline timeout, record a completed suspected power blip and keep
+the device `ONLINE`. Include it once in history and statistics. Apply
+the same duration classification to the observed gap. A software,
+watchdog or panic reset before the offline timeout does not create a
+power blip.
+
+- Example: the device sends a `ping`, the power flickers 10 s later,
+  and the device sends its boot check-in 15 s after that. With the default
+  settings, it stays online and its history shows a suspected short power
+  interruption with a 25 s contact gap.
+- If Wi-Fi or the router takes longer to return, the same flicker can
+  produce an offline alert. The subsequent boot check-in can suggest a
+  power interruption, but it cannot tell how long the power was out.
 
 ### Device settings
 
 - Name.
 - Ping interval (30 s by default), applied by the device.
+- Automatic firmware updates (off by default).
 - Offline timeout (default 120 s).
 - Short-outage threshold (default 3 min).
 - Notify on short outages:
-  - if off, the OFF alert is delayed until the threshold has passed,
-  - if power returns before that → no messages, the outage is only
-    stored.
+  - if off, queue the OFF alert once both the offline timeout and the
+    short-outage threshold have elapsed. Store shorter interruptions
+    silently.
+  - for a completed interruption with no queued OFF alert, send at most
+    one summary. Apply the short-outage setting to `SHORT` events and
+    the suspected network setting to `NETWORK` events.
 - Notify on suspected network outages. The cause is estimated once the
-  device reconnects, so this setting affects the recovery message.
+  device reconnects, so this setting affects summaries and recovery
+  messages.
 - Quiet hours (optional): messages are sent silently
   (Telegram `disable_notification`).
+
+### Monitoring acceptance checks
+
+- Use a controlled clock to cover first boot, regular pings, sustained loss
+  of contact, recovery before the next worker check, a power reset before
+  the timeout, a Wi-Fi-only interruption, a software reset, duplicate
+  check-ins and legacy pings. For OTA, cover successful installation,
+  rollback, duplicate start and result requests, and a result arriving
+  after the deadline. Verify that OTA reports never update the last ping
+  timestamp and that a planned reboot creates no power blip.
+- On the target ESP32-C3 and power adapter, verify the reset reasons and
+  boot check-in for brief and sustained power interruptions. Repeat with
+  the router restarting and with only Wi-Fi interrupted.
+- Simulate an extended API outage and more than 16 Wi-Fi interruptions.
+  Verify that buffer capacity stays fixed, the newest records survive,
+  the eviction count is reported and retries do not duplicate diagnostics.
+  Check available heap on the target board during reconnect and OTA.
 
 ## 6. Sharing a device
 
@@ -236,6 +398,8 @@ When the device reconnects, estimate the cause from its reported uptime:
 Each user has **channels** (platform Telegram, own bot, webhook) and
 chooses which devices notify which channels. All sends go through a
 queue (a Postgres table) processed by the worker, with a delivery log.
+Viber is a candidate for a future notification channel and would follow
+the same localization rules.
 
 ### Telegram — platform bot (default)
 
@@ -258,8 +422,11 @@ Bot commands: `/status` (all devices), `/stats` (last 7 days),
 
 ### Webhooks
 
-- User adds a URL and selects events (`device.offline`,
-  `device.online`).
+- User adds a URL and selects events (`device.offline`, `device.online`,
+  `device.power_blip`). Send `device.power_blip` for a completed suspected
+  power blip while still online. Use `device.online` with completed outage
+  details for other completed interruptions. Send these events according
+  to the notification rules in §5.
 - Request:
   ```
   POST <user url>
@@ -294,23 +461,33 @@ Last signal: 21 Nov 18:42
 
 🟢 Home — device is back online
 Offline for 2 h 15 min (18:42 → 20:57) · suspected power outage
+
+🟡 Home — suspected short power interruption
+Device restarted · 25 s between check-ins
 ```
 
-Texts in the user's language (uk / en / ru), times in the user's
-timezone.
+Render human-readable notifications in the recipient's preferred language
+and timezone. For a shared device, each recipient gets messages according
+to their own profile, regardless of the device owner's preferences. This
+also applies to Telegram bot replies and transactional emails.
+
+Keep webhook fields, event names, status and error codes, and timestamps
+in their documented machine-readable formats across all languages.
 
 ## 8. API
 
 ### Device endpoints (device token)
 
-| Method | Path                | Purpose                                  |
-| ------ | ------------------- | ---------------------------------------- |
-| POST   | `/api/device/claim` | Pairing code → device token (once)       |
-| POST   | `/ping`             | Ping (same as v1, so old firmware works) |
+| Method | Path | Purpose |
+| ------ | ---- | ------- |
+| POST | `/api/device/claim` | Pairing code → device token (once) |
+| POST | `/ping` | `boot` or `ping` check-in, including the legacy v1 ping payload |
+| GET | `/api/device/updates/pending` | Get the pending OTA attempt and signed release information, if available |
+| POST | `/api/device/updates/:id/start` | `update_started`, requests the maintenance window |
+| POST | `/api/device/updates/:id/result` | `update_finished`, reports the outcome and running firmware |
 
 Updated firmware also uses the device token to fetch remote settings and
-release information, report applied settings and announce an OTA update
-before reboot. The v1 ping remains supported for migrated devices.
+report applied settings. The v1 ping remains supported for migrated devices.
 
 ### Auth endpoints
 
@@ -346,6 +523,7 @@ Base path `/api/v1`. JSON. Errors:
 | DELETE | `/devices/:id`                 | write | Delete device (owner only)                                         |
 | POST   | `/devices/:id/pairing-code`    | write | New pairing code (owner only)                                      |
 | POST   | `/devices/:id/rotate-token`    | write | Invalidate device token (owner)                                    |
+| POST   | `/devices/:id/firmware-update` | write | Queue or explicitly retry a firmware install (owner only)          |
 | GET    | `/devices/:id/outages`         | read  | Outages, filters: `from`, `to`, `kind`, `cause`; cursor pagination |
 | GET    | `/devices/:id/stats`           | read  | Period (`day`, `week`, `month`), `from`, `to`                        |
 | GET    | `/devices/:id/members`         | read  | Owner + viewers                                                    |
@@ -413,8 +591,10 @@ Pages:
 - **Devices** — cards with 🟢 / 🔴 / ⚪, "since", last seen; shared
   devices marked.
 - **Device** — status, timeline of outages, stats (day / week / month),
-  settings and their applied status, firmware version and update result,
-  members & invites, channels, "re-pair", "rotate token", "delete".
+  settings and their applied status, firmware version, update availability,
+  Install button, automatic update setting, queued and running updates,
+  update result, members & invites, channels, "re-pair", "rotate token",
+  "delete".
 - **Add device** — wizard: name → pairing code → (flash) → wait for
   first ping.
 - **Flash firmware** — ESP Web Tools.
@@ -443,9 +623,16 @@ Keep keyed dictionaries for Ukrainian (`uk`), English (`en`) and Russian
 messages, including emails and Telegram notifications. Translations ship
 with the app and server releases.
 
+Store each account's preferred `language` in its PostgreSQL profile.
+`GET /api/v1/me` returns it and `PATCH /api/v1/me` validates and saves
+changes from Account settings. Both React apps use the saved preference
+after sign-in. The server uses it when rendering outgoing messages as
+described in §7. If a recipient has no saved preference, use Ukrainian
+(`uk`), including invites sent to people without an account.
+
 ## 10. Security
 
-- HTTPS everywhere (Render).
+- HTTPS everywhere, including the Render API and Vercel apps.
 - Passwords: argon2id. Email verification required.
 - Refresh tokens rotated with reuse detection; access JWT 15 min.
 - Device tokens, API tokens, refresh tokens: random 32 bytes, only
@@ -479,24 +666,48 @@ Rough numbers to plan for:
 | ---------- | ------------------------- |
 | API        | Render Web Service (paid) |
 | Worker     | Render Background Worker  |
-| Client app | Render Static Site        |
-| Admin app  | Render Static Site        |
+| Client app | Vercel                    |
+| Admin app  | Vercel (separate project) |
 | Database   | Supabase (Postgres)       |
 | Emails     | Resend                    |
 
 - The worker runs the checker and sends Telegram messages and webhooks.
-  It runs as one instance, so nothing is sent twice; the API can scale
-  to several instances.
+  Start with one worker instance. Persist the delivery ID across retries
+  so webhook consumers can deduplicate uncertain deliveries. The API can
+  scale to several instances.
 - API and worker share one codebase, started with different commands
   (`npm run start:api`, `npm run start:worker`).
-- `render.yaml` blueprint for all Render services.
+- `render.yaml` defines the API and worker. Each React app has its own
+  Vercel project rooted at `client/` or `admin/`. Configure the SPA
+  fallback to `index.html` for React Router deep links.
 - Custom domains for the React apps and API: `app.<domain>`, `admin.<domain>`,
   and `api.<domain>`.
 - Supabase: use the pooler connection string.
-- Two environments: `staging` and `production`.
-- Migrations: SQL files in the server, run on deploy.
+- Keep staging and production separate. Staging uses its own API,
+  worker, database, auth secrets and integration credentials. Assign
+  stable staging app and API domains under the same parent domain for
+  sign-in and refresh testing. Vercel preview builds use the staging API
+  configuration. Run authenticated smoke tests from the stable staging
+  origins.
+- Keep migrations as SQL files in `server/`. Run them once per
+  environment before the API and worker roll forward. Use migrations
+  compatible with the old service versions during a rolling deploy.
 - Telegram platform bot webhook points to
   `https://api.<domain>/telegram/webhook/<secret>`.
+
+### CI/CD
+
+- Set up GitHub Actions as part of the V2 foundation. Run checks on pull
+  requests and deploy branches. Require successful checks before merge.
+- Run `npm ci`, lint and formatting checks, TypeScript checks and builds
+  for the server and both React apps, Vitest for the API and worker,
+  and an ESP32-C3 firmware build as each package is added.
+- Deploy the Render API and worker and the Vercel apps to staging after
+  CI passes. Verify the API health endpoint, auth refresh, a device
+  check-in and a client deep link there. Gate production releases on
+  passing CI and staging smoke tests.
+- Keep deployment credentials in CI or provider secrets. Set the API base
+  URL per Vercel environment. Browser builds contain public config only.
 
 ### Config (environment variables)
 
@@ -511,6 +722,7 @@ EMAIL_FROM=...
 TELEGRAM_PLATFORM_BOT_TOKEN=...
 TELEGRAM_WEBHOOK_SECRET=...
 CLIENT_URL=https://app.<domain>
+ADMIN_URL=https://admin.<domain>
 API_URL=https://api.<domain>
 ```
 
@@ -518,8 +730,8 @@ API_URL=https://api.<domain>
 
 - The v1 device becomes the first device of the owner's account.
 - Its existing `DEVICE_TOKEN` is hashed and stored, so the ESP keeps
-  working without reflashing. Remote configuration and OTA require a one-time
-  upgrade to firmware that supports those features.
+  working without reflashing. Boot signals, power blip detection, remote
+  configuration and OTA require a one-time firmware upgrade.
 - v1 has no database or saved event history. Outage history starts in v2.
 
 ## 14. Repo layout
@@ -536,10 +748,14 @@ elec-monitoring/
 
 ## 15. Milestones
 
+Set up CI with the first packages and add each package's checks as the
+implementation lands.
+
 1. **Auth:** email + password, email verification and reset (Resend),
    Google sign-in, sessions.
-2. **Devices:** CRUD, device token pings, state in DB.
-3. **Worker:** checker, outages, classification, platform Telegram bot.
+2. **Devices:** CRUD, `boot` and `ping`, Wi-Fi diagnostics, legacy pings,
+   state in DB.
+3. **Worker:** checker, outages, power blips, classification, platform Telegram bot.
 4. **Client app:** log in, devices list, device page, add-device flow.
 5. **Device setup:** captive portal + pairing code + browser flashing.
 6. **Sharing:** invites, viewer role.
@@ -549,7 +765,8 @@ elec-monitoring/
 9. **Statistics** in API, client app and `/stats` bot command.
 10. **Admin app:** read-only monitoring of the API, worker, devices and
     notification queue.
-11. **Remote device management:** settings sync, signed OTA, update-start
-    confirmation, rollback and monitoring through the update window.
-12. **Launch readiness:** rate limits, access tests, staging, v1 migration,
-    keyed translations (uk / en / ru).
+11. **Remote device management:** settings sync, signed manual and automatic
+    OTA, separate update signals, rollback and maintenance monitoring.
+12. **Launch readiness:** rate limits, access tests, Render and Vercel
+    staging and production releases, smoke tests, v1 migration, keyed
+    translations (uk / en / ru).
