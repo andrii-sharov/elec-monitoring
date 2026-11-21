@@ -52,6 +52,7 @@ possible. If it works well, we move to v2 — the multi-user platform
 3. If Wi-Fi drops → keep trying to reconnect.
 4. If the request fails → try again on the next tick. HTTP timeout ~10 s.
 5. Hardware watchdog on: if the firmware hangs, the chip restarts.
+6. Status LEDs — see `DEVICE_STATUS.md`.
 
 `uptime_s` is diagnostic information only in v1. Automatic power vs
 network classification is deferred to v2.

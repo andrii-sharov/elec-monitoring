@@ -21,6 +21,8 @@ changing behaviour, and update the spec if a decision changes.
 - `docs/PROJECT_V1.md` — current spec (goal, firmware, server,
   deploy, milestones).
 - `docs/PROJECT_V2.md` — next version, not in scope yet.
+- `docs/DEVICE_STATUS.md` — LED states and serial log messages. Update it
+  when firmware LED or log behaviour changes.
 
 ## What v1 is
 

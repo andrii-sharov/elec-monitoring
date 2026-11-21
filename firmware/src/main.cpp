@@ -11,10 +11,27 @@ static const uint32_t PING_INTERVAL_MS = 30 * 1000;
 static const uint32_t HTTP_TIMEOUT_MS = 10 * 1000;
 static const uint32_t RECONNECT_INTERVAL_MS = 60 * 1000;
 static const uint32_t WATCHDOG_TIMEOUT_S = 60;
+static const uint8_t LED_PIN = 8;
+static const uint32_t LED_FLASH_MS = 200;
+static const uint32_t LED_BLINK_MS = 200;
 
 static uint32_t lastPingAt = 0;
 static uint32_t lastReconnectAt = 0;
 static bool pingedOnce = false;
+static bool lastPingOk = true;
+static uint32_t flashStartedAt = 0;
+
+static void setLed(bool on) { digitalWrite(LED_PIN, on ? LOW : HIGH); }
+
+static void updateLed() {
+  if (WiFi.status() != WL_CONNECTED) {
+    setLed((millis() / LED_BLINK_MS) % 2);
+  } else if (!lastPingOk) {
+    setLed(true);
+  } else {
+    setLed(millis() - flashStartedAt < LED_FLASH_MS);
+  }
+}
 
 static void startWatchdog() {
 #if ESP_ARDUINO_VERSION_MAJOR >= 3
@@ -70,12 +87,16 @@ static void sendPing() {
     WiFiClient client;
     status = postPing(client);
   }
+  lastPingOk = status == 204;
+  if (lastPingOk) flashStartedAt = millis();
   Serial.printf("ping -> %d (ip %s, rssi %d)\n", status, WiFi.localIP().toString().c_str(),
                 WiFi.RSSI());
 }
 
 void setup() {
   Serial.begin(115200);
+  pinMode(LED_PIN, OUTPUT);
+  setLed(false);
   startWatchdog();
   connectWiFi();
   configTime(0, 0, "pool.ntp.org", "time.google.com");
@@ -92,5 +113,6 @@ void loop() {
     sendPing();
   }
 
-  delay(100);
+  updateLed();
+  delay(50);
 }
