@@ -15,6 +15,8 @@ changing behaviour, and update the spec if a decision changes.
 - [PROJECT_V2.md](docs/PROJECT_V2.md) covers active requirements and milestones.
 - [API.md](docs/API.md) is the source of truth for all API endpoints,
   auth, errors, rate limits and payloads. Update it when an endpoint changes.
+- [DATABASE.md](docs/DATABASE.md) is the source of truth for the PostgreSQL
+  schema: tables, constraints and indexes. Update it when a table changes.
 - [PROJECT_V1.md](docs/archived/PROJECT_V1.md) records the released v1 design.
 - [DEVICE_STATUS.md](docs/DEVICE_STATUS.md) covers LED states and serial log
   messages. Update it when firmware LED or log behaviour changes.

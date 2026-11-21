@@ -49,6 +49,7 @@ The platform is **free** for all users for now.
   connect to one Node.js/Express API. The API enforces access for each caller.
 - PostgreSQL stores accounts, device ownership and sharing, device state and
   settings, outage history, update status and the notification queue.
+  [DATABASE.md](DATABASE.md) defines the schema.
 - A separate worker uses the same database to detect missed pings, check
   update deadlines and deliver notifications. React apps and devices access
   platform data through the API.
@@ -124,16 +125,16 @@ authenticated HTTPS check-in to `POST /api/v1/device/ping`:
 
 | Type | When | What it tells the server |
 | ---- | ---- | ------------------------ |
-| `boot` | Immediately after Wi-Fi connects and the API is reachable on each boot | The device started a new boot session and reports the reset reason |
-| `ping` | Every 30 s by default, and promptly after reconnecting within the same boot session | The device is reachable and reports telemetry |
+| `BOOT` | Immediately after Wi-Fi connects and the API is reachable on each boot | The device started a new boot session and reports the reset reason |
+| `PING` | Every 30 s by default, and promptly after reconnecting within the same boot session | The device is reachable and reports telemetry |
 
 ```json
 {
-  "type": "boot",
+  "type": "BOOT",
   "boot_id": "b738bb72-4172-4edd-8b30-8d5219d8f5f3",
   "seq": 1,
   "uptime_s": 8,
-  "reset_reason": "power_on",
+  "reset_reason": "POWER_ON",
   "rssi": -61,
   "fw": "2.0.0"
 }
@@ -142,8 +143,8 @@ authenticated HTTPS check-in to `POST /api/v1/device/ping`:
 - Generate a fresh `boot_id` in memory on each boot. Include it, the
   increasing `seq`, current `uptime_s`, `rssi` and `fw` on every check-in.
 - Read the startup reason using ESP-IDF's `esp_reset_reason()` and include
-  it in `boot` and `ping` messages. Map power-on, brownout, software,
-  watchdog and panic reasons explicitly. Use `unknown` for unrecognized
+  it in `BOOT` and `PING` messages. Map power-on, brownout, software,
+  watchdog and panic reasons explicitly. Use `UNKNOWN` for unrecognized
   values. See the [ESP32-C3 system API](https://docs.espressif.com/projects/esp-idf/en/release-v5.4/esp32c3/api-reference/system/misc_system_api.html).
 - Retry the boot check-in on transient failures with backoff and honor
   `Retry-After`. Keep the same `boot_id` and `seq` on retry and refresh
@@ -169,11 +170,11 @@ authenticated HTTPS check-in to `POST /api/v1/device/ping`:
   If the buffer is full, overwrite the oldest record and increment a
   saturating per-boot eviction counter.
 - Send the buffered records and eviction counter with the next successful
-  `ping`. On acknowledgement, remove only the records included in that
+  `PING`. On acknowledgement, remove only the records included in that
   request. The server deduplicates by device, boot ID and local event ID
   and keeps the highest reported eviction counter per boot. It stores
   diagnostics even if the device stayed `ONLINE` throughout.
-- Skip missed periodic pings and send one fresh `ping` after reconnecting.
+- Skip missed periodic pings and send one fresh `PING` after reconnecting.
   The Wi-Fi buffer and counter reset on reboot or power loss. The server
   keeps diagnostics it has already received.
 - A failed HTTPS request with Wi-Fi still connected is an API reachability
@@ -235,29 +236,29 @@ firmware releases.
    an online device. Retries reuse the attempt ID and original deadline.
    The device starts installation only after receiving an unexpired
    confirmation.
-2. The device pauses `ping` while it downloads the signed image over HTTPS,
+2. The device pauses `PING` while it downloads the signed image over HTTPS,
    writes it to the inactive slot, verifies it before switching slots, and
    reboots. The apps show `UPDATING`. The worker excludes the planned gap
    from outage notifications and statistics.
 3. After local startup checks, the device confirms the new firmware or
    rolls back. As soon as it can reach the API, it sends `update_finished`
-   with the attempt ID, outcome (`succeeded`, `failed` or `rolled_back`),
+   with the attempt ID, outcome (`SUCCEEDED`, `FAILED` or `ROLLED_BACK`),
    running version and boot ID. A download or verification failure reports
-   `failed` while the old firmware is still running. The device keeps the
+   `FAILED` while the old firmware is still running. The device keeps the
    result across reboot until acknowledged. Retrying a result cannot
    create a second state change or notification.
 4. `update_started` and `update_finished` are separate API requests.
    Neither advances the last ping timestamp. A result received before the
    deadline closes the maintenance window and returns the device to
    `ONLINE`, with a fresh offline timeout for the next monitoring signal.
-   The device then sends its normal `boot` after reboot or a `ping` if it
+   The device then sends its normal `BOOT` after reboot or a `PING` if it
    never rebooted. The reported OTA boot establishes the new boot baseline
    so the reboot does not register as a power blip.
 5. If no result arrives by the deadline, the device goes `OFFLINE`, the
    user receives an update-specific notification, and unplanned downtime
    starts at the deadline. A late result can record the outcome and close
    the matching outage without removing the recorded downtime or changing
-   a newer attempt. A normal `boot` or `ping` after expiry can also restore
+   a newer attempt. A normal `BOOT` or `PING` after expiry can also restore
    contact if the result is unavailable.
 
 ### Adding a device (user flow)
@@ -311,7 +312,7 @@ Use the following evidence when contact resumes. Apply the OTA rules in
 
 | Evidence | Cause |
 | -------- | ----- |
-| Previously known `boot_id` changed, with `power_on` or `brownout` | `POWER` (suspected power interruption) |
+| Previously known `boot_id` changed, with `POWER_ON` or `BROWNOUT` | `POWER` (suspected power interruption) |
 | Same `boot_id` across an offline gap | `NETWORK` (the device stayed up, but the Wi-Fi, internet or API path was unavailable). An overlapping Wi-Fi diagnostic confirms a local disconnect occurred during the gap. |
 | Software, watchdog, panic, unknown reset or missing boot evidence | `UNKNOWN` |
 
@@ -332,7 +333,7 @@ the same duration classification to the observed gap. A software,
 watchdog or panic reset before the offline timeout does not create a
 power blip.
 
-- Example: the device sends a `ping`, the power flickers 10 s later,
+- Example: the device sends a `PING`, the power flickers 10 s later,
   and the device sends its boot check-in 15 s after that. With the default
   settings, it stays online and its history shows a suspected short power
   interruption with a 25 s contact gap.
@@ -652,7 +653,7 @@ implementation lands.
 
 1. **Auth:** email + password, email verification and reset (Resend),
    Google sign-in, sessions.
-2. **Devices:** CRUD, `boot` and `ping`, Wi-Fi diagnostics, state in DB.
+2. **Devices:** CRUD, `BOOT` and `PING`, Wi-Fi diagnostics, state in DB.
 3. **Worker:** checker, outages, power blips, classification, platform Telegram bot.
 4. **Client app:** log in, devices list, device page, add-device flow.
 5. **Device setup:** captive portal + pairing code + browser flashing.

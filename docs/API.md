@@ -76,7 +76,10 @@ Validation errors add `details`:
 - Timestamps: ISO 8601 UTC, e.g. `2026-11-21T16:42:00Z`.
 - Durations: integer seconds, fields end with `_s`.
 - IDs: UUID strings for all resources.
-- Enums in API payloads are lowercase: `online`, `power`, `short`.
+- Enum values are `UPPER_CASE` in payloads and query parameters: `ONLINE`,
+  `POWER`, `SHORT`. Standard values keep their own spelling: language
+  codes (`uk`), webhook event names (`device.offline`), token scopes
+  (`read`), error codes (`not_found`) and HTTP header values.
 - Lists use cursor pagination: `?limit=50&cursor=<opaque>` →
   `{ "items": [...], "next_cursor": "..." | null }`. Max `limit` 100.
 
@@ -96,7 +99,7 @@ Responses include `Retry-After` on `429`.
 | Method | Path                                              | Purpose                                                 |
 | ------ | ------------------------------------------------- | ------------------------------------------------------- |
 | POST   | `/api/v1/device/claim`                            | Pairing code → device token (once)                      |
-| POST   | `/api/v1/device/ping`                             | `boot` or `ping` check-in                               |
+| POST   | `/api/v1/device/ping`                             | `BOOT` or `PING` check-in                               |
 | GET    | `/api/v1/device/settings` **(proposed)**          | Current device settings                                 |
 | POST   | `/api/v1/device/settings/applied` **(proposed)**  | Report applied settings version                         |
 | GET    | `/api/v1/device/updates/pending`                  | Pending OTA attempt and signed release info, if any     |
@@ -131,17 +134,17 @@ Exchanges a pairing code for the permanent device token. Auth: none
 
 ### `POST /api/v1/device/ping`
 
-One endpoint for `boot` and `ping` check-ins.
+One endpoint for `BOOT` and `PING` check-ins.
 
 Body:
 
 ```json
 {
-  "type": "ping",
+  "type": "PING",
   "boot_id": "b738bb72-4172-4edd-8b30-8d5219d8f5f3",
   "seq": 42,
   "uptime_s": 1260,
-  "reset_reason": "power_on",
+  "reset_reason": "POWER_ON",
   "rssi": -61,
   "fw": "2.0.0",
   "settings_version": 3,
@@ -150,7 +153,7 @@ Body:
     "events": [
       {
         "id": 7,
-        "kind": "wifi",
+        "kind": "WIFI",
         "start_uptime_s": 900,
         "end_uptime_s": 948,
         "reason": 201
@@ -160,10 +163,10 @@ Body:
 }
 ```
 
-- `type`: `boot` | `ping`. `reset_reason`: `power_on` | `brownout` |
-  `software` | `watchdog` | `panic` | `unknown`.
-- `wifi` is only sent with `ping`. `kind` is `wifi` (Wi-Fi disconnected)
-  or `api` (Wi-Fi up, HTTPS failed). `reason` is the driver reason code.
+- `type`: `BOOT` | `PING`. `reset_reason`: `POWER_ON` | `BROWNOUT` |
+  `SOFTWARE` | `WATCHDOG` | `PANIC` | `UNKNOWN`.
+- `wifi` is only sent with `PING`. `kind` is `WIFI` (Wi-Fi disconnected)
+  or `API` (Wi-Fi up, HTTPS failed). `reason` is the driver reason code.
 - `settings_version` is the settings version the device has applied.
 
 Responses:
@@ -191,7 +194,7 @@ Processing (one transaction, device row locked):
 3. `PENDING` → `ONLINE` silently.
 4. `OFFLINE` → `ONLINE`. Close the open outage, classify cause and kind,
    queue the recovery notification.
-5. `ONLINE` with a new `boot_id` and `power_on`/`brownout` → record a
+5. `ONLINE` with a new `boot_id` and `POWER_ON`/`BROWNOUT` → record a
    power blip. Contact gap = previous check-in → now.
 6. Gap past the offline timeout but the worker has not run yet → record
    the completed outage here and queue one summary.
@@ -273,13 +276,13 @@ verifies `sha256` and the signature before switching slots.
 
 ```json
 {
-  "outcome": "succeeded",
+  "outcome": "SUCCEEDED",
   "running_version": "2.1.0",
   "boot_id": "…"
 }
 ```
 
-`outcome`: `succeeded` | `failed` | `rolled_back`. `204`.
+`outcome`: `SUCCEEDED` | `FAILED` | `ROLLED_BACK`. `204`.
 
 - Before the deadline: close the window, device → `ONLINE`, fresh
   offline timeout. The reported `boot_id` becomes the new baseline, so
@@ -310,7 +313,7 @@ Successful sign-in responses set the refresh cookie and return:
 | POST   | `/api/auth/verify-email`                       | `token`                                             | `204`. Used or older than 24 h → `410`                                                                             |
 | POST   | `/api/auth/resend-verification` **(proposed)** | — (JWT)                                             | `204`                                                                                                              |
 | POST   | `/api/auth/login`                              | `email`, `password`                                 | `200` session. Wrong credentials → `401 invalid_credentials`                                                       |
-| GET    | `/api/auth/google`                             | query `app=client\|admin`, `intent=login\|link`     | `302` to Google with PKCE and `state`                                                                              |
+| GET    | `/api/auth/google`                             | query `app=CLIENT\|ADMIN`, `intent=LOGIN\|LINK`     | `302` to Google with PKCE and `state`                                                                              |
 | GET    | `/api/auth/google/callback`                    | from Google                                         | Sets refresh cookie, `302` to the app. The app then calls `refresh`                                                |
 | POST   | `/api/auth/refresh`                            | cookie                                              | `200` session, rotates the cookie. Reused token → revoke session, `401`                                            |
 | POST   | `/api/auth/logout`                             | cookie                                              | `204`, clears the cookie                                                                                           |
@@ -344,7 +347,7 @@ it for a given device.
 
 ```json
 {
-  "device": { "id": "4c0f…", "name": "Home", "state": "pending" },
+  "device": { "id": "4c0f…", "name": "Home", "state": "PENDING" },
   "pairing_code": "K7Q2M9XD",
   "pairing_code_expires_at": "2026-11-21T17:12:00Z"
 }
@@ -356,12 +359,12 @@ Device object (`GET /devices/:id`, items of `GET /devices`):
 {
   "id": "4c0f…",
   "name": "Home",
-  "role": "owner",
-  "state": "online",
+  "role": "OWNER",
+  "state": "ONLINE",
   "state_since": "2026-11-21T14:02:00Z",
   "last_seen_at": "2026-11-21T16:41:30Z",
   "open_outage": null,
-  "telemetry": { "rssi": -61, "uptime_s": 9420, "reset_reason": "power_on" },
+  "telemetry": { "rssi": -61, "uptime_s": 9420, "reset_reason": "POWER_ON" },
   "settings": {
     "ping_interval_s": 30,
     "offline_timeout_s": 120,
@@ -378,7 +381,7 @@ Device object (`GET /devices/:id`, items of `GET /devices`):
     "update": {
       "attempt_id": "a1b2…",
       "version": "2.1.0",
-      "status": "queued",
+      "status": "QUEUED",
       "window_ends_at": null,
       "outcome": null,
       "finished_at": null
@@ -387,11 +390,11 @@ Device object (`GET /devices/:id`, items of `GET /devices`):
 }
 ```
 
-- `state`: `pending` | `online` | `offline` | `updating`.
-- `update.status`: `queued` | `installing` | `finished` | `timed_out`.
+- `state`: `PENDING` | `ONLINE` | `OFFLINE` | `UPDATING`.
+- `update.status`: `QUEUED` | `INSTALLING` | `FINISHED` | `TIMED_OUT`.
 - `firmware`, `settings_sync` and `telemetry` are hidden in `GET /devices`
   list items to keep it small. The client polls `GET /devices/:id` in
-  the add-device wizard until `state` leaves `pending`.
+  the add-device wizard until `state` leaves `PENDING`.
 
 `PATCH /devices/:id` accepts any subset of `name` and `settings`.
 Validation:
@@ -440,7 +443,7 @@ flashing. It points to the latest stable image.
 | Method | Path                                      | Scope | Role          | Purpose                                              |
 | ------ | ----------------------------------------- | ----- | ------------- | ---------------------------------------------------- |
 | GET    | `/devices/:id/outages`                    | read  | owner, viewer | Outages and power blips, filtered, cursor pagination |
-| GET    | `/devices/:id/stats`                      | read  | owner, viewer | Stats for `day`, `week` or `month`                   |
+| GET    | `/devices/:id/stats`                      | read  | owner, viewer | Stats for `DAY`, `WEEK` or `MONTH`                   |
 | GET    | `/devices/:id/diagnostics` **(proposed)** | read  | owner         | Wi-Fi and API reachability diagnostics               |
 
 `GET /devices/:id/outages?from&to&kind&cause&type&limit&cursor`, newest
@@ -451,12 +454,12 @@ first:
   "items": [
     {
       "id": "9e1d…",
-      "type": "outage",
+      "type": "OUTAGE",
       "started_at": "2026-11-21T16:42:00Z",
       "ended_at": "2026-11-21T18:57:00Z",
       "duration_s": 8100,
-      "cause": "power",
-      "kind": "long",
+      "cause": "POWER",
+      "kind": "LONG",
       "ota_attempt_id": null
     }
   ],
@@ -464,15 +467,15 @@ first:
 }
 ```
 
-- `type`: `outage` | `power_blip`. `cause`: `power` | `network` |
-  `unknown` (null while open). `kind`: `short` | `long` (null while open).
+- `type`: `OUTAGE` | `POWER_BLIP`. `cause`: `POWER` | `NETWORK` |
+  `UNKNOWN` (null while open). `kind`: `SHORT` | `LONG` (null while open).
 - An open outage has `ended_at: null`.
 
-`GET /devices/:id/stats?period=week&from=…`:
+`GET /devices/:id/stats?period=WEEK&from=…`:
 
 ```json
 {
-  "period": "week",
+  "period": "WEEK",
   "from": "2026-11-16T00:00:00Z",
   "to": "2026-11-23T00:00:00Z",
   "outages": 7,
@@ -495,7 +498,7 @@ first:
 ```
 
 - Day and week boundaries use the caller's timezone from `/me`.
-- `buckets`: hours for `day`, days for `week` and `month`. Used for charts.
+- `buckets`: hours for `DAY`, days for `WEEK` and `MONTH`. Used for charts.
 - Planned OTA windows are excluded. Power blips count in `power_blips`,
   not in `outages` or downtime.
 
@@ -545,13 +548,13 @@ shared devices.
 { "url": "https://t.me/<PlatformBot>?start=<link_code>", "expires_at": "…" }
 ```
 
-The bot receives `/start <link_code>` and creates a `telegram_platform`
+The bot receives `/start <link_code>` and creates a `TELEGRAM_PLATFORM`
 channel. The client polls `GET /channels` until it appears.
 
 `POST /channels`, own bot:
 
 ```json
-{ "type": "telegram_bot", "name": "My bot", "bot_token": "…", "chat_id": "-100123" }
+{ "type": "TELEGRAM_BOT", "name": "My bot", "bot_token": "…", "chat_id": "-100123" }
 ```
 
 The server calls `getMe` and sends a test message. Failure →
@@ -561,7 +564,7 @@ The server calls `getMe` and sends a test message. Failure →
 
 ```json
 {
-  "type": "webhook",
+  "type": "WEBHOOK",
   "name": "Home Assistant",
   "url": "https://…",
   "events": ["device.offline", "device.online"]
@@ -576,7 +579,7 @@ Channel object:
 ```json
 {
   "id": "…",
-  "type": "webhook",
+  "type": "WEBHOOK",
   "name": "Home Assistant",
   "enabled": true,
   "disabled_reason": null,
@@ -585,7 +588,7 @@ Channel object:
 }
 ```
 
-`disabled_reason`: `null` | `user` | `too_many_failures`. `PATCH` with
+`disabled_reason`: `null` | `USER` | `TOO_MANY_FAILURES`. `PATCH` with
 `enabled: true` re-enables and resets the failure counter.
 
 `PUT /devices/:id/channels` `{ "channel_ids": ["…"] }` replaces the
@@ -600,7 +603,7 @@ caller's channel set for that device. Other users' links are untouched.
       "id": "…",
       "event": "device.offline",
       "device_id": "…",
-      "status": "failed",
+      "status": "FAILED",
       "attempts": 6,
       "last_attempt_at": "…",
       "last_error": "HTTP 502",
@@ -611,7 +614,7 @@ caller's channel set for that device. Other users' links are untouched.
 }
 ```
 
-`status`: `queued` | `sent` | `retrying` | `failed`. `redeliver` queues
+`status`: `QUEUED` | `SENT` | `RETRYING` | `FAILED`. `redeliver` queues
 the same delivery ID again (`202`).
 
 ### API tokens (JWT only)
@@ -688,9 +691,9 @@ their own API token. Admin endpoints are not included.
 ## 8. Outgoing webhooks
 
 See [PROJECT_V2.md §7](PROJECT_V2.md#webhooks). Payload `device`,
-`outage` and enum values use the same shapes and lowercase values as
+`outage` and enum values use the same shapes and `UPPER_CASE` values as
 the REST API above. `device.power_blip` sends the outage object with
-`type: "power_blip"`.
+`type: "POWER_BLIP"`.
 
 ## 9. Review: gaps and open questions
 
@@ -711,7 +714,7 @@ in PROJECT_V2.md §3–§12. Section numbers below refer to PROJECT_V2.md.
 | §12 CI checks "API health endpoint"                                  | `/health` not listed in v2                                                      | §7 here                                                                                                 |
 | Swagger UI                                                           | No paths                                                                        | `/api/v1/openapi.json`, `/api/docs`                                                                     |
 | §3 Verification email                                                | No resend if the link expires                                                   | `POST /api/auth/resend-verification`                                                                    |
-| §9 Account "linked Google"                                           | No link / unlink                                                                | `intent=link` on `/api/auth/google`, `DELETE /api/auth/google`                                          |
+| §9 Account "linked Google"                                           | No link / unlink                                                                | `intent=LINK` on `/api/auth/google`, `DELETE /api/auth/google`                                          |
 | Account settings                                                     | No change password                                                              | `POST /api/auth/change-password`                                                                        |
 | §6 Invites                                                           | Owner can't see or revoke pending invites. Invitee can't see what the invite is | `GET` / `DELETE /devices/:id/invites`, `GET /invites/:token`                                            |
 | §7 Webhook secret                                                    | No rotation if leaked                                                           | `POST /channels/:id/rotate-secret`                                                                      |
@@ -723,8 +726,8 @@ in PROJECT_V2.md §3–§12. Section numbers below refer to PROJECT_V2.md.
 
 - **ID types.** The webhook example has `"id": 123` for outages, devices
   use string IDs. Pick one (this file assumes UUIDs).
-- **Enum case.** The spec uses `ONLINE`, `POWER`, `SHORT`; the webhook
-  example and ping body use lowercase. This file uses lowercase in JSON.
+- **Enum case.** Resolved: enum values are `UPPER_CASE` in the spec, the
+  API and the database (see [Formats](#formats)).
 - **Stats response** has no power blips, no cause breakdown and no series
   for charts. §5 says blips count "once in history and statistics".
   Proposed fields in [Outages and stats](#outages-and-stats).
