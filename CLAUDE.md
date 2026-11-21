@@ -24,10 +24,13 @@ changing behaviour, and update the spec if a decision changes.
 - `server/` contains the Node.js/Express API and the background worker.
   PostgreSQL is the source of truth for accounts, devices, monitoring state
   and notification deliveries.
-- Server stack: Express 5 (async errors reach the error handler without
-  try/catch), TypeScript built with `tsc`, run in dev with `tsx`, tests in
-  Vitest. Where the `node` skill suggests `node:test` or type stripping,
-  follow this stack instead.
+- Server stack: Node.js 26 LTS, Express 5 (async errors reach the error
+  handler without try/catch), TypeScript built with `tsc`, run in dev with
+  `tsx`, tests in Vitest, Drizzle ORM with Drizzle Kit SQL migrations, Zod
+  for request and response schemas with `zod-openapi` generating the
+  OpenAPI document, `jose` for JWTs, `arctic` for Google sign-in, i18next
+  for server-rendered messages. Where the `node` skill suggests
+  `node:test` or type stripping, follow this stack instead.
 - `client/` is the planned React app for account and device management.
   `admin/` is the planned React app for platform monitoring. Both use the
   same API. Enforce owner, viewer and platform administrator permissions

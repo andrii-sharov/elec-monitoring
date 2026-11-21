@@ -485,8 +485,9 @@ errors, rate limits, and request and response shapes.
 
 ## 9. Client app (React)
 
-Vite + React + TypeScript, React Router, TanStack Query. All data goes
-through our API.
+Vite + React + TypeScript, React Router, TanStack Query, shadcn/ui
+components on Tailwind CSS, forms with React Hook Form and Zod, and
+i18next for translations. All data goes through our API.
 
 Pages:
 
@@ -510,7 +511,8 @@ Pages:
 
 ### Admin app (React)
 
-A separate app for platform staff uses the same Express API. Admin routes
+A separate app for platform staff uses the same stack as the client app
+and the same Express API. Admin routes
 require a signed-in account with a platform administrator role checked by
 the server. The initial app is read-only and shows:
 
@@ -522,8 +524,9 @@ the server. The initial app is read-only and shows:
 ### Localization
 
 Keep keyed dictionaries for Ukrainian (`uk`), English (`en`) and Russian
-(`ru`) in the repository. Use them for both React apps and server-generated
-messages, including emails and Telegram notifications. Translations ship
+(`ru`) in the repository. Load them with i18next in both React apps and
+on the server for generated messages, including emails and Telegram
+notifications. Translations ship
 with the app and server releases.
 
 Store each account's preferred `language` in its PostgreSQL profile.
@@ -592,7 +595,8 @@ Rough numbers to plan for:
   sign-in and refresh testing. Vercel preview builds use the staging API
   configuration. Run authenticated smoke tests from the stable staging
   origins.
-- Keep migrations as SQL files in `server/`. Run them once per
+- Access the database with Drizzle ORM. Generate migrations as SQL files
+  in `server/` with Drizzle Kit and review them before merge. Run them once per
   environment before the API and worker roll forward. Use migrations
   compatible with the old service versions during a rolling deploy.
 - Telegram platform bot webhook points to
