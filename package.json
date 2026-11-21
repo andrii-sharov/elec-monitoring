@@ -1,0 +1,14 @@
+{
+  "name": "elec-monitoring",
+  "private": true,
+  "scripts": {
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.79.0",
+    "oxlint": "^1.94.0"
+  }
+}
