@@ -9,7 +9,7 @@
 
 static const uint32_t PING_INTERVAL_MS = 30 * 1000;
 static const uint32_t HTTP_TIMEOUT_MS = 10 * 1000;
-static const uint32_t RECONNECT_INTERVAL_MS = 10 * 1000;
+static const uint32_t RECONNECT_INTERVAL_MS = 60 * 1000;
 static const uint32_t WATCHDOG_TIMEOUT_S = 60;
 
 static uint32_t lastPingAt = 0;
@@ -34,15 +34,18 @@ static void connectWiFi() {
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(true);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.setTxPower(WIFI_POWER_8_5dBm);
 }
 
 static void keepWiFiAlive() {
-  if (WiFi.status() == WL_CONNECTED) return;
+  if (WiFi.status() == WL_CONNECTED) {
+    lastReconnectAt = millis();
+    return;
+  }
   if (millis() - lastReconnectAt < RECONNECT_INTERVAL_MS) return;
   lastReconnectAt = millis();
-  Serial.println("Wi-Fi down, reconnecting");
-  WiFi.disconnect();
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.printf("Wi-Fi down (status %d), reconnecting\n", WiFi.status());
+  WiFi.reconnect();
 }
 
 static int postPing(WiFiClient &client) {
@@ -67,7 +70,8 @@ static void sendPing() {
     WiFiClient client;
     status = postPing(client);
   }
-  Serial.printf("ping -> %d\n", status);
+  Serial.printf("ping -> %d (ip %s, rssi %d)\n", status, WiFi.localIP().toString().c_str(),
+                WiFi.RSSI());
 }
 
 void setup() {

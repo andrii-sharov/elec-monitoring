@@ -59,6 +59,12 @@ network classification is deferred to v2.
 ### Notes
 
 - ESP32-C3 supports **2.4 GHz Wi-Fi only**.
+- The SuperMini's antenna is weak at full TX power: it associates but
+  drops connections. Firmware sets TX power to 8.5 dBm, which made
+  pings reliable in testing.
+- Wi-Fi reconnects are left to the driver's auto-reconnect; the firmware
+  forces `WiFi.reconnect()` only after 60 s without a connection, so it
+  doesn't interrupt a slow WPA2/WPA3 handshake.
 - The server timestamps events. The ESP synchronizes time for HTTPS
   certificate validation and uses a trusted CA certificate.
 - Wi-Fi SSID/password, server URL and token live in
