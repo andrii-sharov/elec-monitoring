@@ -1,6 +1,6 @@
 {
-  "id": "ff67352d-2520-4683-aa71-d94b36129ee3",
-  "prevId": "a6867aa7-75e7-4cea-abc9-2f6e47a98c53",
+  "id": "aa380dd5-330f-4d6d-b389-8492d537000b",
+  "prevId": "2347ee11-c9ce-4488-91ef-598273a53182",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -822,6 +822,21 @@
           "where": "accepted_at is null",
           "concurrently": false
         },
+        "device_invite_device_id_idx": {
+          "name": "device_invite_device_id_idx",
+          "columns": [
+            {
+              "expression": "device_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
         "device_invite_invited_by_idx": {
           "name": "device_invite_invited_by_idx",
           "columns": [
@@ -1263,6 +1278,10 @@
           "name": "firmware_update_attempt_started_check",
           "value": "status in ('QUEUED', 'CANCELLED') or (started_at is not null and window_ends_at is not null)"
         },
+        "firmware_update_attempt_queued_check": {
+          "name": "firmware_update_attempt_queued_check",
+          "value": "status <> 'QUEUED' or started_at is null"
+        },
         "firmware_update_attempt_outcome_check": {
           "name": "firmware_update_attempt_outcome_check",
           "value": "(outcome is null) = (finished_at is null)"
@@ -1448,6 +1467,10 @@
         "device_diagnostic_uptime_check": {
           "name": "device_diagnostic_uptime_check",
           "value": "end_uptime_s >= start_uptime_s"
+        },
+        "device_diagnostic_reason_check": {
+          "name": "device_diagnostic_reason_check",
+          "value": "kind = 'WIFI' or reason is null"
         }
       },
       "isRLSEnabled": true

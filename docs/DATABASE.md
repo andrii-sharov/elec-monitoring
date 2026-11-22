@@ -48,7 +48,8 @@ Design rules follow the `supabase-postgres-best-practices` skill.
   AES-256-GCM and stored as one `bytea` value: `nonce || ciphertext || tag`.
 - **Foreign keys:** every FK column is indexed (alone or as the leading
   column of another index), so joins and `on delete cascade` don't scan
-  the child table.
+  the child table. A partial index counts only when its condition is
+  `<column> is not null`, since cascades look up every non-null value.
 - **`updated_at`:** set by the server on write (Drizzle `$onUpdate`), no
   triggers.
 - **Constraint names:** the SQL below leaves checks unnamed for reading.
@@ -344,6 +345,7 @@ create table device_invite (
 
 create unique index device_invite_pending_key on device_invite (device_id, email)
   where accepted_at is null;
+create index device_invite_device_id_idx on device_invite (device_id);
 create index device_invite_invited_by_idx on device_invite (invited_by);
 ```
 
@@ -399,6 +401,7 @@ create table firmware_update_attempt (
   finished_at     timestamptz,
   created_at      timestamptz not null default now(),
   check (status in ('QUEUED', 'CANCELLED') or (started_at is not null and window_ends_at is not null)),
+  check (status <> 'QUEUED' or started_at is null),
   check ((outcome is null) = (finished_at is null)),
   check (status <> 'FINISHED' or outcome is not null)
 );
@@ -425,7 +428,7 @@ create index firmware_update_attempt_requested_by_idx on firmware_update_attempt
   `TIMED_OUT` attempt for this device, unless a newer explicit attempt
   exists.
 - A release cannot be deleted while attempts reference it (default
-  `restrict`).
+  `no action`).
 
 ## 6. Monitoring history
 
@@ -466,7 +469,8 @@ create table device_diagnostic (
   received_at    timestamptz not null default now(),
   primary key (device_id, boot_id, local_id),
   foreign key (device_id, boot_id) references device_boot (device_id, boot_id) on delete cascade,
-  check (end_uptime_s >= start_uptime_s)
+  check (end_uptime_s >= start_uptime_s),
+  check (kind = 'WIFI' or reason is null)
 );
 
 create index device_diagnostic_device_started_idx on device_diagnostic (device_id, started_at desc);
@@ -708,8 +712,8 @@ Each query states the index it relies on.
 
 - Enable Row Level Security on every table and create **no policies**, so
   the Supabase `anon` and `authenticated` roles read nothing (PROJECT_V2
-  §10). In the first migration, also revoke their table privileges in
-  `public` and the matching default privileges.
+  §10). Migration `0001_revoke_public_roles` also revokes their table
+  privileges in `public` and the matching default privileges.
 - The API and worker connect as the table owner, which bypasses RLS. Do
   **not** use `force row level security`. With no policies it would block
   our own server.

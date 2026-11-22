@@ -52,6 +52,7 @@ export const deviceDiagnostic = pgTable(
       foreignColumns: [deviceBoot.deviceId, deviceBoot.bootId],
     }).onDelete('cascade'),
     check('device_diagnostic_uptime_check', sql`end_uptime_s >= start_uptime_s`),
+    check('device_diagnostic_reason_check', sql`kind = 'WIFI' or reason is null`),
     index('device_diagnostic_device_started_idx').on(t.deviceId, t.startedAt.desc().nullsFirst()),
   ],
 ).enableRLS();

@@ -5,6 +5,10 @@ import { sha256 } from '../lib/crypto.ts';
 import {
   appUser,
   device,
+  deviceBoot,
+  deviceDiagnostic,
+  firmwareRelease,
+  firmwareUpdateAttempt,
   notificationChannel,
   outage,
   refreshToken,
@@ -93,6 +97,13 @@ describe('migrations', () => {
           select 1 from pg_index i
           where i.indrelid = c.conrelid
             and (i.indkey::int2[])[0:cardinality(c.conkey) - 1] = c.conkey
+            and (
+              i.indpred is null
+              or pg_get_expr(i.indpred, i.indrelid) = format(
+                '(%I IS NOT NULL)',
+                (select attname from pg_attribute where attrelid = c.conrelid and attnum = c.conkey[1])
+              )
+            )
         )
     `);
     expect(unindexed).toEqual([]);
@@ -197,6 +208,49 @@ describe('constraints', () => {
         .insert(refreshToken)
         .values({ tokenHash: Buffer.alloc(16), sessionId: s!.id, expiresAt }),
       'refresh_token_token_hash_check',
+    );
+  });
+
+  test('API diagnostics have no Wi-Fi reason code', async () => {
+    const d = await insertDevice();
+    const bootId = '01970000-0000-7000-8000-000000000001';
+    await t.db.insert(deviceBoot).values({ deviceId: d.id, bootId, resetReason: 'POWER_ON' });
+    const record = {
+      deviceId: d.id,
+      bootId,
+      startUptimeS: 10,
+      endUptimeS: 20,
+      startedAt: new Date('2026-11-21T10:00:00Z'),
+      endedAt: new Date('2026-11-21T10:00:10Z'),
+    };
+    await expectViolation(
+      t.db.insert(deviceDiagnostic).values({ ...record, localId: 1, kind: 'API', reason: 15 }),
+      'device_diagnostic_reason_check',
+    );
+    await t.db.insert(deviceDiagnostic).values({ ...record, localId: 2, kind: 'WIFI', reason: 15 });
+  });
+
+  test('queued update attempts have not started', async () => {
+    const d = await insertDevice();
+    const [release] = await t.db
+      .insert(firmwareRelease)
+      .values({
+        version: '2.1.0',
+        versionCode: 20100,
+        sizeBytes: 1,
+        sha256: sha256('image'),
+        signature: Buffer.alloc(64),
+        imagePath: 'firmware/2.1.0.bin',
+      })
+      .returning();
+    await expectViolation(
+      t.db.insert(firmwareUpdateAttempt).values({
+        deviceId: d.id,
+        releaseId: release!.id,
+        startedAt: new Date('2026-11-21T10:00:00Z'),
+        windowEndsAt: new Date('2026-11-21T10:10:00Z'),
+      }),
+      'firmware_update_attempt_queued_check',
     );
   });
 });

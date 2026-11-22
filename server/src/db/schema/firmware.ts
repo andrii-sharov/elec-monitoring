@@ -57,6 +57,7 @@ export const firmwareUpdateAttempt = pgTable(
       'firmware_update_attempt_started_check',
       sql`status in ('QUEUED', 'CANCELLED') or (started_at is not null and window_ends_at is not null)`,
     ),
+    check('firmware_update_attempt_queued_check', sql`status <> 'QUEUED' or started_at is null`),
     check('firmware_update_attempt_outcome_check', sql`(outcome is null) = (finished_at is null)`),
     check(
       'firmware_update_attempt_finished_check',

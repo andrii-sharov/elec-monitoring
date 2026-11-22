@@ -122,6 +122,7 @@ export const deviceInvite = pgTable(
     uniqueIndex('device_invite_pending_key')
       .on(t.deviceId, t.email)
       .where(sql`accepted_at is null`),
+    index('device_invite_device_id_idx').on(t.deviceId),
     index('device_invite_invited_by_idx').on(t.invitedBy),
   ],
 ).enableRLS();

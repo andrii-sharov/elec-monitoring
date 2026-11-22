@@ -174,6 +174,7 @@ CREATE TABLE "firmware_update_attempt" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "firmware_update_attempt_status_check" CHECK (status in ('QUEUED', 'INSTALLING', 'FINISHED', 'TIMED_OUT', 'CANCELLED')),
 	CONSTRAINT "firmware_update_attempt_started_check" CHECK (status in ('QUEUED', 'CANCELLED') or (started_at is not null and window_ends_at is not null)),
+	CONSTRAINT "firmware_update_attempt_queued_check" CHECK (status <> 'QUEUED' or started_at is null),
 	CONSTRAINT "firmware_update_attempt_outcome_check" CHECK ((outcome is null) = (finished_at is null)),
 	CONSTRAINT "firmware_update_attempt_finished_check" CHECK (status <> 'FINISHED' or outcome is not null)
 );
@@ -201,7 +202,8 @@ CREATE TABLE "device_diagnostic" (
 	"ended_at" timestamp with time zone NOT NULL,
 	"received_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "device_diagnostic_device_id_boot_id_local_id_pk" PRIMARY KEY("device_id","boot_id","local_id"),
-	CONSTRAINT "device_diagnostic_uptime_check" CHECK (end_uptime_s >= start_uptime_s)
+	CONSTRAINT "device_diagnostic_uptime_check" CHECK (end_uptime_s >= start_uptime_s),
+	CONSTRAINT "device_diagnostic_reason_check" CHECK (kind = 'WIFI' or reason is null)
 );
 --> statement-breakpoint
 ALTER TABLE "device_diagnostic" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
@@ -317,6 +319,7 @@ CREATE INDEX "session_user_id_idx" ON "session" USING btree ("user_id");--> stat
 CREATE INDEX "device_owner_id_idx" ON "device" USING btree ("owner_id");--> statement-breakpoint
 CREATE INDEX "device_offline_at_idx" ON "device" USING btree ("offline_at") WHERE state = 'ONLINE';--> statement-breakpoint
 CREATE UNIQUE INDEX "device_invite_pending_key" ON "device_invite" USING btree ("device_id","email") WHERE accepted_at is null;--> statement-breakpoint
+CREATE INDEX "device_invite_device_id_idx" ON "device_invite" USING btree ("device_id");--> statement-breakpoint
 CREATE INDEX "device_invite_invited_by_idx" ON "device_invite" USING btree ("invited_by");--> statement-breakpoint
 CREATE INDEX "device_viewer_user_id_idx" ON "device_viewer" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "firmware_update_attempt_device_idx" ON "firmware_update_attempt" USING btree ("device_id","created_at" DESC NULLS FIRST);--> statement-breakpoint
