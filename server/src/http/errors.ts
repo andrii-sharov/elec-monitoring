@@ -13,6 +13,8 @@ export type ErrorCode =
   | 'conflict'
   | 'expired'
   | 'rate_limited'
+  | 'invalid_credentials'
+  | 'reauth_required'
   | 'internal';
 
 export const errorSchema = z
@@ -34,19 +36,31 @@ export const errorSchema = z
   })
   .meta({ id: 'Error' });
 
+export function errorResponse(description: string) {
+  return { description, content: { 'application/json': { schema: errorSchema } } };
+}
+
 export type ErrorDetail = { path: string; code: string; min?: number; max?: number };
 
 export class HttpError extends Error {
   readonly status: number;
   readonly code: ErrorCode;
   readonly details?: ErrorDetail[];
+  readonly headers?: Record<string, string>;
 
-  constructor(status: number, code: ErrorCode, message: string, details?: ErrorDetail[]) {
+  constructor(
+    status: number,
+    code: ErrorCode,
+    message: string,
+    details?: ErrorDetail[],
+    headers?: Record<string, string>,
+  ) {
     super(message);
     this.name = 'HttpError';
     this.status = status;
     this.code = code;
     this.details = details;
+    this.headers = headers;
   }
 }
 
@@ -83,7 +97,8 @@ export function errorHandler(logger: Logger): ErrorRequestHandler {
       res.status(500).json({ error: { code: 'internal', message: 'Internal error' } });
       return;
     }
-    const { status, code, message, details } = httpError;
+    const { status, code, message, details, headers } = httpError;
+    if (headers) res.set(headers);
     res.status(status).json({ error: details ? { code, message, details } : { code, message } });
   };
 }

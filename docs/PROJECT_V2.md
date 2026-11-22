@@ -62,17 +62,37 @@ only sends emails.
 ### Email + password
 
 - Sign up → verification email (Resend) with a one-time link (valid
-  24 h). Account can't add devices until the email is verified.
+  24 h). Account can't add devices until the email is verified. Sign up
+  answers `201` with no body and does not sign in: signing in would reveal
+  whether the email was new. An existing email gets an "account exists"
+  email instead.
+- Emails are sent after the response, so response time doesn't reveal
+  whether an account exists. A lost email is recovered with resend or
+  forgot password.
+- Every bad email-link token answers `410 expired`, whether it is unknown,
+  used, expired or for another purpose.
 - Passwords hashed with **argon2id**.
 - Forgot password → reset link by email (valid 1 h, single use). Reset
-  logs out all sessions.
+  logs out all sessions, marks the email verified (the link proves ownership)
+  and expires the user's other unused reset links.
 - Rate limits on sign up, log in, reset (per IP and per email).
 
 ### Google sign-in
 
 - OAuth 2.0 / OpenID Connect, authorization code flow with PKCE.
+- Scopes `openid email profile`. The ID token arrives over the TLS back
+  channel, so the server decodes it and checks `aud`, `iss` and
+  `email_verified`.
 - If a user with the same **verified** email exists, Google is linked
-  to that account.
+  to that account. If the same email belongs to an **unverified** local
+  account, Google is linked, the email is marked verified, the password is
+  removed and all its sessions are revoked, which blocks pre-registration
+  takeover.
+- New Google accounts get `uk` / `Europe/Kyiv`; the app can `PATCH /me`
+  afterwards.
+- The callback redirects to `<app origin>/auth/google`, clean or with
+  `?error=`. OAuth state and the PKCE verifier live in a signed 10-minute
+  `em_oauth` cookie.
 - A user can have both a password and Google linked.
 
 ### Sessions
@@ -81,7 +101,9 @@ only sends emails.
   `Authorization: Bearer`.
 - **Refresh token:** random, 30 days, stored hashed, sent in an
   `httpOnly`, `Secure`, `SameSite=Lax` cookie. Rotated on every use;
-  reuse of an old refresh token revokes the whole session.
+  reuse of an old refresh token revokes the whole session. A token reused
+  within 10 s of its first use answers `409 conflict` and revokes nothing:
+  two tabs refreshing at the same moment, the second one retries once.
 - "Log out everywhere" in account settings.
 - Use HTTPS custom domains under a shared parent domain for the apps and
   API (see §12). The refresh cookie stays scoped to the API host. Both apps
@@ -587,8 +609,13 @@ Rough numbers to plan for:
 - `render.yaml` defines the API and worker. Each React app has its own
   Vercel project rooted at `client/` or `admin/`. Configure the SPA
   fallback to `index.html` for React Router deep links.
-- Custom domains for the React apps and API: `app.<domain>`, `admin.<domain>`,
-  and `api.<domain>`.
+- Custom domains in production: the client app on the apex `https://<domain>`,
+  `https://admin.<domain>` and `https://api.<domain>`; `www.<domain>`
+  redirects to the apex. Staging: `staging-app.<domain>`,
+  `staging-admin.<domain>` and `staging-api.<domain>`. Provider default
+  hosts (`*.onrender.com`, `*.vercel.app`) are on the Public Suffix List,
+  which makes the app and the API cross-site, so they cannot be used for
+  sign-in.
 - Supabase: use the pooler connection string.
 - Keep staging and production separate. Staging uses its own API,
   worker, database, auth secrets and integration credentials. Assign
@@ -621,23 +648,27 @@ Rough numbers to plan for:
 
 ```
 DATABASE_URL=...
-JWT_SECRET=...
-ENCRYPTION_KEY=...                 # 32 bytes, base64
+JWT_SECRET=...                     # at least 32 characters
+ENCRYPTION_KEY=...                 # 32 bytes, base64 (M8)
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
-RESEND_API_KEY=...
+EMAIL_TRANSPORT=resend             # resend (default) | log
+RESEND_API_KEY=...                 # required when EMAIL_TRANSPORT=resend
 EMAIL_FROM=...
 TELEGRAM_PLATFORM_BOT_TOKEN=...
 TELEGRAM_WEBHOOK_SECRET=...
-CLIENT_URL=https://app.<domain>
+CLIENT_URL=https://<domain>        # origin only, no path
 ADMIN_URL=https://admin.<domain>
 API_URL=https://api.<domain>
+TRUST_PROXY_HOPS=0                 # 1 behind Render's proxy
 PORT=3000
 ```
 
-The server validates these with Zod at startup and exits on a missing or
-invalid value. Each milestone adds its keys when its code first reads them,
-so M0 needs only `DATABASE_URL` and `PORT`.
+The API validates these with Zod at startup and exits on a missing or
+invalid value. App URLs must be origins: `https`, or `http` for
+`localhost` and `127.0.0.1`; a trailing slash is removed. The worker and
+`db:migrate` need only `DATABASE_URL`. Each milestone adds its keys when
+its code first reads them.
 
 ## 13. Repo layout
 

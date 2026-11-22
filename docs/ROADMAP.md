@@ -27,7 +27,7 @@ Status: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 | #   | Milestone                                                             | Status | Depends on | Plan                           |
 | --- | --------------------------------------------------------------------- | ------ | ---------- | ------------------------------ |
 | M0  | [Foundation](#m0--foundation)                                         | ✅     | —          | [M00](plans/M00-foundation.md) |
-| M1  | [Auth](#m1--auth)                                                     | ⬜     | M0         | [M01](plans/M01-auth.md)       |
+| M1  | [Auth](#m1--auth)                                                     | 🟡     | M0         | [M01](plans/M01-auth.md)       |
 | M2  | [Devices and check-ins](#m2--devices-and-check-ins)                   | ⬜     | M1         | —                              |
 | M3  | [Worker and platform bot](#m3--worker-and-platform-telegram-bot)      | ⬜     | M2         | —                              |
 | M4  | [Client app](#m4--client-app)                                         | ⬜     | M3         | —                              |
@@ -57,8 +57,8 @@ Open questions from the specs, matched to the milestone they block.
 | Q1  | ✅ UUIDv7: Postgres `uuidv7()` or generated in the server                                               | M0            | D §1                 | Generated in the server (Drizzle `$defaultFn`).                                                                                                                   |
 | Q2  | ✅ Test database                                                                                        | M0            | CLAUDE.md            | PGlite in-process for most tests. Lock and `skip locked` tests run against real Postgres as a CI service.                                                         |
 | Q3  | ✅ Where shared code lives (i18n dictionaries, shared enums)                                            | M0            | P §9, §13            | npm workspace `shared/`.                                                                                                                                          |
-| Q4  | Rate limit counter store                                                                                | M1            | D §12 Q4             | Postgres table behind a small `RateLimiter` interface. Swap to Redis if several API instances make it a hotspot.                                                  |
-| Q5  | Parent domain and staging host names                                                                    | M1            | P §3, §12            | Pick before Google sign-in work. It also sets OAuth redirect URIs and CORS origins.                                                                               |
+| Q4  | ✅ Rate limit counter store                                                                             | M1            | D §12 Q4             | Postgres table behind a small `RateLimiter` interface. Swap to Redis if several API instances make it a hotspot.                                                  |
+| Q5  | ✅ Parent domain and staging host names                                                                 | M1            | P §3, §12            | Pick before Google sign-in work. It also sets OAuth redirect URIs and CORS origins.                                                                               |
 | Q6  | Notification rules and quiet-hours timezone for viewers                                                 | M3            | A §9 Q1–2, D §12 Q1  | Per-recipient rules (`device_notification_rules`), quiet hours in the recipient's timezone. Decide before M3 so fan-out is built once.                            |
 | Q7  | Retention for `delivery` and `device_diagnostic`                                                        | M3            | D §12 Q2             | 90 days.                                                                                                                                                          |
 | Q8  | Firmware image storage                                                                                  | M5            | A §9 Q4, D §12 Q3    | Private Supabase Storage bucket. Browser flashing in M5 already needs it, not only OTA.                                                                           |
@@ -67,7 +67,7 @@ Open questions from the specs, matched to the milestone they block.
 | Q11 | Admin "API error rate" source                                                                           | M10           | A §5, D §8           | Each API instance upserts a per-minute 5xx counter row, written only on errors.                                                                                   |
 | Q12 | OTA maintenance window length                                                                           | M11           | P §4 (not specified) | 10 min (matches the A §2 example).                                                                                                                                |
 | Q13 | Spec fixes: webhook example outage `"id": 123` → UUID (P §7); add `CANCELLED` to `update.status` (A §4) | M8, M11       | A §9, D §12 Q5       | Accept both.                                                                                                                                                      |
-| Q14 | Endpoints marked **(proposed)** in API.md                                                               | per milestone | A §9                 | Accept or drop each one in the milestone plan that uses it, then remove the marker.                                                                               |
+| Q14 | Endpoints marked **(proposed)** in API.md                                                               | per milestone | A §9                 | Accept or drop each one in the milestone plan that uses it, then remove the marker. ✅ M1: `resend-verification`, `change-password`, `DELETE /api/auth/google`.   |
 | Q15 | Email change                                                                                            | —             | A §9 Q5              | Out of scope for v2.                                                                                                                                              |
 
 ## Definition of done (every task)
@@ -144,24 +144,24 @@ migration SQL.
 **Spec:** P §3, §10 · A §3, §4 Account · D §3.
 **Needs:** Q4, Q5.
 
-- [ ] Email sender interface: Resend implementation and a test fake;
+- [x] Email sender interface: Resend implementation and a test fake;
       verify and reset templates in uk / en / ru
-- [ ] Sign up (no email enumeration), verify email (24 h, single use),
+- [x] Sign up (no email enumeration), verify email (24 h, single use),
       resend verification
-- [ ] Log in with argon2id; sessions; refresh token rotation with reuse
+- [x] Log in with argon2id; sessions; refresh token rotation with reuse
       detection; cookie `httpOnly`, `Secure`, `SameSite=Lax`, scoped to
       the API host
-- [ ] CORS with credentials for `CLIENT_URL` and `ADMIN_URL` only;
+- [x] CORS with credentials for `CLIENT_URL` and `ADMIN_URL` only;
       `Origin` check on `refresh` and `logout`
-- [ ] Access JWT (jose, 15 min, session ID claim); `requireUser` and
+- [x] Access JWT (jose, 15 min, session ID claim); `requireUser` and
       `requireVerifiedEmail` middleware
-- [ ] Log out, log out everywhere, forgot / reset password (1 h, single
+- [x] Log out, log out everywhere, forgot / reset password (1 h, single
       use, revokes all sessions), change password
-- [ ] Google sign-in with arctic: PKCE, signed state cookie, link to a
+- [x] Google sign-in with arctic: PKCE, signed state cookie, link to a
       verified email, `intent=LINK`, unlink (`409` if it's the only
       method), redirect allowlist
-- [ ] `GET`, `PATCH`, `DELETE /me`
-- [ ] Rate limiter per Q4 on sign up, log in, reset and claim (per IP
+- [x] `GET`, `PATCH`, `DELETE /me`
+- [x] Rate limiter per Q4 on sign up, log in, reset and claim (per IP
       and per email), `429` with `Retry-After`
 - [ ] Staging: `render.yaml` (API + worker), Supabase staging project,
       domains, migrations run, deploy after CI

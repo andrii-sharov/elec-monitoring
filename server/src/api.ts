@@ -1,12 +1,23 @@
 import { systemClock } from './clock.ts';
 import { loadConfigOrExit } from './config.ts';
 import { createDb } from './db/client.ts';
+import { createGoogleClient } from './auth/google.ts';
+import { createEmailSender } from './email/sender.ts';
 import { createApp } from './http/app.ts';
 import { listen } from './http/listen.ts';
+import { createPgRateLimiter } from './rateLimit/limiter.ts';
 
 const config = loadConfigOrExit(process.env);
 const { db, close } = createDb(config.databaseUrl);
-const app = createApp({ db, clock: systemClock, logger: console, config });
+const app = createApp({
+  db,
+  clock: systemClock,
+  logger: console,
+  config,
+  email: createEmailSender(config.email, console),
+  google: createGoogleClient(config),
+  rateLimiter: createPgRateLimiter(db, systemClock),
+});
 
 async function shutdown(exitCode: number): Promise<never> {
   try {

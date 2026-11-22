@@ -1,0 +1,69 @@
+import request from 'supertest';
+import { afterAll, beforeAll, beforeEach, expect, test } from 'vitest';
+import { createTestDb, type TestDb } from '../../test/db.ts';
+import { FakeClock } from '../../test/fakes.ts';
+import { testApp } from '../../test/app.ts';
+import { rateLimitBucket } from '../db/schema/index.ts';
+import { createPgRateLimiter } from '../rateLimit/limiter.ts';
+import { rateLimit } from './rateLimit.ts';
+
+let t: TestDb;
+
+beforeAll(async () => {
+  t = await createTestDb();
+});
+
+afterAll(async () => {
+  await t.close();
+});
+
+beforeEach(async () => {
+  await t.db.delete(rateLimitBucket);
+});
+
+function appWith(rules: Parameters<typeof rateLimit>[2]) {
+  const clock = new FakeClock(new Date('2026-11-21T16:42:00Z'));
+  const limiter = createPgRateLimiter(t.db, clock);
+  return testApp({
+    routes: (app) => {
+      app.post('/test', rateLimit(limiter, 'test', rules), (_req, res) => {
+        res.status(204).end();
+      });
+    },
+  });
+}
+
+test('answers 429 with Retry-After once the email rule is exceeded', async () => {
+  const app = appWith({ ip: { limit: 5, windowS: 60 }, email: { limit: 1, windowS: 60 } });
+  expect((await request(app).post('/test').send({ email: 'a@b.c' })).status).toBe(204);
+  const res = await request(app).post('/test').send({ email: 'a@b.c' }).expect(429);
+  expect(res.body.error.code).toBe('rate_limited');
+  expect(res.headers['retry-after']).toMatch(/^\d+$/);
+});
+
+test('Retry-After is the larger value when two rules deny', async () => {
+  const app = appWith({ ip: { limit: 1, windowS: 60 }, email: { limit: 1, windowS: 600 } });
+  expect((await request(app).post('/test').send({ email: 'a@b.c' })).status).toBe(204);
+  const res = await request(app).post('/test').send({ email: 'a@b.c' }).expect(429);
+  expect(res.headers['retry-after']).toBe('480');
+});
+
+test('a request counts in every bucket, even one that is denied by another', async () => {
+  const app = appWith({ ip: { limit: 2, windowS: 60 }, email: { limit: 1, windowS: 60 } });
+  expect((await request(app).post('/test').send({ email: 'a@b.c' })).status).toBe(204);
+  expect((await request(app).post('/test').send({ email: 'a@b.c' })).status).toBe(429);
+  expect((await request(app).post('/test').send({ email: 'other@b.c' })).status).toBe(429);
+});
+
+test('normalizes the email before counting', async () => {
+  const app = appWith({ email: { limit: 1, windowS: 60 } });
+  expect((await request(app).post('/test').send({ email: ' A@B.C ' })).status).toBe(204);
+  expect((await request(app).post('/test').send({ email: 'a@b.c' })).status).toBe(429);
+});
+
+test('without an email field only the IP rule applies', async () => {
+  const app = appWith({ ip: { limit: 2, windowS: 60 }, email: { limit: 1, windowS: 60 } });
+  expect((await request(app).post('/test').send({})).status).toBe(204);
+  expect((await request(app).post('/test').send({})).status).toBe(204);
+  expect((await request(app).post('/test').send({})).status).toBe(429);
+});
