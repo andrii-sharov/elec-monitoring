@@ -24,21 +24,21 @@ Status: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 
 ## Status board
 
-| #   | Milestone                                                             | Status | Depends on | Plan |
-| --- | --------------------------------------------------------------------- | ------ | ---------- | ---- |
-| M0  | [Foundation](#m0--foundation)                                         | 🟡     | —          | —    |
-| M1  | [Auth](#m1--auth)                                                     | ⬜     | M0         | —    |
-| M2  | [Devices and check-ins](#m2--devices-and-check-ins)                   | ⬜     | M1         | —    |
-| M3  | [Worker and platform bot](#m3--worker-and-platform-telegram-bot)      | ⬜     | M2         | —    |
-| M4  | [Client app](#m4--client-app)                                         | ⬜     | M3         | —    |
-| M5  | [Firmware core and device setup](#m5--firmware-core-and-device-setup) | ⬜     | M2         | —    |
-| M6  | [Sharing](#m6--sharing)                                               | ⬜     | M4         | —    |
-| M7  | [API tokens and public API](#m7--api-tokens-and-public-rest-api)      | ⬜     | M4         | —    |
-| M8  | [Own bot and webhooks](#m8--own-telegram-bot-and-webhooks)            | ⬜     | M4         | —    |
-| M9  | [Statistics](#m9--statistics)                                         | ⬜     | M4         | —    |
-| M10 | [Admin app](#m10--admin-app)                                          | ⬜     | M4         | —    |
-| M11 | [Remote management and OTA](#m11--remote-device-management-and-ota)   | ⬜     | M4, M5     | —    |
-| M12 | [Launch readiness](#m12--launch-readiness)                            | ⬜     | all        | —    |
+| #   | Milestone                                                             | Status | Depends on | Plan                           |
+| --- | --------------------------------------------------------------------- | ------ | ---------- | ------------------------------ |
+| M0  | [Foundation](#m0--foundation)                                         | 🟡     | —          | [M00](plans/M00-foundation.md) |
+| M1  | [Auth](#m1--auth)                                                     | ⬜     | M0         | —                              |
+| M2  | [Devices and check-ins](#m2--devices-and-check-ins)                   | ⬜     | M1         | —                              |
+| M3  | [Worker and platform bot](#m3--worker-and-platform-telegram-bot)      | ⬜     | M2         | —                              |
+| M4  | [Client app](#m4--client-app)                                         | ⬜     | M3         | —                              |
+| M5  | [Firmware core and device setup](#m5--firmware-core-and-device-setup) | ⬜     | M2         | —                              |
+| M6  | [Sharing](#m6--sharing)                                               | ⬜     | M4         | —                              |
+| M7  | [API tokens and public API](#m7--api-tokens-and-public-rest-api)      | ⬜     | M4         | —                              |
+| M8  | [Own bot and webhooks](#m8--own-telegram-bot-and-webhooks)            | ⬜     | M4         | —                              |
+| M9  | [Statistics](#m9--statistics)                                         | ⬜     | M4         | —                              |
+| M10 | [Admin app](#m10--admin-app)                                          | ⬜     | M4         | —                              |
+| M11 | [Remote management and OTA](#m11--remote-device-management-and-ota)   | ⬜     | M4, M5     | —                              |
+| M12 | [Launch readiness](#m12--launch-readiness)                            | ⬜     | all        | —                              |
 
 M5 (firmware) can run alongside M3–M4 once the check-in endpoints exist.
 
