@@ -123,10 +123,10 @@ only sends emails.
 The ESP32-C3 runs from the monitored power supply. It sends two types of
 authenticated HTTPS check-in to `POST /api/v1/device/ping`:
 
-| Type | When | What it tells the server |
-| ---- | ---- | ------------------------ |
-| `BOOT` | Immediately after Wi-Fi connects and the API is reachable on each boot | The device started a new boot session and reports the reset reason |
-| `PING` | Every 30 s by default, and promptly after reconnecting within the same boot session | The device is reachable and reports telemetry |
+| Type   | When                                                                                | What it tells the server                                           |
+| ------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `BOOT` | Immediately after Wi-Fi connects and the API is reachable on each boot              | The device started a new boot session and reports the reset reason |
+| `PING` | Every 30 s by default, and promptly after reconnecting within the same boot session | The device is reachable and reports telemetry                      |
 
 ```json
 {
@@ -310,11 +310,11 @@ instance can handle any ping; restarts lose nothing.
 Use the following evidence when contact resumes. Apply the OTA rules in
 §4 first. An outage opened at a missed OTA deadline keeps cause `UNKNOWN`.
 
-| Evidence | Cause |
-| -------- | ----- |
-| Previously known `boot_id` changed, with `POWER_ON` or `BROWNOUT` | `POWER` (suspected power interruption) |
-| Same `boot_id` across an offline gap | `NETWORK` (the device stayed up, but the Wi-Fi, internet or API path was unavailable). An overlapping Wi-Fi diagnostic confirms a local disconnect occurred during the gap. |
-| Software, watchdog, panic, unknown reset or missing boot evidence | `UNKNOWN` |
+| Evidence                                                          | Cause                                                                                                                                                                       |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Previously known `boot_id` changed, with `POWER_ON` or `BROWNOUT` | `POWER` (suspected power interruption)                                                                                                                                      |
+| Same `boot_id` across an offline gap                              | `NETWORK` (the device stayed up, but the Wi-Fi, internet or API path was unavailable). An overlapping Wi-Fi diagnostic confirms a local disconnect occurred during the gap. |
+| Software, watchdog, panic, unknown reset or missing boot evidence | `UNKNOWN`                                                                                                                                                                   |
 
 For an outage or power blip, measure the observed contact gap from the
 last accepted check-in before the interruption to the recovery check-in.
@@ -525,7 +525,7 @@ the server. The initial app is read-only and shows:
 ### Localization
 
 Keep keyed dictionaries for Ukrainian (`uk`), English (`en`) and Russian
-(`ru`) in the repository. Load them with i18next in both React apps and
+(`ru`) in the `shared/` workspace. Load them with i18next in both React apps and
 on the server for generated messages, including emails and Telegram
 notifications. Translations ship
 with the app and server releases.
@@ -644,28 +644,41 @@ elec-monitoring/
   server/
   client/
   admin/
+  shared/      # npm workspace: translations and enums used by server and apps
 ```
 
 ## 14. Milestones
 
-Set up CI with the first packages and add each package's checks as the
-implementation lands.
+[ROADMAP.md](ROADMAP.md) tracks progress and lists each milestone's
+deliverables and acceptance checks.
 
-1. **Auth:** email + password, email verification and reset (Resend),
-   Google sign-in, sessions.
-2. **Devices:** CRUD, `BOOT` and `PING`, Wi-Fi diagnostics, state in DB.
-3. **Worker:** checker, outages, power blips, classification, platform Telegram bot.
-4. **Client app:** log in, devices list, device page, add-device flow.
-5. **Device setup:** captive portal + pairing code + browser flashing.
-6. **Sharing:** invites, viewer role.
-7. **API integrations:** API tokens, public REST API, generated OpenAPI and
-   Swagger UI.
-8. **Own Telegram bot + webhooks** with delivery log and retries.
-9. **Statistics** in API, client app and `/stats` bot command.
-10. **Admin app:** read-only monitoring of the API, worker, devices and
-    notification queue.
-11. **Remote device management:** settings sync, signed manual and automatic
-    OTA, separate update signals, rollback and maintenance monitoring.
-12. **Launch readiness:** rate limits, access tests, Render and Vercel
-    staging and production releases, smoke tests, keyed
-    translations (uk / en / ru).
+Every milestone adds its CI checks, its access tests and its translations
+as the implementation lands. From M4 on, each milestone includes its
+client UI.
+
+- **M0 Foundation:** server and worker skeleton, schema and migrations,
+  CI, i18n, OpenAPI registry.
+- **M1 Auth:** email + password, email verification and reset (Resend),
+  Google sign-in, sessions, auth rate limits, staging environment.
+- **M2 Devices:** CRUD, `BOOT` and `PING`, Wi-Fi diagnostics, state in DB.
+- **M3 Worker:** checker, outages, power blips, classification, platform
+  Telegram bot.
+- **M4 Client app:** log in, devices list, device page, add-device flow.
+- **M5 Firmware and device setup:** check-ins, Wi-Fi diagnostics, captive
+  portal, pairing code, browser flashing. The first firmware already has
+  the OTA partition layout and verifying key.
+- **M6 Sharing:** invites, viewer role.
+- **M7 API integrations:** API tokens, public REST API, complete OpenAPI
+  document and Swagger UI.
+- **M8 Own Telegram bot + webhooks** with delivery log and retries.
+- **M9 Statistics** in API, client app and `/stats` bot command.
+- **M10 Admin app:** read-only monitoring of the API, worker, devices and
+  notification queue.
+- **M11 Remote device management:** settings sync, signed manual and
+  automatic OTA, separate update signals, rollback and maintenance
+  monitoring.
+- **M12 Launch readiness:** rate limit and access audits, translation
+  review, Render and Vercel production releases, smoke tests.
+
+No device goes to a user before M11 is done, because the first firmware
+must support OTA (§4).

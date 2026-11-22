@@ -17,7 +17,9 @@ Design rules follow the `supabase-postgres-best-practices` skill.
   `casing: "snake_case"`, so the database never needs quoted identifiers.
 - **IDs:** `uuid` primary keys for every resource the API exposes (API.md
   uses UUID strings). Generate **UUIDv7** (time-ordered) so inserts stay
-  at the end of the index. Avoid random v4 keys. Join tables and natural
+  at the end of the index. Avoid random v4 keys. The server generates
+  them (Drizzle `$defaultFn`), so the schema works on any Postgres
+  version. Join tables and natural
   keys use composite primary keys. Token tables use the token hash as the
   key.
 - **Time:** always `timestamptz`, stored in UTC. Local times without a date
@@ -653,7 +655,7 @@ reads `beat_at`.
   cookie.
 - Access JWTs, translations, API error metrics (logs).
 - Firmware images (§12, question 3).
-- Rate limit counters (§12, question 5).
+- Rate limit counters (§12, question 4).
 
 ## 9. Hot paths
 
@@ -759,12 +761,9 @@ Cascades implement the spec without extra code:
 3. **Firmware storage** (API.md §9, question 4). Decides what
    `firmware_release.image_path` points to. The spec also doesn't define
    "compatible release", so there is no compatibility column yet.
-4. **UUIDv7 source.** On Postgres 18 or newer, use the built-in `uuidv7()`
-   as the column default. On older versions, generate it in the server
-   (Drizzle `$defaultFn`). Check the Supabase project's Postgres version.
-5. **Rate limit counters.** With several API instances they need a shared
+4. **Rate limit counters.** With several API instances they need a shared
    store (Postgres table, Redis, or the edge). Not covered here yet.
-6. **API.md gap.** `update.status` in API.md lists `QUEUED`, `INSTALLING`,
+5. **API.md gap.** `update.status` in API.md lists `QUEUED`, `INSTALLING`,
    `FINISHED`, `TIMED_OUT`, but `POST /device/updates/:id/start` returns
    `409` for a cancelled attempt. This schema adds `CANCELLED`. API.md
    should list it too.

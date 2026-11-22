@@ -518,7 +518,7 @@ first:
   in the recipient's language, or `uk` if they have no account. Already a
   member → `409`.
 - `GET /invites/:token` returns device name, inviter name and expiry, so
-  the page can show "Andrii invited you to Home" before sign-up.
+  the page can show "Johnny invited you to Home" before sign-up.
 - `accept` → `200` with the device. Valid 7 days (`410` after). The
   account email must match the invite email (else `403`).
 - The owner cannot be removed with `DELETE /members`.
@@ -640,7 +640,7 @@ the same delivery ID again (`202`).
   "id": "…",
   "email": "user@example.com",
   "email_verified": true,
-  "name": "Andrii",
+  "name": "Johnny",
   "language": "uk",
   "timezone": "Europe/Kyiv",
   "has_password": true,
