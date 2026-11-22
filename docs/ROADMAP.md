@@ -26,7 +26,7 @@ Status: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 
 | #   | Milestone                                                             | Status | Depends on | Plan                           |
 | --- | --------------------------------------------------------------------- | ------ | ---------- | ------------------------------ |
-| M0  | [Foundation](#m0--foundation)                                         | 🟡     | —          | [M00](plans/M00-foundation.md) |
+| M0  | [Foundation](#m0--foundation)                                         | ✅     | —          | [M00](plans/M00-foundation.md) |
 | M1  | [Auth](#m1--auth)                                                     | ⬜     | M0         | —                              |
 | M2  | [Devices and check-ins](#m2--devices-and-check-ins)                   | ⬜     | M1         | —                              |
 | M3  | [Worker and platform bot](#m3--worker-and-platform-telegram-bot)      | ⬜     | M2         | —                              |
@@ -108,30 +108,30 @@ shared building blocks every later milestone uses.
 **Spec:** P §2 Architecture, §12, §13 · D §1, §10, §11 · A §1, §7.
 
 - [x] Root oxlint and oxfmt config
-- [ ] npm workspaces `server/` and `shared/`; `server/` with TypeScript
+- [x] npm workspaces `server/` and `shared/`; `server/` with TypeScript
       (`tsc` build), `tsx` dev, Vitest; root lint and format scripts
       cover both
-- [ ] Env config validated with Zod (P §12 Config); startup fails on a
+- [x] Env config validated with Zod (P §12 Config); startup fails on a
       missing value
-- [ ] Express 5 app factory with injected dependencies (db, clock,
+- [x] Express 5 app factory with injected dependencies (db, clock,
       senders); error handler emits the A §1 error shape, including
       `validation_error` details from Zod and `not_found`
-- [ ] `GET /health` (`200 {"status":"ok"}` when the DB is reachable)
-- [ ] Drizzle with postgres.js (`prepare: false`, `casing: "snake_case"`),
+- [x] `GET /health` (`200 {"status":"ok"}` when the DB is reachable)
+- [x] Drizzle with postgres.js (`prepare: false`, `casing: "snake_case"`),
       the full D schema, first migration with RLS on and `anon` /
       `authenticated` privileges revoked
-- [ ] Test DB harness: PGlite with a fresh migrated DB per test file;
+- [x] Test DB harness: PGlite with a fresh migrated DB per test file;
       Postgres service in CI for lock tests
-- [ ] `Clock` interface used by all time-based code
-- [ ] Helpers: server-generated UUIDv7 IDs, random 32-byte tokens,
+- [x] `Clock` interface used by all time-based code
+- [x] Helpers: server-generated UUIDv7 IDs, random 32-byte tokens,
       SHA-256 hashing, AES-256-GCM (`nonce || ciphertext || tag`)
-- [ ] i18n: uk / en / ru dictionaries in `shared/`, server i18next
+- [x] i18n: uk / en / ru dictionaries in `shared/`, server i18next
       setup, key-parity test
-- [ ] OpenAPI registry with zod-openapi: `GET /api/v1/openapi.json`,
+- [x] OpenAPI registry with zod-openapi: `GET /api/v1/openapi.json`,
       Swagger UI at `/api/docs`
-- [ ] Worker entry point: loop runner, `worker_heartbeat` upsert,
+- [x] Worker entry point: loop runner, `worker_heartbeat` upsert,
       graceful shutdown; `start:api` and `start:worker` scripts
-- [ ] GitHub Actions: `npm ci`, lint, format check, type check, build,
+- [x] GitHub Actions: `npm ci`, lint, format check, type check, build,
       tests; required on pull requests
 
 **Done when:** CI is green on a pull request. Tests migrate a fresh DB,
