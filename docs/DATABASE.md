@@ -51,6 +51,12 @@ Design rules follow the `supabase-postgres-best-practices` skill.
   the child table.
 - **`updated_at`:** set by the server on write (Drizzle `$onUpdate`), no
   triggers.
+- **Constraint names:** the SQL below leaves checks unnamed for reading.
+  The Drizzle schema names them `<table>_<what>_check` and column unique
+  constraints `<table>_<column>_key`, because Drizzle requires names.
+- **Descending indexes** are `desc nulls first`, the Postgres default for
+  `order by … desc`, so keyset queries can use them. Drizzle needs
+  `.desc().nullsFirst()` for this; plain `.desc()` emits `nulls last`.
 
 ### Enum types
 
