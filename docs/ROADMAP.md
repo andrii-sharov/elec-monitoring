@@ -27,7 +27,7 @@ Status: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 | #   | Milestone                                                             | Status | Depends on | Plan                           |
 | --- | --------------------------------------------------------------------- | ------ | ---------- | ------------------------------ |
 | M0  | [Foundation](#m0--foundation)                                         | ✅     | —          | [M00](plans/M00-foundation.md) |
-| M1  | [Auth](#m1--auth)                                                     | ⬜     | M0         | —                              |
+| M1  | [Auth](#m1--auth)                                                     | ⬜     | M0         | [M01](plans/M01-auth.md)       |
 | M2  | [Devices and check-ins](#m2--devices-and-check-ins)                   | ⬜     | M1         | —                              |
 | M3  | [Worker and platform bot](#m3--worker-and-platform-telegram-bot)      | ⬜     | M2         | —                              |
 | M4  | [Client app](#m4--client-app)                                         | ⬜     | M3         | —                              |
