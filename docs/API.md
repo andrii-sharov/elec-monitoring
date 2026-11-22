@@ -57,19 +57,22 @@ Validation errors add `details`:
 }
 ```
 
-| HTTP | `code`               | When                                                                       |
-| ---- | -------------------- | -------------------------------------------------------------------------- |
-| 400  | `validation_error`   | Body, query or path fails the schema                                       |
-| 401  | `unauthorized`       | Missing, invalid or expired token                                          |
-| 403  | `forbidden`          | Authenticated, but the role does not allow it (e.g. viewer edits settings) |
-| 403  | `jwt_required`       | API token used on a JWT-only endpoint                                      |
-| 403  | `insufficient_scope` | `read` token on a `write` endpoint                                         |
-| 403  | `email_not_verified` | Unverified account creates a device                                        |
-| 404  | `not_found`          | Missing, or the caller has no access (do not leak existence)               |
-| 409  | `conflict`           | State does not allow the action (see each endpoint)                        |
-| 410  | `expired`            | Pairing code, invite or email link expired or used                         |
-| 429  | `rate_limited`       | Limit exceeded, with `Retry-After`                                         |
-| 500  | `internal`           | Unexpected error                                                           |
+| HTTP | `code`                | When                                                                         |
+| ---- | --------------------- | ---------------------------------------------------------------------------- |
+| 400  | `validation_error`    | Body, query or path fails the schema                                         |
+| 401  | `unauthorized`        | Missing, invalid or expired token                                            |
+| 403  | `forbidden`           | Authenticated, but the role does not allow it (e.g. viewer edits settings)   |
+| 403  | `jwt_required`        | API token used on a JWT-only endpoint                                        |
+| 403  | `insufficient_scope`  | `read` token on a `write` endpoint                                           |
+| 401  | `invalid_credentials` | Log in with a wrong email or password (the same answer for both)             |
+| 403  | `invalid_credentials` | A signed-in user's password re-check fails (change password, delete account) |
+| 403  | `reauth_required`     | Google-only account deletes itself more than 5 min after sign-in             |
+| 403  | `email_not_verified`  | Unverified account creates a device                                          |
+| 404  | `not_found`           | Missing, or the caller has no access (do not leak existence)                 |
+| 409  | `conflict`            | State does not allow the action (see each endpoint)                          |
+| 410  | `expired`             | Pairing code, invite or email link expired or used                           |
+| 429  | `rate_limited`        | Limit exceeded, with `Retry-After`                                           |
+| 500  | `internal`            | Unexpected error                                                             |
 
 ### Formats
 
@@ -85,12 +88,16 @@ Validation errors add `details`:
 
 ### Rate limits
 
-| Who             | Limit              |
-| --------------- | ------------------ |
-| Device check-in | 6 / min per device |
-| API token       | 60 / min per token |
-| Client app JWT  | 120 / min per user |
-| Auth / claim    | 10 / min per IP    |
+| Who                             | Limit                 |
+| ------------------------------- | --------------------- |
+| Device check-in                 | 6 / min per device    |
+| API token                       | 60 / min per token    |
+| Client app JWT                  | 120 / min per user    |
+| Auth / claim                    | 10 / min per IP       |
+| Log in                          | 10 / 15 min per email |
+| Sign up, forgot password        | 3 / h per email       |
+| Resend verification             | 3 / h per user        |
+| Change password, delete account | 10 / 15 min per user  |
 
 Responses include `Retry-After` on `429`.
 
@@ -301,27 +308,43 @@ and `ADMIN_URL`. Cookie-authenticated endpoints (`refresh`, `logout`)
 also check the `Origin` header, because `SameSite` does not block
 requests from sibling subdomains.
 
+The refresh cookie is named `em_refresh`, with `Path=/api/auth` and
+`Max-Age` 30 days, and no `Domain` attribute (host-only).
+
 Successful sign-in responses set the refresh cookie and return:
 
 ```json
 { "access_token": "<jwt>", "expires_in": 900, "user": { "...": "see GET /me" } }
 ```
 
-| Method | Path                                           | Body                                                | Success                                                                                                            |
-| ------ | ---------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| POST   | `/api/auth/signup`                             | `email`, `password`, `name`, `language`, `timezone` | `201`, sends verification email. Existing email → also `201` and an email to the existing account (no enumeration) |
-| POST   | `/api/auth/verify-email`                       | `token`                                             | `204`. Used or older than 24 h → `410`                                                                             |
-| POST   | `/api/auth/resend-verification` **(proposed)** | — (JWT)                                             | `204`                                                                                                              |
-| POST   | `/api/auth/login`                              | `email`, `password`                                 | `200` session. Wrong credentials → `401 invalid_credentials`                                                       |
-| GET    | `/api/auth/google`                             | query `app=CLIENT\|ADMIN`, `intent=LOGIN\|LINK`     | `302` to Google with PKCE and `state`                                                                              |
-| GET    | `/api/auth/google/callback`                    | from Google                                         | Sets refresh cookie, `302` to the app. The app then calls `refresh`                                                |
-| POST   | `/api/auth/refresh`                            | cookie                                              | `200` session, rotates the cookie. Reused token → revoke session, `401`                                            |
-| POST   | `/api/auth/logout`                             | cookie                                              | `204`, clears the cookie                                                                                           |
-| POST   | `/api/auth/logout-all`                         | JWT                                                 | `204`, revokes all refresh tokens                                                                                  |
-| POST   | `/api/auth/forgot-password`                    | `email`                                             | Always `204`                                                                                                       |
-| POST   | `/api/auth/reset-password`                     | `token`, `password`                                 | `204`, logs out all sessions. Used or older than 1 h → `410`                                                       |
-| POST   | `/api/auth/change-password` **(proposed)**     | `current_password`, `new_password` (JWT)            | `204`. Revokes other sessions                                                                                      |
-| DELETE | `/api/auth/google` **(proposed)**              | JWT                                                 | `204`. `409` if it is the only sign-in method                                                                      |
+| Method | Path                            | Body                                                | Success                                                                                                                                                                               |
+| ------ | ------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/auth/signup`              | `email`, `password`, `name`, `language`, `timezone` | `201` with no body; it does not sign in. Sends a verification email. Existing email → the same `201` and an email to the existing account (no enumeration)                            |
+| POST   | `/api/auth/verify-email`        | `token`                                             | `204`. Unknown, used, expired or wrong-purpose token → `410 expired`                                                                                                                  |
+| POST   | `/api/auth/resend-verification` | — (JWT)                                             | `204`. A verified account gets `204` and no email                                                                                                                                     |
+| POST   | `/api/auth/login`               | `email`, `password`                                 | `200` session. Wrong credentials → `401 invalid_credentials`                                                                                                                          |
+| GET    | `/api/auth/google`              | query `app=CLIENT\|ADMIN`, `intent=LOGIN\|LINK`     | `302` to Google with PKCE and `state`                                                                                                                                                 |
+| GET    | `/api/auth/google/callback`     | from Google                                         | `302` to `<app origin>/auth/google`, with the refresh cookie set on `LOGIN`. The app then calls `refresh`. On failure the redirect adds `?error=` (see below)                         |
+| POST   | `/api/auth/refresh`             | cookie                                              | `200` session, rotates the cookie. Token reused within 10 s → `409 conflict` (the parallel request already set the new cookie; retry once). Reused after 10 s → revoke session, `401` |
+| POST   | `/api/auth/logout`              | cookie                                              | `204`, clears the cookie                                                                                                                                                              |
+| POST   | `/api/auth/logout-all`          | JWT                                                 | `204`, revokes all refresh tokens                                                                                                                                                     |
+| POST   | `/api/auth/forgot-password`     | `email`                                             | Always `204`                                                                                                                                                                          |
+| POST   | `/api/auth/reset-password`      | `token`, `password`                                 | `204`, verifies the email, logs out all sessions. Unknown, used, expired or superseded token → `410`                                                                                  |
+| POST   | `/api/auth/change-password`     | `current_password`, `new_password` (JWT)            | `204`. Revokes other sessions. Wrong current password → `403 invalid_credentials`. Account without a password → `409 conflict`                                                        |
+| DELETE | `/api/auth/google`              | JWT                                                 | `204`. `409` if it is the only sign-in method                                                                                                                                         |
+
+Email links open the client app: `${CLIENT_URL}/verify-email?token=…` and
+`${CLIENT_URL}/reset-password?token=…`. Every bad token (unknown, used,
+expired, wrong purpose) answers `410 expired`.
+
+Google callback `error` values: `google_failed` (missing or expired state
+cookie, state mismatch, consent denied, token exchange failed, or `LINK`
+without a signed-in session), `google_email_unverified`,
+`google_account_in_use` (the Google account belongs to another user) and
+`google_already_linked` (the user already has a different Google account).
+The callback never answers with JSON or a `500` page for these cases. `LINK`
+finds the user from the refresh cookie, which the browser sends on the
+top-level `GET` because the cookie path is `/api/auth`.
 
 Google callback redirect targets come from an allowlist
 (`CLIENT_URL`, `ADMIN_URL`). Never redirect to a URL from the query.
@@ -651,7 +674,9 @@ the same delivery ID again (`202`).
 
 `PATCH /me` accepts `name`, `language` (`uk` | `en` | `ru`), `timezone`
 (IANA name). `DELETE /me` needs `{ "password": "…" }`, or a sign-in
-within the last 5 min for Google-only accounts. Deletes owned devices,
+within the last 5 min for Google-only accounts. A wrong or missing
+password answers `403 invalid_credentials`; a Google-only account whose
+session is older than 5 min answers `403 reauth_required`. Deletes owned devices,
 outages, channels, tokens and memberships.
 
 ## 5. Admin API (proposed)
@@ -713,9 +738,6 @@ in PROJECT_V2.md §3–§12. Section numbers below refer to PROJECT_V2.md.
 | §9 Admin app                                                         | No admin endpoints at all                                                       | §5 here                                                                                                 |
 | §12 CI checks "API health endpoint"                                  | `/health` not listed in v2                                                      | §7 here                                                                                                 |
 | Swagger UI                                                           | No paths                                                                        | `/api/v1/openapi.json`, `/api/docs`                                                                     |
-| §3 Verification email                                                | No resend if the link expires                                                   | `POST /api/auth/resend-verification`                                                                    |
-| §9 Account "linked Google"                                           | No link / unlink                                                                | `intent=LINK` on `/api/auth/google`, `DELETE /api/auth/google`                                          |
-| Account settings                                                     | No change password                                                              | `POST /api/auth/change-password`                                                                        |
 | §6 Invites                                                           | Owner can't see or revoke pending invites. Invitee can't see what the invite is | `GET` / `DELETE /devices/:id/invites`, `GET /invites/:token`                                            |
 | §7 Webhook secret                                                    | No rotation if leaked                                                           | `POST /channels/:id/rotate-secret`                                                                      |
 | `PUT /devices/:id/channels`                                          | No matching `GET`                                                               | `GET /devices/:id/channels`                                                                             |

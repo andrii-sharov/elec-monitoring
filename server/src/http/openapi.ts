@@ -12,7 +12,10 @@ export function buildOpenApiDocument(paths: ZodOpenApiPathsObject[]): OpenApiDoc
     openapi: '3.1.0',
     info: { title: 'Electricity Monitor API', version: '2.0.0' },
     paths: Object.assign({}, ...paths),
-    components: { schemas: { Error: errorSchema } },
+    components: {
+      schemas: { Error: errorSchema },
+      securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } },
+    },
   });
 }
 

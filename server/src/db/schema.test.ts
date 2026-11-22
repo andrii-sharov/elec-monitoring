@@ -73,6 +73,7 @@ describe('migrations', () => {
       'notification_channel',
       'one_time_token',
       'outage',
+      'rate_limit_bucket',
       'refresh_token',
       'session',
       'worker_heartbeat',

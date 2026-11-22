@@ -11,6 +11,7 @@
   },
   "ignorePatterns": ["**/dist/**", "firmware/.pio/**"],
   "rules": {
+    "oxc/no-async-endpoint-handlers": "off",
     "vitest/expect-expect": [
       "error",
       {

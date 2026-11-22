@@ -29,3 +29,9 @@ export type UpdateOutcome = (typeof updateOutcomes)[number];
 export const languages = ['uk', 'en', 'ru'] as const;
 export type Language = (typeof languages)[number];
 export const defaultLanguage: Language = 'uk';
+
+export const appTargets = ['CLIENT', 'ADMIN'] as const;
+export type AppTarget = (typeof appTargets)[number];
+
+export const googleIntents = ['LOGIN', 'LINK'] as const;
+export type GoogleIntent = (typeof googleIntents)[number];

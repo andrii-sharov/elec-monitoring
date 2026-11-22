@@ -8,6 +8,10 @@ export { schema };
 
 export type Db = PgDatabase<PgQueryResultHKT, typeof schema>;
 
+export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
+
+export type Executor = Db | Tx;
+
 export const migrationsFolder = fileURLToPath(new URL('../../drizzle', import.meta.url));
 
 export function createDb(url: string): { db: Db; close(): Promise<void> } {

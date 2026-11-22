@@ -184,7 +184,9 @@ create index refresh_token_session_id_idx on refresh_token (session_id);
 - Refresh: lock the presented token row (`for update`). If it is unused,
   valid, and the session is not revoked, set `used_at` and insert the next
   token in the same transaction.
-- A token with `used_at` set means reuse. Revoke the whole session.
+- A token with `used_at` set means reuse. If `used_at` is within 10 s the
+  API answers `409` and changes nothing (a parallel refresh); older than
+  that, revoke the whole session.
 
 ### `one_time_token`
 
@@ -659,13 +661,29 @@ create table worker_heartbeat (
 The worker upserts its row on every loop. The admin health endpoint
 reads `beat_at`.
 
+### `rate_limit_bucket`
+
+```sql
+create table rate_limit_bucket (
+  key          text primary key,
+  window_start timestamptz not null,
+  count        integer not null
+);
+
+create index rate_limit_bucket_window_start_idx on rate_limit_bucket (window_start);
+```
+
+Fixed-window rate limit counters shared by all API instances. `key` is
+`<rule name>:<ip|email|user>:<SHA-256 hex of the value>`, so no raw email
+or IP address is stored. One upsert per request; a hit in a new window
+resets `count` to 1. The worker deletes rows older than one day.
+
 ### Not stored in the database
 
 - Google OAuth `state` and PKCE verifier: short-lived signed `httpOnly`
   cookie.
 - Access JWTs, translations, API error metrics (logs).
 - Firmware images (§12, question 3).
-- Rate limit counters (§12, question 4).
 
 ## 9. Hot paths
 
@@ -737,6 +755,7 @@ Cascades implement the spec without extra code:
 | `one_time_token`                | Delete one day after `expires_at`                                                      |
 | `session`                       | Delete when revoked or when every refresh token has expired (cascades `refresh_token`) |
 | `device_invite`                 | Delete 30 days after `expires_at`                                                      |
+| `rate_limit_bucket`             | Delete when `window_start` is older than one day (worker, every tick)                  |
 | `delivery`, `device_diagnostic` | Retention to be decided (§12, question 2)                                              |
 | `outage`, `device_boot`         | Keep (history and statistics)                                                          |
 
@@ -771,8 +790,7 @@ Cascades implement the spec without extra code:
 3. **Firmware storage** (API.md §9, question 4). Decides what
    `firmware_release.image_path` points to. The spec also doesn't define
    "compatible release", so there is no compatibility column yet.
-4. **Rate limit counters.** With several API instances they need a shared
-   store (Postgres table, Redis, or the edge). Not covered here yet.
+4. ~~**Rate limit counters.**~~ ✅ Resolved: Postgres table `rate_limit_bucket` (§8).
 5. **API.md gap.** `update.status` in API.md lists `QUEUED`, `INSTALLING`,
    `FINISHED`, `TIMED_OUT`, but `POST /device/updates/:id/start` returns
    `409` for a cancelled attempt. This schema adds `CANCELLED`. API.md
