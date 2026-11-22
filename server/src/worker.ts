@@ -11,7 +11,7 @@ const LOOP_INTERVAL_MS = 10_000;
 
 const config = loadDatabaseConfigOrExit(process.env);
 const { db, close } = createDb(config.databaseUrl);
-const instanceId = process.env.RENDER_INSTANCE_ID ?? `${hostname()}:${process.pid}`;
+const instanceId = `${hostname()}:${process.pid}`;
 const controller = new AbortController();
 
 for (const signal of ['SIGTERM', 'SIGINT'] as const) {

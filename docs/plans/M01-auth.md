@@ -53,7 +53,7 @@ Each task records its decisions in the spec. Q4 and Q5 get ✅ in the ROADMAP De
 12. **Cookies.** Refresh: `em_refresh`, `Path=/api/auth`, `Max-Age` 30 d. OAuth state: `em_oauth`, `Path=/api/auth/google`, 10 min, value is a jose HS256 JWT with `aud: 'oauth-state'` holding `state`, the PKCE verifier, `app`, `intent` and `userId?`.
 13. **Config split.** `loadConfig` (API) gains `JWT_SECRET` (≥ 32 chars), `CLIENT_URL`, `ADMIN_URL`, `API_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `EMAIL_TRANSPORT` (`resend` default | `log`), `RESEND_API_KEY` (required when `resend`), `EMAIL_FROM`, `TRUST_PROXY_HOPS` (default `0`). The worker and `db:migrate` use `loadDatabaseConfig` (`DATABASE_URL` only), so they don't need auth secrets. `ENCRYPTION_KEY` waits for M8. P §12.
 14. **Proposed endpoints accepted (Q14):** `POST /api/auth/resend-verification`, `POST /api/auth/change-password`, `DELETE /api/auth/google`. Remove their markers.
-15. **Staging** deploys from branch `v2` until v2 merges into `main`. Render `autoDeployTrigger: checksPass`; the API's `preDeployCommand` runs migrations once per deploy.
+15. **Staging** deploys from branch `v2` until v2 merges into `main`. The first EC2 deploy is manual after CI passes. Run migrations once before restarting the API and worker (P §12).
 
 ## Review Focus
 
@@ -68,7 +68,7 @@ Each task records its decisions in the spec. Q4 and Q5 get ✅ in the ROADMAP De
 ## File structure
 
 ```
-render.yaml                         staging API + worker (Task 12)
+deploy/                             EC2 staging: Caddyfile, systemd units, env example, release script (Task 12)
 shared/src/enums.ts                 + appTargets, googleIntents
 shared/src/i18n/locales/{uk,en,ru}.ts  + email.* keys
 server/drizzle/0002_rate_limit_bucket.sql
@@ -478,8 +478,8 @@ returning count
 
 **Files:**
 
-- Create: `render.yaml`
-- Modify: `server/src/http/openapi.test.ts`, `docs/ROADMAP.md`, `docs/API.md` §9 (strike the gaps M1 closed), `docs/DATABASE.md` §12 Q4
+- Create: `deploy/README.md`, `deploy/Caddyfile`, `deploy/systemd/elec-staging-{api,worker}.service`, `deploy/staging.env.example`, `deploy/staging-release.sh`
+- Modify: `server/src/config.ts`, `server/src/config.test.ts`, `server/src/http/listen.ts`, `server/src/http/listen.test.ts`, `server/src/api.ts`, `server/src/worker.ts`, `docs/PROJECT_V2.md` §12, `server/src/http/openapi.test.ts`, `docs/ROADMAP.md`, `docs/API.md` §9 (strike the gaps M1 closed), `docs/DATABASE.md` §12 Q4
 
 **Interfaces:**
 
@@ -487,61 +487,18 @@ returning count
 
 - [ ] **Step 1: OpenAPI test:** the document has every M1 path and method: `post /api/auth/{signup,verify-email,resend-verification,login,refresh,logout,logout-all,forgot-password,reset-password,change-password}`, `get /api/auth/google`, `get /api/auth/google/callback`, `delete /api/auth/google`, `get|patch|delete /api/v1/me`. JWT endpoints list `security: [{ bearerAuth: [] }]`, `components.schemas.Me` exists, and every auth `POST` lists a `429` response.
 - [ ] **Step 2: Run** → PASS (fix any route missing from its `paths` export).
-- [ ] **Step 3: `render.yaml`:**
-
-```yaml
-services:
-  - type: web
-    name: elec-api-staging
-    runtime: node
-    region: frankfurt
-    plan: starter
-    branch: v2
-    buildCommand: npm ci && npm run build
-    preDeployCommand: npm run db:migrate -w server
-    startCommand: npm run start:api -w server
-    healthCheckPath: /health
-    autoDeployTrigger: checksPass
-    envVars:
-      - { key: NODE_VERSION, value: '26' }
-      - { key: EMAIL_TRANSPORT, value: resend }
-      - { key: TRUST_PROXY_HOPS, value: '1' }
-      - { key: JWT_SECRET, generateValue: true }
-      - { key: DATABASE_URL, sync: false }
-      - { key: CLIENT_URL, sync: false }
-      - { key: ADMIN_URL, sync: false }
-      - { key: API_URL, sync: false }
-      - { key: GOOGLE_CLIENT_ID, sync: false }
-      - { key: GOOGLE_CLIENT_SECRET, sync: false }
-      - { key: RESEND_API_KEY, sync: false }
-      - { key: EMAIL_FROM, sync: false }
-  - type: worker
-    name: elec-worker-staging
-    runtime: node
-    region: frankfurt
-    plan: starter
-    branch: v2
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start:worker -w server
-    autoDeployTrigger: checksPass
-    envVars:
-      - { key: NODE_VERSION, value: '26' }
-      - { key: DATABASE_URL, sync: false }
-```
-
-Custom domains are added in the dashboard once the real domain is known; `render.yaml` doesn't hold the placeholder.
-
+- [ ] **Step 3: EC2 staging files.** Add `deploy/` (Caddyfile, two `systemd` units, `staging.env.example`, `staging-release.sh`, runbook README). Add optional `HOST` to `loadConfig` and `listen(app, port, host?)`, with tests; staging sets `HOST=127.0.0.1`. Drop `RENDER_INSTANCE_ID` from the worker. P §12 [EC2 staging setup](../PROJECT_V2.md#ec2-staging-setup).
 - [ ] **Step 4: Full check:** `npm ci && npm run lint && npm run fmt:check && npm run typecheck && npm run build && npm test` all exit 0.
 - [ ] **Step 5: Roadmap.** Tick the M1 deliverables that merged; mark Q4, Q5 and the three M1 Q14 endpoints ✅ in Decisions (the decisions are already in the spec from Tasks 1, 4, 7–10); status board M1 🟡 until the manual checks below pass, then ✅.
-- [ ] **Commit point:** `render.yaml server/src/http/openapi.test.ts docs/` — `Add staging blueprint and finish M1 docs`
+- [ ] **Commit point:** `deploy/ server/src/ docs/` — `Add EC2 staging deploy files`
 
 **M1 done when (ROADMAP):** tests cover link expiry with a controlled clock, single use, refresh reuse revoking the session, rate limiting and no enumeration (Tasks 4, 5, 7–9). 👤 Verify by hand:
 
-- Pick the domain; create DNS records for `staging-app`, `staging-admin`, `staging-api`.
-- Create the Supabase staging project; set `DATABASE_URL` to the transaction pooler URL (port 6543). Confirm the `preDeployCommand` migration succeeds through it; if it doesn't, run migrations through the session pooler (port 5432) instead.
-- Create the Render Blueprint from `render.yaml`, fill in the `sync: false` values, add `staging-api.<domain>` as a custom domain, confirm `/health` is `200` and a `worker_heartbeat` row updates.
+- Follow [deploy/README.md](../../deploy/README.md) on `elec-staging`: Elastic IP, Porkbun `A` record for `staging-api`, Node 26, Caddy, `elec` user, checkout, `/etc/elec/staging.env` with the Supabase staging transaction pooler URL (port 6543), services, first release.
+- Verify the runbook checks: `/health` is `200` over HTTPS, `worker_heartbeat.beat_at` advances, port 3000 is closed from outside.
+- Create DNS records for `staging-app` and `staging-admin` when their pages are hosted.
 - Resend: verify the sending domain, set `EMAIL_FROM`.
 - Google Cloud: OAuth client (web) with redirect URI `https://staging-api.<domain>/api/auth/google/callback`; JS origins aren't needed (server-side flow).
-- On staging, log `req.ip` once from a known network and confirm it shows your public IP with `TRUST_PROXY_HOPS=1`; adjust if it shows a Render or Cloudflare address.
+- On staging, log `req.ip` once from a known network and confirm it shows your public IP with `TRUST_PROXY_HOPS=1` and Caddy as the only proxy.
 - Until the M4 client exists, run the flow from the browser console on a page served at `https://staging-app.<domain>` (any static page): sign up, open the verification email, verify, log in, refresh (cookie rotates), sign in with Google, log out. Check the cookie is `HttpOnly`, `Secure`, host-only on `staging-api.<domain>`.
 - Confirm a request from another origin gets no CORS headers.

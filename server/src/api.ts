@@ -30,8 +30,8 @@ async function shutdown(exitCode: number): Promise<never> {
 }
 
 try {
-  const server = await listen(app, config.port);
-  console.info(`api listening on port ${config.port}`);
+  const server = await listen(app, config.port, config.host);
+  console.info(`api listening on ${config.host ?? '*'}:${config.port}`);
   for (const signal of ['SIGTERM', 'SIGINT'] as const) {
     process.once(signal, () => {
       server.close(() => {

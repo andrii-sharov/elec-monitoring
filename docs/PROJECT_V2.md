@@ -561,7 +561,7 @@ described in §7. If a recipient has no saved preference, use Ukrainian
 
 ## 10. Security
 
-- HTTPS everywhere, including the Render API and Vercel apps.
+- HTTPS everywhere, including the API on EC2 and the Vercel apps.
 - Passwords: argon2id. Email verification required.
 - Refresh tokens rotated with reuse detection; access JWT 15 min.
 - Device tokens, API tokens, refresh tokens: random 32 bytes, only
@@ -591,31 +591,30 @@ Rough numbers to plan for:
 
 ## 12. Deployment
 
-| What       | Where                     |
-| ---------- | ------------------------- |
-| API        | Render Web Service (paid) |
-| Worker     | Render Background Worker  |
-| Client app | Vercel                    |
-| Admin app  | Vercel (separate project) |
-| Database   | Supabase (Postgres)       |
-| Emails     | Resend                    |
+| What       | Where                                                |
+| ---------- | ---------------------------------------------------- |
+| API        | AWS EC2, `systemd` service behind Caddy              |
+| Worker     | AWS EC2, separate `systemd` service on the same host |
+| Client app | Vercel                                               |
+| Admin app  | Vercel (separate project)                            |
+| Database   | Supabase (Postgres)                                  |
+| Emails     | Resend                                               |
 
 - The worker runs the checker and sends Telegram messages and webhooks.
   Start with one worker instance. Persist the delivery ID across retries
   so webhook consumers can deduplicate uncertain deliveries. The API can
   scale to several instances.
-- API and worker share one codebase, started with different commands
-  (`npm run start:api`, `npm run start:worker`).
-- `render.yaml` defines the API and worker. Each React app has its own
-  Vercel project rooted at `client/` or `admin/`. Configure the SPA
-  fallback to `index.html` for React Router deep links.
+- API and worker share one codebase. Run both directly with Node.js 26 LTS
+  on EC2. The initial staging deployment uses `systemd` and Caddy.
+- Each React app has its own Vercel project rooted at `client/` or
+  `admin/`. Configure the SPA fallback to `index.html` for React Router
+  deep links.
+- The parent domain `<domain>` is `elec-monitoring.homes`.
 - Custom domains in production: the client app on the apex `https://<domain>`,
   `https://admin.<domain>` and `https://api.<domain>`; `www.<domain>`
   redirects to the apex. Staging: `staging-app.<domain>`,
-  `staging-admin.<domain>` and `staging-api.<domain>`. Provider default
-  hosts (`*.onrender.com`, `*.vercel.app`) are on the Public Suffix List,
-  which makes the app and the API cross-site, so they cannot be used for
-  sign-in.
+  `staging-admin.<domain>` and `staging-api.<domain>`. Use these custom
+  domains for browser sign-in and refresh so the app and API are same-site.
 - Supabase: use the pooler connection string.
 - Keep staging and production separate. Staging uses its own API,
   worker, database, auth secrets and integration credentials. Assign
@@ -630,6 +629,51 @@ Rough numbers to plan for:
 - Telegram platform bot webhook points to
   `https://api.<domain>/telegram/webhook/<secret>`.
 
+### EC2 staging setup
+
+The commands live in [deploy/README.md](../deploy/README.md), and the
+Caddy, `systemd` and env templates are in `deploy/`.
+
+1. Host: `elec-staging` in Stockholm (`eu-north-1`), the same region as
+   the Supabase staging project. Ubuntu Server 26.04 LTS ARM64 on
+   `t4g.small` (2 GiB RAM plus a 2 GiB swap file), 20 GiB encrypted
+   `gp3` root volume. The security group allows SSH `22` from the
+   operator's IP and public TCP `80` and `443` for Caddy only.
+2. Domain `elec-monitoring.homes`, DNS at Porkbun. An Elastic IP is
+   associated with the instance, and the `staging-api` `A` record points
+   to it. Caddy serves that hostname with automatic HTTPS and proxies to
+   `127.0.0.1:3000`. The API listens on `HOST=127.0.0.1`, so its port is
+   closed even if the security group is wrong.
+3. Node.js 26 LTS from NodeSource at `/usr/bin/node`. The `v2` checkout
+   lives in `/opt/elec/staging`, owned by `ubuntu`, which runs `npm ci`
+   and `npm run build`.
+4. Settings live in `/etc/elec/staging.env` (`root:root`, `0600`), in
+   `systemd` env-file syntax: double-quote values with spaces. Staging
+   uses its own `JWT_SECRET`, Google OAuth client, Resend key and
+   Supabase transaction pooler URL (port `6543`), with `PORT=3000` and
+   `TRUST_PROXY_HOPS=1` because Caddy is the only proxy.
+5. `elec-staging-api.service` and `elec-staging-worker.service` run
+   `node dist/api.js` and `node dist/worker.js` directly (not through
+   `npm`, so signals reach Node and the service user needs no home) as
+   the unprivileged system user `elec`, with
+   `WorkingDirectory=/opt/elec/staging/server`, the env file and
+   `Restart=always`. Both start at boot.
+6. Each release runs `deploy/staging-release.sh`: pull `v2`, `npm ci`,
+   build, run `node dist/db/migrate.js` once as `elec` through
+   `systemd-run`, then restart both services. A failed step stops the
+   release before the restart. If a migration fails through the
+   transaction pooler, run it through the session pooler (port `5432`).
+7. Staging is up when `https://staging-api.elec-monitoring.homes/health`
+   returns `200`, `worker_heartbeat.beat_at` advances, `journalctl` shows
+   no startup errors, and port `3000` is unreachable from outside.
+
+For production, use its own checkout, `/etc/elec/production.env`, API and
+worker services, Supabase project, and credentials. If both environments
+share one EC2, move staging to port `3001`, keep production on `3000`, and
+route the two hostnames in Caddy. A shared host outage affects both
+environments. A separate `elec-production` instance gives production its
+own host and Elastic IP.
+
 ### CI/CD
 
 - Set up GitHub Actions as part of the V2 foundation. Run checks on pull
@@ -637,10 +681,11 @@ Rough numbers to plan for:
 - Run `npm ci`, lint and formatting checks, TypeScript checks and builds
   for the server and both React apps, Vitest for the API and worker,
   and an ESP32-C3 firmware build as each package is added.
-- Deploy the Render API and worker and the Vercel apps to staging after
-  CI passes. Verify the API health endpoint, auth refresh, a device
-  check-in and a client deep link there. Gate production releases on
-  passing CI and staging smoke tests.
+- Deploy to staging after CI passes. Use the manual EC2 setup for the
+  first deploy, then automate backend releases through GitHub Actions.
+  Verify the API health endpoint, worker heartbeat, auth refresh, a
+  device check-in and a client deep link as those features land. Gate
+  production releases on passing CI and staging smoke tests.
 - Keep deployment credentials in CI or provider secrets. Set the API base
   URL per Vercel environment. Browser builds contain public config only.
 
@@ -660,8 +705,9 @@ TELEGRAM_WEBHOOK_SECRET=...
 CLIENT_URL=https://<domain>        # origin only, no path
 ADMIN_URL=https://admin.<domain>
 API_URL=https://api.<domain>
-TRUST_PROXY_HOPS=0                 # 1 behind Render's proxy
+TRUST_PROXY_HOPS=0                 # 1 when Caddy is the only proxy
 PORT=3000
+HOST=127.0.0.1                     # optional; unset listens on all interfaces
 ```
 
 The API validates these with Zod at startup and exits on a missing or
@@ -714,7 +760,7 @@ client UI.
   automatic OTA, separate update signals, rollback and maintenance
   monitoring.
 - **M12 Launch readiness:** rate limit and access audits, translation
-  review, Render and Vercel production releases, smoke tests.
+  review, EC2 and Vercel production releases, smoke tests.
 
 No device goes to a user before M11 is done, because the first firmware
 must support OTA (§4).

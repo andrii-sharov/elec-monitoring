@@ -119,6 +119,15 @@ test('RESEND_API_KEY is required only for the resend transport', () => {
   expect(config.email).toEqual({ transport: 'log', from: validEnv.EMAIL_FROM });
 });
 
+test('HOST is optional and passed through', () => {
+  expect(loadConfig(validEnv).host).toBeUndefined();
+  expect(loadConfig({ ...validEnv, HOST: '127.0.0.1' }).host).toBe('127.0.0.1');
+});
+
+test('rejects an empty HOST', () => {
+  expect(catchError(() => loadConfig({ ...validEnv, HOST: '' })).keys).toEqual(['HOST']);
+});
+
 test('TRUST_PROXY_HOPS is read as an integer', () => {
   expect(loadConfig({ ...validEnv, TRUST_PROXY_HOPS: '1' }).trustProxyHops).toBe(1);
 });

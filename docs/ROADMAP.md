@@ -163,8 +163,8 @@ migration SQL.
 - [x] `GET`, `PATCH`, `DELETE /me`
 - [x] Rate limiter per Q4 on sign up, log in, reset and claim (per IP
       and per email), `429` with `Retry-After`
-- [ ] Staging: `render.yaml` (API + worker), Supabase staging project,
-      domains, migrations run, deploy after CI
+- [ ] Staging: EC2 with Caddy and separate API and worker services,
+      Supabase staging project, DNS, migrations, API health and worker heartbeat
 
 **Done when:** tests cover link expiry with a controlled clock, single
 use, refresh reuse revoking the session, rate limiting and no
@@ -434,7 +434,7 @@ power cut during download, heap during OTA.
 - [ ] Access audit: a test fails if any route lacks access tests
 - [ ] Translation review uk / en / ru
 - [ ] Security review and dependency audit
-- [ ] Production: Supabase, Render API and worker, Vercel apps, domains,
+- [ ] Production: Supabase, EC2 API and worker, Vercel apps, domains,
       Telegram webhook, Resend domain
 - [ ] CI/CD: staging smoke tests (health, auth refresh, device check-in,
       client deep link) gate production releases

@@ -12,6 +12,15 @@ test('resolves with the server once listening', async () => {
   }
 });
 
+test('binds to the given host', async () => {
+  const server = await listen(testApp(), 0, '127.0.0.1');
+  try {
+    expect((server.address() as AddressInfo).address).toBe('127.0.0.1');
+  } finally {
+    server.close();
+  }
+});
+
 test('rejects when the port is taken', async () => {
   const first = await listen(testApp(), 0);
   try {

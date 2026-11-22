@@ -19,6 +19,7 @@ const databaseEnvSchema = z.object({ DATABASE_URL: postgresUrl });
 const envSchema = databaseEnvSchema
   .extend({
     PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+    HOST: z.string().min(1).optional(),
     JWT_SECRET: z.string().min(32),
     CLIENT_URL: originUrl,
     ADMIN_URL: originUrl,
@@ -49,6 +50,7 @@ export type EmailConfig =
 export type Config = {
   databaseUrl: string;
   port: number;
+  host?: string;
   jwtSecret: string;
   urls: AppUrls;
   google: { clientId: string; clientSecret: string };
@@ -88,6 +90,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
   return {
     databaseUrl: data.DATABASE_URL,
     port: data.PORT,
+    host: data.HOST,
     jwtSecret: data.JWT_SECRET,
     urls: { client: data.CLIENT_URL, admin: data.ADMIN_URL, api: data.API_URL },
     google: {
