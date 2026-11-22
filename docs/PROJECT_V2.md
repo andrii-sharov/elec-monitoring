@@ -632,7 +632,12 @@ TELEGRAM_WEBHOOK_SECRET=...
 CLIENT_URL=https://app.<domain>
 ADMIN_URL=https://admin.<domain>
 API_URL=https://api.<domain>
+PORT=3000
 ```
+
+The server validates these with Zod at startup and exits on a missing or
+invalid value. Each milestone adds its keys when its code first reads them,
+so M0 needs only `DATABASE_URL` and `PORT`.
 
 ## 13. Repo layout
 

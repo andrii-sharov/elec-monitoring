@@ -677,11 +677,11 @@ user's language.
 
 ## 7. Health and docs
 
-| Method | Path                   | Purpose                                                                        |
-| ------ | ---------------------- | ------------------------------------------------------------------------------ |
-| GET    | `/health`              | `200 {"status":"ok"}` when the DB is reachable. Used by Render and smoke tests |
-| GET    | `/api/v1/openapi.json` | Generated OpenAPI 3.1 document for `/api/v1`, `/api/auth` and device endpoints |
-| GET    | `/api/docs`            | Swagger UI                                                                     |
+| Method | Path                   | Purpose                                                                                                                                                   |
+| ------ | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/health`              | `200 {"status":"ok"}` when the DB is reachable, `503 {"status":"unavailable"}` when it fails or doesn't answer within 3 s. Used by Render and smoke tests |
+| GET    | `/api/v1/openapi.json` | Generated OpenAPI 3.1 document for `/api/v1`, `/api/auth` and device endpoints                                                                            |
+| GET    | `/api/docs`            | Swagger UI                                                                                                                                                |
 
 The server generates the OpenAPI document from route and request and
 response schemas, including authentication, errors and examples. Swagger
