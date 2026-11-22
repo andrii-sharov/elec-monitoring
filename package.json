@@ -1,14 +1,25 @@
 {
   "name": "elec-monitoring",
   "private": true,
+  "workspaces": [
+    "shared",
+    "server"
+  ],
+  "type": "module",
   "scripts": {
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "fmt": "oxfmt",
-    "fmt:check": "oxfmt --check"
+    "fmt:check": "oxfmt --check",
+    "typecheck": "npm run typecheck --workspaces",
+    "build": "npm run build -w shared -w server",
+    "test": "npm run test --workspaces"
   },
   "devDependencies": {
     "oxfmt": "^0.79.0",
     "oxlint": "^1.94.0"
+  },
+  "engines": {
+    "node": ">=26"
   }
 }

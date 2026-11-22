@@ -9,5 +9,13 @@
     "builtin": true,
     "node": true
   },
-  "ignorePatterns": ["**/dist/**", "firmware/.pio/**"]
+  "ignorePatterns": ["**/dist/**", "firmware/.pio/**"],
+  "rules": {
+    "vitest/expect-expect": [
+      "error",
+      {
+        "assertFunctionNames": ["expect", "expectViolation"]
+      }
+    ]
+  }
 }
