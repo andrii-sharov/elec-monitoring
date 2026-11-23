@@ -9,7 +9,7 @@ const PING_TIMEOUT_MS = 3000;
 export const healthPaths: ZodOpenApiPathsObject = {
   '/health': {
     get: {
-      summary: 'Health check',
+      summary: 'Health server check',
       description: 'Reports whether the API can reach its database.',
       responses: {
         '200': {
