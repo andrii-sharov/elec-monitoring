@@ -84,7 +84,7 @@ async function queueOne(deps: MonitorDeps, deviceId: string, outageId: string): 
   });
 }
 
-export async function queueDueOffAlerts(deps: MonitorDeps): Promise<number> {
+async function queueBatch(deps: MonitorDeps): Promise<{ due: number; queued: number }> {
   const now = deps.clock.now();
   const due = await deps.db
     .select({ id: outage.id, deviceId: outage.deviceId })
@@ -108,5 +108,15 @@ export async function queueDueOffAlerts(deps: MonitorDeps): Promise<number> {
       deps.logger.error('failed to queue OFF alert', row.id, err);
     }
   }
-  return queued;
+  return { due: due.length, queued };
+}
+
+export async function queueDueOffAlerts(deps: MonitorDeps): Promise<number> {
+  let total = 0;
+  for (let i = 0; i < MAX_BATCHES_PER_CALL; i++) {
+    const { due, queued } = await queueBatch(deps);
+    total += queued;
+    if (due < OFFLINE_BATCH || queued === 0) break;
+  }
+  return total;
 }
