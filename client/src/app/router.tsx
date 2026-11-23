@@ -10,6 +10,7 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { SignupPage } from '@/pages/auth/SignupPage';
 import { VerifyEmailPage } from '@/pages/auth/VerifyEmailPage';
+import { NotificationsPage } from '@/pages/notifications/NotificationsPage';
 import { NotFound } from '@/pages/NotFound';
 
 export const routes: RouteObject[] = [
@@ -41,6 +42,7 @@ export const routes: RouteObject[] = [
               { path: 'devices', Component: DevicesPage },
               { path: 'devices/new', Component: AddDevicePage },
               { path: 'devices/:id', Component: DevicePage },
+              { path: 'notifications', Component: NotificationsPage },
             ],
           },
         ],

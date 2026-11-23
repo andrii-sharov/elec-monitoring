@@ -11,7 +11,11 @@ const id = '4c0f6a1e-2b3d-4e5f-9a8b-7c6d5e4f3a01';
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.setSystemTime(new Date('2026-11-21T21:00:00Z'));
-  server.use(http.get(`${base}/api/v1/devices/${id}`, () => HttpResponse.json(deviceFixture())));
+  server.use(
+    http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items: [] })),
+    http.get(`${base}/api/v1/devices/${id}/channels`, () => HttpResponse.json({ channel_ids: [] })),
+    http.get(`${base}/api/v1/devices/${id}`, () => HttpResponse.json(deviceFixture())),
+  );
 });
 
 afterEach(() => {

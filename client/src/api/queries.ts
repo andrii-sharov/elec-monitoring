@@ -26,7 +26,10 @@ export const queryKeys = {
 
 export const pollMs = { devices: 30_000, device: 15_000 } as const;
 
-type Overrides<T> = Pick<UseQueryOptions<T, Error, T, QueryKey>, 'refetchInterval' | 'enabled'>;
+type Overrides<T> = Pick<
+  UseQueryOptions<T, Error, T, QueryKey>,
+  'refetchInterval' | 'enabled' | 'refetchOnMount'
+>;
 
 export function useMe() {
   const { api } = useSession();

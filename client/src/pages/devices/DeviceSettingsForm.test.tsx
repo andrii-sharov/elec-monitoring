@@ -12,6 +12,8 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.setSystemTime(new Date('2026-11-21T18:42:00Z'));
   server.use(
+    http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items: [] })),
+    http.get(`${base}/api/v1/devices/${id}/channels`, () => HttpResponse.json({ channel_ids: [] })),
     http.get(`${base}/api/v1/devices/${id}/outages`, () =>
       HttpResponse.json({ items: [], next_cursor: null }),
     ),
