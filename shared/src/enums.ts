@@ -35,3 +35,9 @@ export type AppTarget = (typeof appTargets)[number];
 
 export const googleIntents = ['LOGIN', 'LINK'] as const;
 export type GoogleIntent = (typeof googleIntents)[number];
+
+export const checkInTypes = ['BOOT', 'PING'] as const;
+export type CheckInType = (typeof checkInTypes)[number];
+
+export const deviceRoles = ['OWNER', 'VIEWER'] as const;
+export type DeviceRole = (typeof deviceRoles)[number];

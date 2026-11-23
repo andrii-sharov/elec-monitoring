@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "db:generate": "NODE_OPTIONS=--conditions=source drizzle-kit generate",
-    "db:migrate": "node --env-file-if-exists=.env dist/db/migrate.js"
+    "db:migrate": "node --env-file-if-exists=.env dist/db/migrate.js",
+    "fake-device": "tsx --conditions=source scripts/fake-device.ts"
   },
   "dependencies": {
     "@elec/shared": "*",

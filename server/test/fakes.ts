@@ -2,7 +2,9 @@ import { vi } from 'vitest';
 import type { Clock } from '../src/clock.ts';
 import type { GoogleClient, GoogleIdentity } from '../src/auth/google.ts';
 import type { EmailMessage, EmailSender } from '../src/email/sender.ts';
+import type { Tx } from '../src/db/client.ts';
 import type { Logger } from '../src/logger.ts';
+import type { NotificationQueue, OutageEvent } from '../src/notifications/queue.ts';
 import type { RateLimiter } from '../src/rateLimit/limiter.ts';
 
 export class FakeClock implements Clock {
@@ -79,5 +81,26 @@ export class FakeGoogleClient implements GoogleClient {
     this.lastCode = code;
     if (this.failExchange) return Promise.reject(new Error('fake google failure'));
     return Promise.resolve(this.identity);
+  }
+}
+
+export type QueueCall = { kind: 'recovery' | 'summary' | 'powerBlip' } & OutageEvent;
+
+export class RecordingNotificationQueue implements NotificationQueue {
+  calls: QueueCall[] = [];
+
+  recovery(_tx: Tx, event: OutageEvent): Promise<void> {
+    this.calls.push({ kind: 'recovery', ...event });
+    return Promise.resolve();
+  }
+
+  summary(_tx: Tx, event: OutageEvent): Promise<void> {
+    this.calls.push({ kind: 'summary', ...event });
+    return Promise.resolve();
+  }
+
+  powerBlip(_tx: Tx, event: OutageEvent): Promise<void> {
+    this.calls.push({ kind: 'powerBlip', ...event });
+    return Promise.resolve();
   }
 }

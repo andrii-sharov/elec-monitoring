@@ -45,7 +45,14 @@ describe('API docs', () => {
   describe('groups', () => {
     test('declares the groups in display order', async () => {
       const { tags } = await document();
-      expect(tags.map((t: { name: string }) => t.name)).toEqual(['Health', 'Auth', 'Account']);
+      expect(tags.map((t: { name: string }) => t.name)).toEqual([
+        'Health',
+        'Auth',
+        'Account',
+        'Devices',
+        'Device',
+        'Outages',
+      ]);
       for (const tag of tags) expect(tag.description).toBeTruthy();
     });
 
@@ -125,5 +132,52 @@ describe('API docs', () => {
     test.each(authPosts)('POST /api/auth/%s lists a 429 response', async (name) => {
       expect((await document()).paths[`/api/auth/${name}`].post.responses['429']).toBeDefined();
     });
+  });
+});
+
+function findOperation(
+  paths: Record<string, Record<string, { security?: unknown }>>,
+  route: string,
+) {
+  const [method, path] = route.split(' ') as [string, string];
+  return paths[path]?.[method];
+}
+
+describe('M2 device endpoints', () => {
+  const deviceApi = ['post /api/v1/device/claim', 'post /api/v1/device/ping'];
+  const userApi = [
+    'get /api/v1/devices',
+    'post /api/v1/devices',
+    'get /api/v1/devices/{id}',
+    'patch /api/v1/devices/{id}',
+    'delete /api/v1/devices/{id}',
+    'post /api/v1/devices/{id}/pairing-code',
+    'post /api/v1/devices/{id}/rotate-token',
+    'get /api/v1/devices/{id}/outages',
+    'get /api/v1/devices/{id}/diagnostics',
+  ];
+
+  test('documents every device route', async () => {
+    const { paths } = await document();
+    const missing = [...deviceApi, ...userApi].filter((route) => !findOperation(paths, route));
+    expect(missing).toEqual([]);
+  });
+
+  test('uses the device token for the ping and JWT for user routes', async () => {
+    const { paths, components } = await document();
+    expect(components.securitySchemes.deviceToken).toEqual({ type: 'http', scheme: 'bearer' });
+    expect(findOperation(paths, 'post /api/v1/device/ping')!.security).toEqual([
+      { deviceToken: [] },
+    ]);
+    expect(findOperation(paths, 'post /api/v1/device/claim')!.security).toBeUndefined();
+    const security = userApi.map((route) => [route, findOperation(paths, route)!.security]);
+    expect(security).toEqual(userApi.map((route) => [route, [{ bearerAuth: [] }]]));
+  });
+
+  test('declares the device schemas', async () => {
+    const { components } = await document();
+    expect(Object.keys(components.schemas)).toEqual(
+      expect.arrayContaining(['Device', 'DeviceListItem', 'OutageItem', 'DiagnosticItem']),
+    );
   });
 });

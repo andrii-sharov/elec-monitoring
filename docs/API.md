@@ -52,7 +52,7 @@ Validation errors add `details`:
   "error": {
     "code": "validation_error",
     "message": "Invalid request",
-    "details": [{ "path": "ping_interval_s", "code": "too_small", "min": 15 }]
+    "details": [{ "path": "settings.ping_interval_s", "code": "too_small", "min": 15 }]
   }
 }
 ```
@@ -133,9 +133,17 @@ Exchanges a pairing code for the permanent device token. Auth: none
 }
 ```
 
-- The code is single use and valid 30 min. Used or expired → `410 expired`.
-  Unknown → `404 not_found`.
+- The code is single use and valid 30 min. Expired → `410 expired`.
+  Unknown, used or replaced → `404 not_found` (claiming clears the stored
+  code, so a used code can't be told from an unknown one).
+- Case, spaces and hyphens are ignored: `k7q2-m9xd` claims `K7Q2M9XD`.
 - Claiming replaces any previous device token. Only the SHA-256 hash is stored.
+- The device receives its settings in the claim response, so claiming
+  marks the current settings version as applied (`settings_sync.pending`
+  becomes `false`).
+- Claiming resets the boot baseline (`boot_id`, `seq`). The first boot
+  after a claim is never a power blip, and recovery from `OFFLINE` on it
+  has cause `UNKNOWN`.
 - If the response is lost, the device cannot claim again with the same
   code. The owner generates a new code (`POST /devices/:id/pairing-code`).
 
@@ -210,7 +218,20 @@ Processing (one transaction, device row locked):
 8. Update `last_seen_at`, `boot_id`, `seq`, `uptime_s`, `rssi`, `fw`.
 
 The `204` acknowledges the Wi-Fi events in that request. The device
-removes only those events.
+removes only those events. A duplicate still stores its Wi-Fi events
+(deduplicated), because its `204` acknowledges them too.
+
+Validation is tolerant where a strict check would make a device look
+offline:
+
+- An unknown `reset_reason` is stored as `UNKNOWN`.
+- A Wi-Fi event with `end_uptime_s < start_uptime_s` or
+  `end_uptime_s > uptime_s` is skipped. The rest of the check-in is
+  accepted.
+- A malformed shape is still `400`. At most 32 Wi-Fi events per request.
+
+Until OTA ships (M11): while `UPDATING`, a check-in updates the live
+fields and keeps the state. `settings_version` is accepted and ignored.
 
 ### `GET /api/v1/device/settings` **(proposed)**
 
@@ -366,7 +387,10 @@ it for a given device.
 | POST   | `/devices/:id/pairing-code` | write | owner         | New pairing code (re-pair)        |
 | POST   | `/devices/:id/rotate-token` | write | owner         | Invalidate device token           |
 
-`POST /devices` body `{ "name": "Home" }` → `201`:
+`POST /devices` body `{ "name": "Home" }` (trimmed, 1–64 chars) → `201`.
+The response `device` is the full device object below. The pairing code
+uses `23456789ABCDEFGHJKMNPQRSTUVWXYZ` (no `0 O 1 I L`). An owner can
+have at most 20 devices. The 21st returns `409 conflict`.
 
 ```json
 {
@@ -418,15 +442,32 @@ Device object (`GET /devices/:id`, items of `GET /devices`):
 - `firmware`, `settings_sync` and `telemetry` are hidden in `GET /devices`
   list items to keep it small. The client polls `GET /devices/:id` in
   the add-device wizard until `state` leaves `PENDING`.
+- `GET /devices` returns `{ "items": [...] }`, oldest first. It is not
+  paginated: the 20-device cap keeps it small.
+- `open_outage` is an outage item (the shape of `GET /devices/:id/outages`
+  items) or `null`.
+- `telemetry.reset_reason` is the reset reason of the current boot.
+- Until OTA ships (M11), `firmware.available` and `firmware.update` are
+  `null`.
 
 `PATCH /devices/:id` accepts any subset of `name` and `settings`.
 Validation:
 
-- `ping_interval_s`: at least 15 (to fit 6 pings/min with room for
-  retries), and well under `offline_timeout_s`. Default 30.
-- `offline_timeout_s` ≥ 2 × `ping_interval_s`. Default 120.
-- `short_outage_threshold_s`: default 180.
-- Changing `ping_interval_s` increments `desired_version`.
+- `name`: trimmed, 1–64 chars.
+- `ping_interval_s`: 15–600 (15 fits 6 pings/min with room for retries).
+  Default 30.
+- `offline_timeout_s`: 30–3600 and ≥ 2 × `ping_interval_s`, checked on
+  the merged result. A violation returns detail
+  `{ "path": "settings.offline_timeout_s", "code": "too_small", "min": <2 × interval> }`.
+  Default 120.
+- `short_outage_threshold_s`: 30–86400. Default 180.
+- `quiet_hours`: `{ "start": "HH:MM", "end": "HH:MM" }` (24 h, start ≠ end)
+  or `null`.
+- Unknown keys return `400`.
+- Changing `ping_interval_s` to a different value increments
+  `desired_version`.
+- Changing `offline_timeout_s` or `ping_interval_s` on an `ONLINE` device
+  moves its offline deadline at once.
 
 `POST /devices/:id/pairing-code` → `201` with a new code. Earlier unused
 codes are invalidated. The current device token keeps working until the
@@ -463,11 +504,11 @@ flashing. It points to the latest stable image.
 
 ### Outages and stats
 
-| Method | Path                                      | Scope | Role          | Purpose                                              |
-| ------ | ----------------------------------------- | ----- | ------------- | ---------------------------------------------------- |
-| GET    | `/devices/:id/outages`                    | read  | owner, viewer | Outages and power blips, filtered, cursor pagination |
-| GET    | `/devices/:id/stats`                      | read  | owner, viewer | Stats for `DAY`, `WEEK` or `MONTH`                   |
-| GET    | `/devices/:id/diagnostics` **(proposed)** | read  | owner         | Wi-Fi and API reachability diagnostics               |
+| Method | Path                       | Scope | Role          | Purpose                                              |
+| ------ | -------------------------- | ----- | ------------- | ---------------------------------------------------- |
+| GET    | `/devices/:id/outages`     | read  | owner, viewer | Outages and power blips, filtered, cursor pagination |
+| GET    | `/devices/:id/stats`       | read  | owner, viewer | Stats for `DAY`, `WEEK` or `MONTH`                   |
+| GET    | `/devices/:id/diagnostics` | read  | owner         | Wi-Fi and API reachability diagnostics               |
 
 `GET /devices/:id/outages?from&to&kind&cause&type&limit&cursor`, newest
 first:
@@ -493,6 +534,39 @@ first:
 - `type`: `OUTAGE` | `POWER_BLIP`. `cause`: `POWER` | `NETWORK` |
   `UNKNOWN` (null while open). `kind`: `SHORT` | `LONG` (null while open).
 - An open outage has `ended_at: null`.
+- `from` and `to` (ISO 8601) keep outages that overlap the range:
+  `started_at < to` and (`ended_at` is null or `ended_at > from`). `from`
+  is inclusive, `to` exclusive. `from` after `to` → `400`.
+- `type`, `cause` and `kind` filter by exact value. Filtering by `cause`
+  or `kind` leaves out the open outage.
+- `limit` defaults to 50, max 100. An invalid `cursor` → `400`.
+
+`GET /devices/:id/diagnostics?from&to&kind&limit&cursor` (owner only),
+newest first:
+
+```json
+{
+  "items": [
+    {
+      "boot_id": "b738bb72-4172-4edd-8b30-8d5219d8f5f3",
+      "id": 7,
+      "kind": "WIFI",
+      "reason": 201,
+      "started_at": "2026-11-21T16:36:00Z",
+      "ended_at": "2026-11-21T16:36:48Z",
+      "duration_s": 48,
+      "boot_wifi_evicted": 0
+    }
+  ],
+  "next_cursor": null
+}
+```
+
+- `id` is the device's local event ID within the boot. `reason` is the
+  Wi-Fi driver reason code, `null` for `API`.
+- Times are estimates from the device uptime. `duration_s` is exact.
+- `boot_wifi_evicted` is the highest count of records the device dropped
+  in that boot because its buffer was full.
 
 `GET /devices/:id/stats?period=WEEK&from=…`:
 
@@ -714,9 +788,9 @@ UI loads it so integrators can read the reference and try requests with
 their own API token. Admin endpoints are not included.
 
 Each operation belongs to exactly one tag, so Swagger UI shows grouped
-sections. The tags follow this document's sections, in this order:
-`Health`, `Auth`, `Account`. Later milestones add `Device`, `Devices`,
-`Firmware`, `Outages`, `Sharing`, `Notifications` and `API tokens` as
+sections, in this order: `Health`, `Auth`, `Account`, `Devices`,
+`Device` (firmware endpoints, `deviceToken` security), `Outages`. Later
+milestones add `Firmware`, `Sharing`, `Notifications` and `API tokens` as
 their endpoints ship. A tag is declared only once it has operations.
 
 ## 8. Outgoing webhooks
@@ -747,7 +821,7 @@ in PROJECT_V2.md §3–§12. Section numbers below refer to PROJECT_V2.md.
 | §6 Invites                                                           | Owner can't see or revoke pending invites. Invitee can't see what the invite is | `GET` / `DELETE /devices/:id/invites`, `GET /invites/:token`                                            |
 | §7 Webhook secret                                                    | No rotation if leaked                                                           | `POST /channels/:id/rotate-secret`                                                                      |
 | `PUT /devices/:id/channels`                                          | No matching `GET`                                                               | `GET /devices/:id/channels`                                                                             |
-| §5 Wi-Fi diagnostics stored                                          | No way to read them                                                             | `GET /devices/:id/diagnostics` (owner)                                                                  |
+| §5 Wi-Fi diagnostics stored                                          | No way to read them                                                             | ✅ `GET /devices/:id/diagnostics` (owner, M2)                                                           |
 | OTA queued by mistake                                                | No cancel                                                                       | `DELETE /devices/:id/firmware-update`                                                                   |
 
 ### Inconsistencies

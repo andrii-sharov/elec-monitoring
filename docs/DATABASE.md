@@ -291,8 +291,10 @@ create index device_offline_at_idx on device (offline_at) where state = 'ONLINE'
 
 - **Credentials.** `token_hash` is `null` before the first claim and after
   `rotate-token`. One pairing code per device, so a new code replaces the
-  old one. Claiming sets `token_hash` and `claimed_at` and clears the
-  pairing code columns.
+  old one. Claiming sets `token_hash` and `claimed_at`, clears the pairing
+  code columns, `boot_id`, `seq` and `previous_ping_interval_s`, and sets
+  `applied_settings_version = settings_version` (the claim response carries
+  the settings).
 - **Live state.** `boot_id`, `seq`, `uptime_s`, `rssi` and `fw_version`
   come from the last accepted check-in. A check-in with the same `boot_id`
   and `seq <= device.seq` is a duplicate. The reset reason is read from
@@ -304,7 +306,11 @@ create index device_offline_at_idx on device (offline_at) where state = 'ONLINE'
   worker reads it through the small partial index instead of computing a
   deadline per row.
 - **Settings sync.** Changing `ping_interval_s` increments
-  `settings_version` and keeps the old value in `previous_ping_interval_s`.
+  `settings_version` and keeps the old value in `previous_ping_interval_s`
+  (the larger one if it is changed again before the device applies it).
+  While it is set, `offline_at` is
+  `last_seen_at + max(offline_timeout_s, 2 × previous_ping_interval_s)`.
+  A settings change on an `ONLINE` device recomputes `offline_at` at once.
   When the device reports the version as applied, set
   `applied_settings_version` and clear `previous_ping_interval_s`.
 - **Notification rules** (`notify_*`, quiet hours) sit on the device for

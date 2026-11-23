@@ -1,9 +1,10 @@
 import type { RequestHandler } from 'express';
 import { rateLimitKey, type RateLimiter, type RateRule } from '../rateLimit/limiter.ts';
 import { getAuth } from './auth/middleware.ts';
+import { getDeviceAuth } from './device/auth.ts';
 import { HttpError } from './errors.ts';
 
-type Rules = { ip?: RateRule; email?: RateRule; user?: RateRule };
+type Rules = { ip?: RateRule; email?: RateRule; user?: RateRule; device?: RateRule };
 
 function bodyEmail(body: unknown): string | undefined {
   if (typeof body !== 'object' || body === null || !('email' in body)) return undefined;
@@ -21,6 +22,10 @@ export function rateLimit(limiter: RateLimiter, name: string, rules: Rules): Req
     if (rules.user) {
       const userId = getAuth(res).user.id;
       checks.push({ key: rateLimitKey(name, 'user', userId), rule: rules.user });
+    }
+    if (rules.device) {
+      const { deviceId } = getDeviceAuth(res);
+      checks.push({ key: rateLimitKey(name, 'device', deviceId), rule: rules.device });
     }
 
     const decisions = await Promise.all(checks.map((check) => limiter.hit(check.key, check.rule)));

@@ -6,6 +6,7 @@ import type { Db } from '../db/client.ts';
 import type { GoogleClient } from '../auth/google.ts';
 import type { EmailSender } from '../email/sender.ts';
 import type { Logger } from '../logger.ts';
+import type { NotificationQueue } from '../notifications/queue.ts';
 import type { RateLimiter } from '../rateLimit/limiter.ts';
 import { corsMiddleware } from './cors.ts';
 import { errorHandler, notFound } from './errors.ts';
@@ -15,6 +16,10 @@ import { googlePaths, googleRouter } from './auth/google.ts';
 import { passwordPaths, passwordRouter } from './auth/password.ts';
 import { sessionPaths, sessionRouter } from './auth/session.ts';
 import { signupPaths, signupRouter } from './auth/signup.ts';
+import { claimPaths, claimRouter } from './device/claim.ts';
+import { pingPaths, pingRouter } from './device/ping.ts';
+import { devicesPaths, devicesRouter } from './devices/devices.ts';
+import { historyPaths, historyRouter } from './devices/history.ts';
 import { buildOpenApiDocument, docsRouter } from './openapi.ts';
 
 export type AppDeps = {
@@ -25,6 +30,7 @@ export type AppDeps = {
   email: EmailSender;
   google: GoogleClient;
   rateLimiter: RateLimiter;
+  notifications: NotificationQueue;
 };
 
 export function createApp(deps: AppDeps, extraRoutes?: (app: Express) => void): Express {
@@ -45,6 +51,17 @@ export function createApp(deps: AppDeps, extraRoutes?: (app: Express) => void): 
           paths: [signupPaths, sessionPaths, passwordPaths, googlePaths],
         },
         { tag: 'Account', description: 'Profile of the signed-in user', paths: [mePaths] },
+        { tag: 'Devices', description: 'Device management and settings', paths: [devicesPaths] },
+        {
+          tag: 'Device',
+          description: 'Endpoints called by the device firmware',
+          paths: [claimPaths, pingPaths],
+        },
+        {
+          tag: 'Outages',
+          description: 'Outage history and device diagnostics',
+          paths: [historyPaths],
+        },
       ]),
     ),
   );
@@ -53,6 +70,10 @@ export function createApp(deps: AppDeps, extraRoutes?: (app: Express) => void): 
   app.use(passwordRouter(deps));
   app.use(googleRouter(deps));
   app.use(meRouter(deps));
+  app.use(devicesRouter(deps));
+  app.use(claimRouter(deps));
+  app.use(pingRouter(deps));
+  app.use(historyRouter(deps));
   extraRoutes?.(app);
   app.use(notFound);
   app.use(errorHandler(deps.logger));

@@ -221,8 +221,10 @@ applied changes. Changes for an offline device wait for reconnection.
 The ping interval defaults to 30 s and can be changed by the owner. The
 server validates it against both the ping rate limit and the offline
 timeout. Until the device confirms the change, the server allows for both
-the previous and the new interval when checking for missed pings. Server
-settings such as notification rules apply as soon as they are saved.
+the previous and the new interval when checking for missed pings: the
+deadline is the later of the offline timeout and twice the previous
+interval. Server settings such as notification rules and the offline
+timeout apply as soon as they are saved.
 
 ### Firmware distribution and OTA updates
 
@@ -287,7 +289,7 @@ firmware releases.
 
 1. Client app → "Add device" → enter a name ("Home", "Dacha").
 2. Server creates the device and shows a **pairing code** (8 chars,
-   valid 30 min, single use).
+   valid 30 min, single use). An owner can have up to 20 devices.
 3. Own ESP only: flash the firmware.
 4. User enters Wi-Fi + pairing code on the ESP's setup page.
 5. ESP claims the code → gets a device token → starts pinging.
@@ -306,13 +308,17 @@ stateDiagram-v2
 ```
 
 - `PENDING`: created, never pinged.
+- Claiming a pairing code (also when re-pairing) clears the known boot
+  ID. The next boot then has no boot evidence: no power blip, and cause
+  `UNKNOWN` if it ends an outage.
 - On the first check-in, start monitoring silently. On later accepted
   check-ins, compare the previous check-in and current boot data before
   updating last seen. If the device was `OFFLINE`, close the open outage.
 - If contact returns after the timeout but before the worker's next check,
   record the completed outage in the check-in transaction. Send one
   summary under the notification rules below because no live OFF alert
-  was queued.
+  was queued. The device stays `ONLINE`, and its "state since" time
+  restarts at the recovery check-in, as after `OFFLINE` → `ONLINE`.
 - `UPDATING` is shown while a confirmed OTA window is active. An ordinary
   check-in cannot end this state. The API and worker both apply the OTA
   deadline rules in §4 before processing recovery.
@@ -332,11 +338,11 @@ instance can handle any ping; restarts lose nothing.
 Use the following evidence when contact resumes. Apply the OTA rules in
 §4 first. An outage opened at a missed OTA deadline keeps cause `UNKNOWN`.
 
-| Evidence                                                          | Cause                                                                                                                                                                       |
-| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Previously known `boot_id` changed, with `POWER_ON` or `BROWNOUT` | `POWER` (suspected power interruption)                                                                                                                                      |
-| Same `boot_id` across an offline gap                              | `NETWORK` (the device stayed up, but the Wi-Fi, internet or API path was unavailable). An overlapping Wi-Fi diagnostic confirms a local disconnect occurred during the gap. |
-| Software, watchdog, panic, unknown reset or missing boot evidence | `UNKNOWN`                                                                                                                                                                   |
+| Evidence                                                          | Cause                                                                                                                                                                                                                                                                                  |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Previously known `boot_id` changed, with `POWER_ON` or `BROWNOUT` | `POWER` (suspected power interruption)                                                                                                                                                                                                                                                 |
+| Same `boot_id` across an offline gap                              | `NETWORK` (the device stayed up, but the Wi-Fi, internet or API path was unavailable). An overlapping Wi-Fi diagnostic confirms a local disconnect occurred during the gap. It does not change the cause and is not stored on the outage. The owner sees it in the device diagnostics. |
+| Software, watchdog, panic, unknown reset or missing boot evidence | `UNKNOWN`                                                                                                                                                                                                                                                                              |
 
 For an outage or power blip, measure the observed contact gap from the
 last accepted check-in before the interruption to the recovery check-in.

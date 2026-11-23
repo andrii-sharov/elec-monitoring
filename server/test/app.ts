@@ -6,6 +6,7 @@ import {
   FakeClock,
   FakeEmailSender,
   FakeGoogleClient,
+  RecordingNotificationQueue,
   allowAllLimiter,
   silentLogger,
 } from './fakes.ts';
@@ -33,6 +34,7 @@ export function testApp(
       email: new FakeEmailSender(),
       google: new FakeGoogleClient(),
       rateLimiter: allowAllLimiter,
+      notifications: new RecordingNotificationQueue(),
       ...deps,
     },
     routes,

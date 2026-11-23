@@ -7,3 +7,4 @@ firmware/include/secrets.h
 .zed/
 *.tsbuildinfo
 .superpowers/
+.fake-device.json

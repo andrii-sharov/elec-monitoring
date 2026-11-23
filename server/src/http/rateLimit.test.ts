@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, expect, test } from 'vitest';
 import { createTestDb, type TestDb } from '../../test/db.ts';
@@ -66,4 +67,29 @@ test('without an email field only the IP rule applies', async () => {
   expect((await request(app).post('/test').send({})).status).toBe(204);
   expect((await request(app).post('/test').send({})).status).toBe(204);
   expect((await request(app).post('/test').send({})).status).toBe(429);
+});
+
+test('a device rule counts per authenticated device', async () => {
+  const clock = new FakeClock(new Date('2026-11-21T16:42:00Z'));
+  const limiter = createPgRateLimiter(t.db, clock);
+  const app = testApp({
+    routes: (a) => {
+      a.post(
+        '/device-test',
+        (req, res, next) => {
+          res.locals.device = { deviceId: req.get('X-Device') ?? '', tokenHash: Buffer.alloc(32) };
+          next();
+        },
+        rateLimit(limiter, 'checkin', { device: { limit: 1, windowS: 60 } }),
+        (_req, res) => {
+          res.status(204).end();
+        },
+      );
+    },
+  });
+  expect((await request(app).post('/device-test').set('X-Device', 'd1')).status).toBe(204);
+  expect((await request(app).post('/device-test').set('X-Device', 'd1')).status).toBe(429);
+  expect((await request(app).post('/device-test').set('X-Device', 'd2')).status).toBe(204);
+  const keys = (await t.db.select().from(rateLimitBucket)).map((b) => b.key);
+  expect(keys).toContain(`checkin:device:${createHash('sha256').update('d1').digest('hex')}`);
 });

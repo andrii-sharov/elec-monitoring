@@ -35,7 +35,10 @@ export function buildOpenApiDocument(groups: ApiGroup[]): OpenApiDocument {
     ),
     components: {
       schemas: { Error: errorSchema },
-      securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } },
+      securitySchemes: {
+        bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+        deviceToken: { type: 'http', scheme: 'bearer' },
+      },
     },
   });
 }
