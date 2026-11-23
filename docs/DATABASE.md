@@ -313,8 +313,9 @@ create index device_offline_at_idx on device (offline_at) where state = 'ONLINE'
   A settings change on an `ONLINE` device recomputes `offline_at` at once.
   When the device reports the version as applied, set
   `applied_settings_version` and clear `previous_ping_interval_s`.
-- **Notification rules** (`notify_*`, quiet hours) sit on the device for
-  now. See open question 1 in §12.
+- **Notification rules** (`notify_*`, quiet hours) sit on the device and
+  apply to every recipient. Quiet hours are evaluated in the recipient's
+  timezone (§12, question 1).
 
 ### `device_viewer`
 
@@ -643,8 +644,10 @@ create index delivery_due_idx on delivery (next_attempt_at) where status in ('QU
   Queue with `on conflict do nothing`, so a retried check-in or OTA
   result can't send twice.
 - Rows are inserted in the same transaction as the state change.
-- `payload` is a snapshot of the machine-readable event (device name,
-  outage fields). Webhook retries resend the same body. Telegram text is
+- `payload` is a snapshot of the machine-readable event:
+  `{ event, device: { id, name }, outage: <outage item> }`. Fan-out sends
+  only to enabled channels whose user can read the device, and for
+  webhooks only when the event is in `webhook_events`. Webhook retries resend the same body. Telegram text is
   rendered at send time in the recipient's language and timezone, with
   quiet hours applied.
 - Retries: 1 min, 5 min, 30 min, 2 h, 6 h, then `FAILED` (6 attempts).
@@ -787,11 +790,9 @@ Cascades implement the spec without extra code:
 
 ## 12. Open questions
 
-1. **Notification rules for viewers** (API.md §9, questions 1–2). If each
-   recipient gets their own rules, move `notify_short_outages`,
-   `notify_network_outages` and quiet hours from `device` to a
-   `device_notification_rules (device_id, user_id)` table and evaluate
-   quiet hours in the recipient's timezone.
+1. ~~**Notification rules for viewers.**~~ ✅ Resolved: the rules stay on
+   the device and the owner sets them for every recipient. Quiet hours
+   are evaluated in the recipient's timezone.
 2. **Retention** for `delivery` and `device_diagnostic`. Suggest 90 days.
 3. **Firmware storage** (API.md §9, question 4). Decides what
    `firmware_release.image_path` points to. The spec also doesn't define

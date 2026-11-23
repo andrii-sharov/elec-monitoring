@@ -84,10 +84,15 @@ export class FakeGoogleClient implements GoogleClient {
   }
 }
 
-export type QueueCall = { kind: 'recovery' | 'summary' | 'powerBlip' } & OutageEvent;
+export type QueueCall = { kind: 'offAlert' | 'recovery' | 'summary' | 'powerBlip' } & OutageEvent;
 
 export class RecordingNotificationQueue implements NotificationQueue {
   calls: QueueCall[] = [];
+
+  offAlert(_tx: Tx, event: OutageEvent): Promise<void> {
+    this.calls.push({ kind: 'offAlert', ...event });
+    return Promise.resolve();
+  }
 
   recovery(_tx: Tx, event: OutageEvent): Promise<void> {
     this.calls.push({ kind: 'recovery', ...event });

@@ -384,10 +384,14 @@ power blip.
     one summary. Apply the short-outage setting to `SHORT` events and
     the suspected network setting to `NETWORK` events.
 - Notify on suspected network outages. The cause is estimated once the
-  device reconnects, so this setting affects summaries and recovery
-  messages.
+  device reconnects, so this setting affects summaries only. A recovery
+  message always follows an OFF alert.
 - Quiet hours (optional): messages are sent silently
-  (Telegram `disable_notification`).
+  (Telegram `disable_notification`). The window is read in each
+  recipient's timezone.
+- These rules belong to the device and are set by the owner. Every
+  recipient of the device's alerts follows them. Only quiet hours differ
+  per recipient, through the timezone.
 
 ### Monitoring acceptance checks
 

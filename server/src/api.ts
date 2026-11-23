@@ -5,7 +5,7 @@ import { createGoogleClient } from './auth/google.ts';
 import { createEmailSender } from './email/sender.ts';
 import { createApp } from './http/app.ts';
 import { listen } from './http/listen.ts';
-import { noopNotificationQueue } from './notifications/queue.ts';
+import { createNotificationQueue } from './notifications/queue.ts';
 import { createPgRateLimiter } from './rateLimit/limiter.ts';
 
 const config = loadConfigOrExit(process.env);
@@ -18,7 +18,7 @@ const app = createApp({
   email: createEmailSender(config.email, console),
   google: createGoogleClient(config),
   rateLimiter: createPgRateLimiter(db, systemClock),
-  notifications: noopNotificationQueue,
+  notifications: createNotificationQueue(systemClock),
 });
 
 async function shutdown(exitCode: number): Promise<never> {
