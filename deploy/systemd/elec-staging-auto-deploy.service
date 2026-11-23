@@ -1,0 +1,13 @@
+[Unit]
+Description=Check GitHub CI and deploy Electricity Monitor staging
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/elec/staging
+Environment=GIT_TERMINAL_PROMPT=0
+ExecStart=/usr/bin/bash /opt/elec/staging/deploy/staging-auto-deploy.sh
+TimeoutStartSec=40min

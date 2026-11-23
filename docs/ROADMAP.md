@@ -165,6 +165,9 @@ migration SQL.
       and per email), `429` with `Retry-After`
 - [ ] Staging: EC2 with Caddy and separate API and worker services,
       Supabase staging project, DNS, migrations, API health and worker heartbeat
+- [ ] Continuous deployment: the EC2 timer polls `v2` and releases its
+      tip after GitHub Actions CI passes, then checks services and
+      `/health`. Manual SSH releases remain available.
 
 **Done when:** tests cover link expiry with a controlled clock, single
 use, refresh reuse revoking the session, rate limiting and no

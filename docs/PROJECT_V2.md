@@ -645,24 +645,26 @@ Caddy, `systemd` and env templates are in `deploy/`.
    `127.0.0.1:3000`. The API listens on `HOST=127.0.0.1`, so its port is
    closed even if the security group is wrong.
 3. Node.js 26 LTS from NodeSource at `/usr/bin/node`. The `v2` checkout
-   lives in `/opt/elec/staging`, owned by `ubuntu`, which runs `npm ci`
-   and `npm run build`.
+   lives in `/opt/elec/staging`, owned by `ubuntu`. Each release is built
+   by `ubuntu` in its own directory under `/opt/elec/staging-releases/`,
+   and `/opt/elec/staging-current` links to the running one.
 4. Settings live in `/etc/elec/staging.env` (`root:root`, `0600`), in
    `systemd` env-file syntax: double-quote values with spaces. Staging
    uses its own `JWT_SECRET`, Google OAuth client, Resend key and
-   Supabase transaction pooler URL (port `6543`), with `PORT=3000` and
+   Supabase session pooler URL (IPv4, port `5432`), with `PORT=3000` and
    `TRUST_PROXY_HOPS=1` because Caddy is the only proxy.
 5. `elec-staging-api.service` and `elec-staging-worker.service` run
    `node dist/api.js` and `node dist/worker.js` directly (not through
    `npm`, so signals reach Node and the service user needs no home) as
    the unprivileged system user `elec`, with
-   `WorkingDirectory=/opt/elec/staging/server`, the env file and
+   `WorkingDirectory=/opt/elec/staging-current/server`, the env file and
    `Restart=always`. Both start at boot.
-6. Each release runs `deploy/staging-release.sh`: pull `v2`, `npm ci`,
-   build, run `node dist/db/migrate.js` once as `elec` through
-   `systemd-run`, then restart both services. A failed step stops the
-   release before the restart. If a migration fails through the
-   transaction pooler, run it through the session pooler (port `5432`).
+6. Each release runs `deploy/staging-release.sh` under one lock, from the
+   auto-deploy timer or by hand over SSH: fetch `v2`, export the commit into a new release
+   directory, `npm ci`, build, run `node dist/db/migrate.js` from the new
+   build once as `elec` through `systemd-run`, switch
+   `staging-current`, restart both services and check they are active. A
+   failed step before the switch leaves the running release untouched.
 7. Staging is up when `https://staging-api.elec-monitoring.homes/health`
    returns `200`, `worker_heartbeat.beat_at` advances, `journalctl` shows
    no startup errors, and port `3000` is unreachable from outside.
@@ -681,8 +683,14 @@ own host and Elastic IP.
 - Run `npm ci`, lint and formatting checks, TypeScript checks and builds
   for the server and both React apps, Vitest for the API and worker,
   and an ESP32-C3 firmware build as each package is added.
-- Deploy to staging after CI passes. Use the manual EC2 setup for the
-  first deploy, then automate backend releases through GitHub Actions.
+- Deploy to staging after CI passes. Set up EC2 and perform the first
+  release manually. A systemd timer on EC2 then checks the tip of `v2`
+  every 15 minutes and deploys it after GitHub Actions reports a
+  successful push run for that SHA. The release skips a commit that is
+  already running or is no longer the tip, and the timer does not retry
+  a commit whose release failed. It checks both services and
+  the public health endpoint. Setup is in
+  [deploy/README.md](../deploy/README.md#continuous-deployment).
   Verify the API health endpoint, worker heartbeat, auth refresh, a
   device check-in and a client deep link as those features land. Gate
   production releases on passing CI and staging smoke tests.

@@ -494,7 +494,7 @@ returning count
 
 **M1 done when (ROADMAP):** tests cover link expiry with a controlled clock, single use, refresh reuse revoking the session, rate limiting and no enumeration (Tasks 4, 5, 7–9). 👤 Verify by hand:
 
-- Follow [deploy/README.md](../../deploy/README.md) on `elec-staging`: Elastic IP, Porkbun `A` record for `staging-api`, Node 26, Caddy, `elec` user, checkout, `/etc/elec/staging.env` with the Supabase staging transaction pooler URL (port 6543), services, first release.
+- Follow [deploy/README.md](../../deploy/README.md) on `elec-staging`: Elastic IP, Porkbun `A` record for `staging-api`, Node 26, Caddy, `elec` user, checkout, `/etc/elec/staging.env` with the Supabase staging session pooler URL (IPv4, port 5432), services, first release.
 - Verify the runbook checks: `/health` is `200` over HTTPS, `worker_heartbeat.beat_at` advances, port 3000 is closed from outside.
 - Create DNS records for `staging-app` and `staging-admin` when their pages are hosted.
 - Resend: verify the sending domain, set `EMAIL_FROM`.

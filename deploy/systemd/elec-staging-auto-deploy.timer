@@ -1,0 +1,9 @@
+[Unit]
+Description=Check for a successful staging build every 15 minutes
+
+[Timer]
+OnCalendar=*-*-* *:00/15:00
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

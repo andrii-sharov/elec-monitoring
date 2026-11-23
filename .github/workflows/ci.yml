@@ -34,6 +34,10 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: npm test
+      - name: Release script
+        run: |
+          shellcheck deploy/*.sh
+          bash deploy/staging-release.test.sh
       - name: Migrations match the schema
         run: |
           npm run db:generate -w server

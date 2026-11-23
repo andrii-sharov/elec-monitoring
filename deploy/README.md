@@ -4,13 +4,26 @@ Runbook for the staging API and worker described in
 [PROJECT_V2.md §12](../docs/PROJECT_V2.md#ec2-staging-setup). Run every
 command on `elec-staging` as `ubuntu` unless it says otherwise.
 
-| File                                  | Goes to                                 |
-| ------------------------------------- | --------------------------------------- |
-| `Caddyfile`                           | `/etc/caddy/Caddyfile`                  |
-| `systemd/elec-staging-api.service`    | `/etc/systemd/system/`                  |
-| `systemd/elec-staging-worker.service` | `/etc/systemd/system/`                  |
-| `staging.env.example`                 | `/etc/elec/staging.env` (filled in)     |
-| `staging-release.sh`                  | run from the checkout for every release |
+| File                                               | Goes to                                |
+| -------------------------------------------------- | -------------------------------------- |
+| `Caddyfile`                                        | `/etc/caddy/Caddyfile`                 |
+| `systemd/elec-staging-api.service`                 | `/etc/systemd/system/`                 |
+| `systemd/elec-staging-worker.service`              | `/etc/systemd/system/`                 |
+| `systemd/elec-staging-auto-deploy.{service,timer}` | `/etc/systemd/system/`                 |
+| `staging.env.example`                              | `/etc/elec/staging.env` (filled in)    |
+| `staging-release.sh`                               | runs a release from the checkout       |
+| `staging-auto-deploy.sh`                           | polls GitHub from the checkout         |
+| `staging-release.test.sh`                          | CI only: tests both scripts with stubs |
+
+## Layout on the instance
+
+| Path                                      | What                                                 |
+| ----------------------------------------- | ---------------------------------------------------- |
+| `/opt/elec/staging`                       | `v2` checkout; the release script runs from here     |
+| `/opt/elec/staging-releases/<time>-<sha>` | one built release each; the last 3 are kept          |
+| `/opt/elec/staging-current`               | symlink to the running release; services use it      |
+| `/opt/elec/staging-current/REVISION`      | the deployed commit SHA                              |
+| `/opt/elec/staging-release.lock`          | release lock shared by automatic and manual releases |
 
 ## First setup
 
@@ -71,34 +84,138 @@ command on `elec-staging` as `ubuntu` unless it says otherwise.
 
    ```sh
    cd /opt/elec/staging
-   sudo cp deploy/systemd/elec-staging-*.service /etc/systemd/system/
+   sudo install -m 0644 deploy/systemd/elec-staging-{api,worker}.service /etc/systemd/system/
    sudo systemctl daemon-reload
    sudo systemctl enable elec-staging-api elec-staging-worker
    sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
    sudo systemctl reload caddy
    ```
 
-8. **First release:** `deploy/staging-release.sh` (see below).
+8. **First release:** `deploy/staging-release.sh` (see below). The
+   services start from `/opt/elec/staging-current`, which the first
+   release creates.
 
 ## Every release
+
+A push to `v2` deploys automatically once CI passes (see
+[Continuous deployment](#continuous-deployment)). To release by hand
+over SSH:
 
 ```sh
 /opt/elec/staging/deploy/staging-release.sh
 ```
 
-It pulls `v2`, runs `npm ci` and the build, applies migrations as `elec`
-with the staging env, then restarts the API and worker. It stops at the
-first failing step, so a failed migration leaves the old services
-running. If a migration fails through the transaction pooler, rerun that
-step with the Supabase session pooler URL (port `5432`) as
-`DATABASE_URL`.
+Both paths run the same script under the same lock, so releases never
+overlap; a second release waits up to 10 minutes for the first. The
+script:
 
-If `deploy/systemd/*` or `deploy/Caddyfile` changed, copy them again
-(step 7) before the release.
+1. fetches `origin/v2` and picks its tip. With `--sha <commit>` (the
+   automatic path) it exits with code `3` ("skipped") if the commit
+   has already been deployed or is no longer the tip;
+2. fast-forwards the checkout to that commit;
+3. exports the commit into a new directory under
+   `/opt/elec/staging-releases/` and runs `npm ci` and `npm run build`
+   there;
+4. applies migrations from the new build as `elec` with
+   `/etc/elec/staging.env`;
+5. points `/opt/elec/staging-current` at the new build and restarts the
+   API and worker;
+6. checks that both services are active.
+
+A failure in steps 1–4 stops before the switch: the running release
+stays untouched and the failed build directory is removed. The script
+prints `release failed at step: <step>` on any failure.
+
+The script runs from the checkout, which it fast-forwards during the
+release, so a change to `staging-release.sh` takes effect from the
+release after the one that ships it.
+
+If the API, worker, or Caddy configuration changes, install the updated
+files as in step 7 and restart the corresponding services. If the timer
+or its service changes, reinstall those units using the commands below
+and restart the timer.
+
+### Roll back by hand
+
+Migrations are not rolled back, so this only works while the schema is
+compatible with the old build (P §12 requires that). Pause autodeploy
+and wait until the auto-deploy service finishes before switching:
+
+```sh
+sudo systemctl disable --now elec-staging-auto-deploy.timer
+systemctl is-active elec-staging-auto-deploy.service
+ls /opt/elec/staging-releases
+ln -sfn /opt/elec/staging-releases/<previous> /opt/elec/staging-current
+sudo systemctl restart elec-staging-api elec-staging-worker
+```
+
+Leave the timer paused until the tip of `v2` is ready to deploy again.
+When ready, run `sudo systemctl enable --now elec-staging-auto-deploy.timer`.
+
+## Continuous deployment
+
+Every 15 minutes the timer reads the tip of `v2` from GitHub and
+checks the latest `CI` push run for that exact commit. It skips the
+deployed SHA and waits for a successful run before starting a release.
+The release script rechecks the tip under the release lock. If a
+release fails (build, migration, restart or service check), the timer
+writes that SHA to `/opt/elec/staging-failed-sha` and does not retry it,
+so a broken release doesn't rebuild and rerun migrations every tick. The
+next push to `v2` deploys normally. To retry the same commit, fix the
+cause and run `rm /opt/elec/staging-failed-sha`, or release by hand. On success
+the timer checks the public HTTPS endpoint for HTTP 200 and
+`{"status":"ok"}`. Logs go to the systemd journal. A failed public health
+check is logged and requires investigation. Manual rollback is described
+above.
+
+The instance uses outbound HTTPS for the public GitHub repository and
+Actions API. Its timer runs as `ubuntu`, using that user's existing
+passwordless sudo for migration and service restarts.
+
+### Enable on the existing staging instance
+
+After pushing these files to `v2` and seeing a green CI run, connect to
+`elec-staging` over SSH. If your API and worker already use
+`/opt/elec/staging-current`, go directly to the timer installation after
+pulling the latest code. For an installation that still runs from
+`/opt/elec/staging/server`, create the first versioned release and install
+the updated API and worker units now:
+
+```sh
+cd /opt/elec/staging &&
+git pull --ff-only origin v2 &&
+sudo -n true &&
+./deploy/staging-release.sh &&
+sudo install -m 0644 deploy/systemd/elec-staging-{api,worker}.service /etc/systemd/system/ &&
+sudo systemctl daemon-reload &&
+sudo systemctl restart elec-staging-api elec-staging-worker &&
+curl -fsS --retry 6 --retry-delay 2 --max-time 8 https://staging-api.elec-monitoring.homes/health
+```
+
+Once the endpoint returns `{"status":"ok"}`, install the timer:
+
+```sh
+cd /opt/elec/staging &&
+sudo -n true &&
+sudo install -m 0644 deploy/systemd/elec-staging-auto-deploy.{service,timer} /etc/systemd/system/ &&
+sudo systemctl daemon-reload &&
+sudo systemctl enable --now elec-staging-auto-deploy.timer &&
+systemctl list-timers elec-staging-auto-deploy.timer
+```
+
+On the next green push to `v2`, check the journal and confirm that
+`REVISION` contains the pushed commit:
+
+```sh
+sudo journalctl -u elec-staging-auto-deploy.service -n 50 --no-pager
+cat /opt/elec/staging-current/REVISION
+curl -fsS https://staging-api.elec-monitoring.homes/health
+```
 
 ## Checks
 
 ```sh
+cat /opt/elec/staging-current/REVISION
 curl -sS https://staging-api.elec-monitoring.homes/health
 journalctl -u elec-staging-api -u elec-staging-worker -n 50 --no-pager
 journalctl -u caddy -n 50 --no-pager
