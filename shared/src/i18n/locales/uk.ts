@@ -4,6 +4,12 @@ export const uk: Dictionary = {
   common: {
     appName: 'Монітор електрики',
     greeting: 'Вітаємо, {{name}}',
+    duration: {
+      seconds: '{{value}} с',
+      minutes: '{{value}} хв',
+      hours: '{{value}} год',
+      days: '{{value}} д',
+    },
   },
   email: {
     footer: 'Якщо ви цього не запитували, просто проігноруйте цей лист.',
@@ -27,12 +33,6 @@ export const uk: Dictionary = {
     },
   },
   telegram: {
-    duration: {
-      seconds: '{{value}} с',
-      minutes: '{{value}} хв',
-      hours: '{{value}} год',
-      days: '{{value}} д',
-    },
     offline: {
       title: "🔴 {{name}} — пристрій перестав виходити на зв'язок",
       body: 'Останній сигнал: {{time}}',

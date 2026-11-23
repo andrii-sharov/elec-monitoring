@@ -1,7 +1,12 @@
-import type { DeliveryEvent, Language } from '@elec/shared';
+import {
+  formatDuration,
+  formatMoment,
+  formatRange,
+  type DeliveryEvent,
+  type Language,
+} from '@elec/shared';
 import type { i18n } from 'i18next';
 import type { OutageItem } from '@elec/shared/api';
-import { formatDuration, formatMoment, formatRange } from './format.ts';
 
 export type DeliveryPayload = {
   event: DeliveryEvent;
@@ -23,7 +28,7 @@ export function renderDeliveryText(i18n: i18n, input: RenderInput): string {
   const name = device.name;
   const started = new Date(outage.started_at);
   const ended = outage.ended_at ? new Date(outage.ended_at) : null;
-  const duration = formatDuration(outage.duration_s ?? 0, t);
+  const duration = formatDuration(outage.duration_s ?? 0, (key, o) => t(key, o));
 
   if (payload.event === 'device.offline') {
     return [

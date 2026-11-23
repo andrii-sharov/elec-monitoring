@@ -1,11 +1,10 @@
-import { languages, type Language } from '@elec/shared';
+import { formatMoment, languages, type Language } from '@elec/shared';
 import { and, asc, eq } from 'drizzle-orm';
 import type { i18n } from 'i18next';
 import { consumeOneTimeToken } from '../auth/oneTimeTokens.ts';
 import type { Clock } from '../clock.ts';
 import type { Db } from '../db/client.ts';
 import { appUser, device, deviceChannel, notificationChannel } from '../db/schema/index.ts';
-import { formatMoment } from '../notifications/format.ts';
 import { parseCommand, type TelegramUpdate } from './commands.ts';
 
 export type BotDeps = { db: Db; clock: Clock; i18n: i18n; botUsername: string };

@@ -2,6 +2,12 @@ export const en = {
   common: {
     appName: 'Electricity Monitor',
     greeting: 'Hello, {{name}}',
+    duration: {
+      seconds: '{{value}} s',
+      minutes: '{{value}} min',
+      hours: '{{value}} h',
+      days: '{{value}} d',
+    },
   },
   email: {
     footer: "If you didn't request this, ignore this email.",
@@ -25,12 +31,6 @@ export const en = {
     },
   },
   telegram: {
-    duration: {
-      seconds: '{{value}} s',
-      minutes: '{{value}} min',
-      hours: '{{value}} h',
-      days: '{{value}} d',
-    },
     offline: {
       title: '🔴 {{name}} — device stopped checking in',
       body: 'Last signal: {{time}}',
