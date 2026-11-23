@@ -653,6 +653,21 @@ create index delivery_due_idx on delivery (next_attempt_at) where status in ('QU
   quiet hours applied.
 - Retries: 1 min, 5 min, 30 min, 2 h, 6 h, then `FAILED` (6 attempts).
   Redeliver sets `QUEUED` and `next_attempt_at = now()` on the same row.
+- **Platform bot outcomes.** `2xx` → `SENT`. `429` → `RETRYING` at
+  Telegram's `retry_after`, and the attempt isn't counted. `400` / `403`
+  → `FAILED` at once and `consecutive_failures + 1`. `5xx`, network errors
+  and the 10 s timeout follow the retry schedule and don't touch
+  `consecutive_failures`, so a Telegram outage can't disable channels. A
+  `migrate_to_chat_id` reply updates `telegram_chat_id` and retries at
+  once. Channels disable at 20 counted failures.
+- **Skipped sends.** A `device.offline` delivery whose outage has closed,
+  or whose channel is disabled, becomes `FAILED` with `last_error` set to
+  `skipped: outage closed` or `skipped: channel disabled`. The failure
+  counter is unchanged.
+- **Send loop.** The worker claims up to 30 due rows, sends rows of one
+  channel in order, runs up to 10 channels at once, and takes a token from
+  a 30 messages/s pacer before every send. It beats `worker_heartbeat`
+  under the name `delivery`.
 - Emails (verification, reset, invites, "webhook disabled") go straight to
   Resend and are not stored here.
 
