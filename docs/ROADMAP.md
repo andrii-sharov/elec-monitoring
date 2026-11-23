@@ -27,8 +27,8 @@ Status: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 | #   | Milestone                                                             | Status | Depends on | Plan                           |
 | --- | --------------------------------------------------------------------- | ------ | ---------- | ------------------------------ |
 | M0  | [Foundation](#m0--foundation)                                         | ✅     | —          | [M00](plans/M00-foundation.md) |
-| M1  | [Auth](#m1--auth)                                                     | 🟡     | M0         | [M01](plans/M01-auth.md)       |
-| M2  | [Devices and check-ins](#m2--devices-and-check-ins)                   | ⬜     | M1         | —                              |
+| M1  | [Auth](#m1--auth)                                                     | ✅     | M0         | [M01](plans/M01-auth.md)       |
+| M2  | [Devices and check-ins](#m2--devices-and-check-ins)                   | ⬜     | M1         | [M02](plans/M02-devices.md)    |
 | M3  | [Worker and platform bot](#m3--worker-and-platform-telegram-bot)      | ⬜     | M2         | —                              |
 | M4  | [Client app](#m4--client-app)                                         | ⬜     | M3         | —                              |
 | M5  | [Firmware core and device setup](#m5--firmware-core-and-device-setup) | ⬜     | M2         | —                              |
@@ -163,9 +163,9 @@ migration SQL.
 - [x] `GET`, `PATCH`, `DELETE /me`
 - [x] Rate limiter per Q4 on sign up, log in, reset and claim (per IP
       and per email), `429` with `Retry-After`
-- [ ] Staging: EC2 with Caddy and separate API and worker services,
+- [x] Staging: EC2 with Caddy and separate API and worker services,
       Supabase staging project, DNS, migrations, API health and worker heartbeat
-- [ ] Continuous deployment: the EC2 timer polls `v2` and releases its
+- [x] Continuous deployment: the EC2 timer polls `v2` and releases its
       tip after GitHub Actions CI passes, then checks services and
       `/health`. Manual SSH releases remain available.
 
