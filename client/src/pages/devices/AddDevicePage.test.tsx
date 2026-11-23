@@ -131,7 +131,7 @@ test('an expired code hides the code, stops polling, and a new code resumes it',
 
   await advance(21_000);
   expect(screen.queryByText('K7Q2 M9XD')).toBeNull();
-  const renew = screen.getByRole('button', { name: 'Get a new code' });
+  const renew = await screen.findByRole('button', { name: 'Get a new code' });
   await advance(100);
   const before = calls.get;
   await advance(10_000);
@@ -153,4 +153,29 @@ test('409 on create shows the device limit message', async () => {
   const { user } = renderRoute('/devices/new', { me: meFixture() });
   await createHome(user);
   expect(await screen.findByText('You can have up to 20 devices')).toBeInTheDocument();
+});
+
+test('a device that claims the code at expiry shows done, not the expired state', async () => {
+  const { calls } = handlers({ expiresInS: 20 });
+  const { user } = renderRoute('/devices/new', { me: meFixture() });
+  await createHome(user);
+  await screen.findByText('K7Q2 M9XD');
+  await advance(19_000);
+  calls.state = 'ONLINE';
+  await advance(1500);
+  expect(await screen.findByText('The device is online')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Get a new code' })).toBeNull();
+});
+
+test('a poll error is shown instead of waiting forever', async () => {
+  handlers();
+  server.use(
+    http.get(`${base}/api/v1/devices/${deviceId}`, () =>
+      HttpResponse.json({ error: { code: 'not_found', message: 'x' } }, { status: 404 }),
+    ),
+  );
+  const { user } = renderRoute('/devices/new', { me: meFixture() });
+  await createHome(user);
+  expect(await screen.findByRole('alert')).toBeInTheDocument();
+  expect(screen.queryByText('Waiting for the device to connect…')).toBeNull();
 });

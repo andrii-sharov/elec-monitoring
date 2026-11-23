@@ -1,7 +1,7 @@
 import { createDeviceBodySchema } from '@elec/shared/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
@@ -40,7 +40,6 @@ function NameStep({ onCreated }: { onCreated: (pairing: Pairing) => void }) {
   const mutation = useMutation({
     mutationFn: (body: Output) => createDevice(api, body),
     onSuccess: (created) => {
-      queryClient.setQueryData(queryKeys.device(created.device.id), created.device);
       void queryClient.invalidateQueries({ queryKey: queryKeys.devices });
       onCreated({
         deviceId: created.device.id,
@@ -80,10 +79,22 @@ function PairingStep({ initial }: { initial: Pairing }) {
   const { api } = useSession();
   const [pairing, setPairing] = useState(initial);
   const secondsLeft = useSecondsLeft(pairing.expiresAt);
+  const expired = secondsLeft === 0;
+  const [checkedFor, setCheckedFor] = useState<string | null>(null);
   const device = useDevice(pairing.deviceId, {
-    enabled: secondsLeft > 0,
-    refetchInterval: (query) => (query.state.data?.state === 'PENDING' ? pendingPollMs : false),
+    refetchInterval: (query) => {
+      const { data, status } = query.state;
+      const waiting = data ? data.state === 'PENDING' : status !== 'error';
+      return !expired && waiting ? pendingPollMs : false;
+    },
   });
+  const refetchDevice = device.refetch;
+  useEffect(() => {
+    if (!expired) return;
+    void refetchDevice().finally(() => setCheckedFor(pairing.expiresAt));
+  }, [expired, pairing.expiresAt, refetchDevice]);
+  const checkingExpiry = expired && checkedFor !== pairing.expiresAt;
+  const failed = device.isError && !device.data;
   const renew = useMutation({
     mutationFn: () => newPairingCode(api, pairing.deviceId),
     onSuccess: (next) =>
@@ -121,11 +132,13 @@ function PairingStep({ initial }: { initial: Pairing }) {
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <FormAlert message={renew.error ? errorMessage(t, renew.error) : null} />
-          <PairingCode
-            code={pairing.code}
-            expiresAt={pairing.expiresAt}
-            onRenew={() => renew.mutate()}
-          />
+          {checkingExpiry ? null : (
+            <PairingCode
+              code={pairing.code}
+              expiresAt={pairing.expiresAt}
+              onRenew={() => renew.mutate()}
+            />
+          )}
         </CardContent>
       </Card>
       <Card>
@@ -138,7 +151,8 @@ function PairingStep({ initial }: { initial: Pairing }) {
             <li>{t('app.addDevice.stepWifi')}</li>
             <li>{t('app.addDevice.stepWait')}</li>
           </ol>
-          {secondsLeft > 0 ? (
+          <FormAlert message={failed ? errorMessage(t, device.error) : null} />
+          {!expired && !failed ? (
             <output className="text-sm text-muted-foreground">{t('app.addDevice.waiting')}</output>
           ) : null}
         </CardContent>
