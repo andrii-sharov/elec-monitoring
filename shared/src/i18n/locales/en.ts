@@ -51,6 +51,23 @@ export const en = {
       POWER: 'suspected power outage',
       NETWORK: 'suspected network outage',
     },
+    bot: {
+      welcome:
+        '👋 Hi! To get power alerts here, open the Electricity Monitor app, choose “Connect Telegram” and follow the link.',
+      linked: '✅ Done! This chat is linked and will get alerts for your devices.',
+      alreadyLinked: 'This chat is already linked to your account.',
+      linkExpired: 'This link has expired or was already used. Create a new one in the app.',
+      status: {
+        ONLINE: '🟢 {{name}} — online since {{time}}',
+        OFFLINE: '🔴 {{name}} — offline since {{time}}',
+        PENDING: '⚪ {{name}} — waiting for the first check-in',
+        UPDATING: '🔄 {{name}} — updating since {{time}}',
+      },
+      statusEmpty: 'No devices send alerts to this chat yet. Choose them in the app.',
+      stopped: "🛑 This chat is unlinked. You won't get alerts here anymore.",
+      notLinked: "This chat isn't linked yet. Open the app and choose “Connect Telegram”.",
+      help: 'Commands:\n/status — your devices\n/stop — unlink this chat',
+    },
   },
 };
 

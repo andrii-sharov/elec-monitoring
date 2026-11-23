@@ -13,7 +13,8 @@
     "test": "vitest run",
     "db:generate": "NODE_OPTIONS=--conditions=source drizzle-kit generate",
     "db:migrate": "node --env-file-if-exists=.env dist/db/migrate.js",
-    "fake-device": "tsx --conditions=source scripts/fake-device.ts"
+    "fake-device": "tsx --conditions=source scripts/fake-device.ts",
+    "telegram:webhook": "tsx --conditions=source --env-file-if-exists=.env scripts/telegram-webhook.ts"
   },
   "dependencies": {
     "@elec/shared": "*",

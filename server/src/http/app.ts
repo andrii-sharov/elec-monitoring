@@ -21,6 +21,7 @@ import { claimPaths, claimRouter } from './device/claim.ts';
 import { pingPaths, pingRouter } from './device/ping.ts';
 import { devicesPaths, devicesRouter } from './devices/devices.ts';
 import { historyPaths, historyRouter } from './devices/history.ts';
+import { telegramWebhookRouter } from './telegram/webhook.ts';
 import { buildOpenApiDocument, docsRouter } from './openapi.ts';
 
 export type AppDeps = {
@@ -81,6 +82,7 @@ export function createApp(deps: AppDeps, extraRoutes?: (app: Express) => void): 
   app.use(pingRouter(deps));
   app.use(historyRouter(deps));
   app.use(channelsRouter(deps));
+  app.use(telegramWebhookRouter(deps));
   extraRoutes?.(app);
   app.use(notFound);
   app.use(errorHandler(deps.logger));

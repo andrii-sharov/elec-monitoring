@@ -787,11 +787,21 @@ Read-only.
 
 ## 6. Telegram webhook
 
-`POST /telegram/webhook/:secret`. `:secret` must equal
-`TELEGRAM_WEBHOOK_SECRET`, else `404`. Also check
-`X-Telegram-Bot-Api-Secret-Token`. Always reply `200` fast. Handles
-`/start <code>`, `/status`, `/stats`, `/stop`. Replies use the linked
-user's language.
+`POST /telegram/webhook/:secret`. `:secret` and the
+`X-Telegram-Bot-Api-Secret-Token` header must both equal
+`TELEGRAM_WEBHOOK_SECRET` (compared in constant time), else `404`. Any
+other request gets `200`, also when the update is malformed or handling it
+fails (the error is logged), so Telegram doesn't retry.
+
+A reply is the webhook response body
+`{ "method": "sendMessage", "chat_id": "…", "text": "…" }`. The API never
+calls Telegram itself. Handles `/start <code>`, `/status`, `/stop` and a
+`my_chat_member` update with status `kicked` or `left` (deletes the chat's
+channels, no reply). `/stats` arrives with statistics; until then it gets
+the help text. `/cmd@OtherBot` is ignored. Replies use the language of the
+user who linked the chat (the oldest link for a shared group), or the
+sender's Telegram language when it is `uk`, `en` or `ru`, else `uk`.
+Allowed updates: `message`, `my_chat_member`.
 
 ## 7. Health and docs
 

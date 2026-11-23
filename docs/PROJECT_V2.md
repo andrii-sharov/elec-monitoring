@@ -444,8 +444,11 @@ the same localization rules.
    the user can change that per device. Devices created later aren't
    attached automatically.
 
-Bot commands: `/status` (all devices), `/stats` (last 7 days),
-`/stop` (unlink).
+Bot commands: `/status` (devices that notify this chat), `/stats`
+(last 7 days, with statistics), `/stop` (unlink the chat). Removing the bot
+from a group also unlinks it. Linking creates a channel named after the
+group title or the person's Telegram name. Linking a chat that is already
+linked changes nothing.
 
 ### Telegram — user's own bot (advanced)
 
@@ -654,7 +657,9 @@ Rough numbers to plan for:
   environment before the API and worker roll forward. Use migrations
   compatible with the old service versions during a rolling deploy.
 - Telegram platform bot webhook points to
-  `https://api.<domain>/telegram/webhook/<secret>`.
+  `https://api.<domain>/telegram/webhook/<secret>`. Register it once per
+  environment from `server/` with
+  `npm run telegram:webhook -- set` (and `info`, `delete`).
 
 ### EC2 staging setup
 
