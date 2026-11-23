@@ -99,7 +99,7 @@ Validation errors add `details`:
 | Resend verification             | 3 / h per user        |
 | Change password, delete account | 10 / 15 min per user  |
 
-Responses include `Retry-After` on `429`.
+Responses include `Retry-After` on `429`; CORS exposes it to the app origins.
 
 ## 2. Device API
 

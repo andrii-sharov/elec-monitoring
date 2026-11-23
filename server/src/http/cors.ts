@@ -4,7 +4,12 @@ import type { AppUrls } from '../config.ts';
 import { HttpError } from './errors.ts';
 
 export function corsMiddleware(urls: AppUrls): RequestHandler {
-  return cors({ origin: [urls.client, urls.admin], credentials: true, maxAge: 600 });
+  return cors({
+    origin: [urls.client, urls.admin],
+    credentials: true,
+    maxAge: 600,
+    exposedHeaders: ['Retry-After'],
+  });
 }
 
 export function requireAppOrigin(urls: AppUrls): RequestHandler {

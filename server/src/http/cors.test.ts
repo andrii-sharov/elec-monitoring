@@ -13,6 +13,11 @@ test('preflight from the client app allows credentials', async () => {
   expect(res.headers['access-control-allow-credentials']).toBe('true');
 });
 
+test('actual requests from the client app expose Retry-After', async () => {
+  const res = await request(testApp()).get('/health').set('Origin', 'https://app.test');
+  expect(res.headers['access-control-expose-headers']).toContain('Retry-After');
+});
+
 test('preflight from another origin gets no CORS headers', async () => {
   const res = await request(testApp())
     .options('/api/auth/refresh')
