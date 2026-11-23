@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "shared",
-    "server"
+    "server",
+    "client"
   ],
   "type": "module",
   "scripts": {
@@ -12,7 +13,7 @@
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "typecheck": "npm run typecheck --workspaces",
-    "build": "npm run build -w shared -w server",
+    "build": "npm run build -w shared -w server -w client",
     "test": "npm run test --workspaces"
   },
   "devDependencies": {

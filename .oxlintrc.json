@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "unicorn", "oxc", "import", "vitest"],
+  "plugins": ["typescript", "unicorn", "oxc", "import", "vitest", "react", "jsx-a11y"],
   "categories": {
     "correctness": "error",
     "suspicious": "warn"
@@ -35,6 +35,29 @@
           }
         ],
         "no-restricted-globals": ["error", "Buffer", "process"]
+      }
+    },
+    {
+      "files": ["client/**"],
+      "env": {
+        "browser": true
+      },
+      "rules": {
+        "import/no-unassigned-import": [
+          "warn",
+          {
+            "allow": ["**/*.css", "@testing-library/jest-dom/vitest"]
+          }
+        ],
+        "react/react-in-jsx-scope": "off"
+      }
+    },
+    {
+      "files": ["client/src/components/ui/**"],
+      "rules": {
+        "jsx-a11y/prefer-tag-over-role": "off",
+        "jsx-a11y/click-events-have-key-events": "off",
+        "jsx-a11y/no-noninteractive-element-interactions": "off"
       }
     }
   ]

@@ -69,6 +69,46 @@ export const en = {
       help: 'Commands:\n/status — your devices\n/stop — unlink this chat',
     },
   },
+  app: {
+    common: {
+      loading: 'Loading…',
+      retry: 'Try again',
+      save: 'Save',
+      cancel: 'Cancel',
+      close: 'Close',
+      language: 'Language',
+      languages: { uk: 'Українська', en: 'English', ru: 'Русский' },
+    },
+    errors: {
+      validation_error: 'Check the highlighted fields.',
+      unauthorized: 'Your session has ended. Sign in again.',
+      forbidden: "You don't have access to this.",
+      jwt_required: 'Sign in to continue.',
+      insufficient_scope: "You don't have permission for this action.",
+      email_not_verified: 'Confirm your email address first.',
+      not_found: 'Not found.',
+      conflict: 'This conflicts with existing data. Refresh the page and try again.',
+      expired: 'This link or code has expired.',
+      rate_limited: 'Too many attempts. Try again later.',
+      invalid_credentials: 'Wrong email or password.',
+      reauth_required: "Confirm it's you by signing in again.",
+      internal: 'Something went wrong on our side. Try again later.',
+      network: "Can't reach the server. Check your connection.",
+      invalid_response: 'Something went wrong. Try again later.',
+      generic: 'Something went wrong. Try again.',
+    },
+    theme: {
+      label: 'Theme',
+      system: 'System',
+      light: 'Light',
+      dark: 'Dark',
+    },
+    notFound: {
+      title: 'Page not found',
+      body: "This page doesn't exist or has moved.",
+      home: 'Go to the home page',
+    },
+  },
 };
 
 export type Dictionary = typeof en;
