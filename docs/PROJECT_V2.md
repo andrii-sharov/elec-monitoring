@@ -439,7 +439,10 @@ the same localization rules.
 2. User presses **Start** in Telegram.
 3. Bot receives `/start <link_code>` (via Telegram webhook to our API)
    and saves the `chat_id` as a new channel.
-4. Works for private chats and groups.
+4. Works for private chats and groups (`startgroup` link). The new
+   channel is attached to every device the user owns at that moment, and
+   the user can change that per device. Devices created later aren't
+   attached automatically.
 
 Bot commands: `/status` (all devices), `/stats` (last 7 days),
 `/stop` (unlink).
@@ -732,8 +735,10 @@ GOOGLE_CLIENT_SECRET=...
 EMAIL_TRANSPORT=resend             # resend (default) | log
 RESEND_API_KEY=...                 # required when EMAIL_TRANSPORT=resend
 EMAIL_FROM=...
-TELEGRAM_PLATFORM_BOT_TOKEN=...
-TELEGRAM_WEBHOOK_SECRET=...
+TELEGRAM_PLATFORM_BOT_TOKEN=...    # worker only
+TELEGRAM_PLATFORM_BOT_USERNAME=... # API, without @
+TELEGRAM_WEBHOOK_SECRET=...        # API, 32-256 chars of A-Z a-z 0-9 _ -
+TELEGRAM_TRANSPORT=telegram        # worker; telegram (default) | log
 CLIENT_URL=https://<domain>        # origin only, no path
 ADMIN_URL=https://admin.<domain>
 API_URL=https://api.<domain>

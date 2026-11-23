@@ -4,11 +4,12 @@ import type { Executor } from '../db/client.ts';
 import { oneTimeToken } from '../db/schema/index.ts';
 import { randomToken, sha256 } from '../lib/crypto.ts';
 
-export type OneTimePurpose = 'VERIFY_EMAIL' | 'RESET_PASSWORD';
+export type OneTimePurpose = 'VERIFY_EMAIL' | 'RESET_PASSWORD' | 'TELEGRAM_LINK';
 
 export const ONE_TIME_TTL_S: Record<OneTimePurpose, number> = {
   VERIFY_EMAIL: 86_400,
   RESET_PASSWORD: 3_600,
+  TELEGRAM_LINK: 900,
 };
 
 export async function issueOneTimeToken(

@@ -19,6 +19,7 @@ export const testConfig: Config = {
   google: { clientId: 'google-client-id', clientSecret: 'google-client-secret' },
   email: { transport: 'log', from: 'Electricity Monitor <noreply@app.test>' },
   trustProxyHops: 0,
+  telegram: { botUsername: 'TestBot', webhookSecret: 's'.repeat(32) },
 };
 
 export function testApp(

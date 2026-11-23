@@ -41,6 +41,11 @@ const envSchema = databaseEnvSchema
     RESEND_API_KEY: z.string().min(1).optional(),
     EMAIL_FROM: z.string().min(1),
     TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
+    TELEGRAM_PLATFORM_BOT_USERNAME: z
+      .string()
+      .transform((value) => value.replace(/^@/, ''))
+      .pipe(z.string().regex(/^[A-Za-z0-9_]{5,32}$/)),
+    TELEGRAM_WEBHOOK_SECRET: z.string().regex(/^[A-Za-z0-9_-]{32,256}$/),
   })
   .superRefine((env, ctx) => {
     if (env.EMAIL_TRANSPORT === 'resend' && !env.RESEND_API_KEY) {
@@ -67,6 +72,7 @@ export type Config = {
   google: { clientId: string; clientSecret: string };
   email: EmailConfig;
   trustProxyHops: number;
+  telegram: { botUsername: string; webhookSecret: string };
 };
 
 export type DatabaseConfig = { databaseUrl: string };
@@ -115,6 +121,10 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
     },
     email: toEmailConfig(data),
     trustProxyHops: data.TRUST_PROXY_HOPS,
+    telegram: {
+      botUsername: data.TELEGRAM_PLATFORM_BOT_USERNAME,
+      webhookSecret: data.TELEGRAM_WEBHOOK_SECRET,
+    },
   };
 }
 

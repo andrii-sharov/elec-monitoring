@@ -16,6 +16,7 @@ import { googlePaths, googleRouter } from './auth/google.ts';
 import { passwordPaths, passwordRouter } from './auth/password.ts';
 import { sessionPaths, sessionRouter } from './auth/session.ts';
 import { signupPaths, signupRouter } from './auth/signup.ts';
+import { channelsPaths, channelsRouter } from './channels/channels.ts';
 import { claimPaths, claimRouter } from './device/claim.ts';
 import { pingPaths, pingRouter } from './device/ping.ts';
 import { devicesPaths, devicesRouter } from './devices/devices.ts';
@@ -62,6 +63,11 @@ export function createApp(deps: AppDeps, extraRoutes?: (app: Express) => void): 
           description: 'Outage history and device diagnostics',
           paths: [historyPaths],
         },
+        {
+          tag: 'Notifications',
+          description: 'Notification channels and which devices use them',
+          paths: [channelsPaths],
+        },
       ]),
     ),
   );
@@ -74,6 +80,7 @@ export function createApp(deps: AppDeps, extraRoutes?: (app: Express) => void): 
   app.use(claimRouter(deps));
   app.use(pingRouter(deps));
   app.use(historyRouter(deps));
+  app.use(channelsRouter(deps));
   extraRoutes?.(app);
   app.use(notFound);
   app.use(errorHandler(deps.logger));

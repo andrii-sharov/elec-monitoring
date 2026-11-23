@@ -626,12 +626,12 @@ newest first:
 | ------ | -------------------------------------------- | ----- | ----------------------------------------- |
 | GET    | `/channels`                                  | read  | List my channels                          |
 | POST   | `/channels`                                  | write | Add own bot or webhook                    |
-| POST   | `/channels/telegram-link` **(proposed)**     | write | Link to connect the platform Telegram bot |
+| POST   | `/channels/telegram-link`                    | write | Link to connect the platform Telegram bot |
 | PATCH  | `/channels/:id`                              | write | Update, enable, disable                   |
 | DELETE | `/channels/:id`                              | write | Delete channel                            |
 | POST   | `/channels/:id/test`                         | write | Send test message                         |
 | POST   | `/channels/:id/rotate-secret` **(proposed)** | write | New webhook secret                        |
-| GET    | `/devices/:id/channels` **(proposed)**       | read  | My channels used by this device           |
+| GET    | `/devices/:id/channels`                      | read  | My channels used by this device           |
 | PUT    | `/devices/:id/channels`                      | write | Set which of my channels this device uses |
 | GET    | `/channels/:id/deliveries`                   | read  | Delivery log                              |
 | POST   | `/deliveries/:id/redeliver`                  | write | Retry a delivery                          |
@@ -642,11 +642,21 @@ shared devices.
 `POST /channels/telegram-link` → `201`:
 
 ```json
-{ "url": "https://t.me/<PlatformBot>?start=<link_code>", "expires_at": "…" }
+{
+  "url": "https://t.me/<PlatformBot>?start=<link_code>",
+  "group_url": "https://t.me/<PlatformBot>?startgroup=<link_code>",
+  "expires_at": "…"
+}
 ```
 
-The bot receives `/start <link_code>` and creates a `TELEGRAM_PLATFORM`
-channel. The client polls `GET /channels` until it appears.
+The code is valid for 15 minutes, and a new request expires the previous
+unused code. Limit: 10 per 15 minutes per user. The bot receives
+`/start <link_code>` and creates a `TELEGRAM_PLATFORM` channel, named after
+the group title or the user's Telegram name. The channel is attached to
+every device the caller owns at that moment; devices created later are not
+attached automatically. The client polls `GET /channels` until the channel
+appears. `url` opens a private chat, `group_url` lets the user pick a
+group.
 
 `POST /channels`, own bot:
 
@@ -688,8 +698,17 @@ Channel object:
 `disabled_reason`: `null` | `USER` | `TOO_MANY_FAILURES`. `PATCH` with
 `enabled: true` re-enables and resets the failure counter.
 
+`GET /devices/:id/channels` → `200 { "channel_ids": ["…"] }`, the caller's
+channels used by the device.
+
 `PUT /devices/:id/channels` `{ "channel_ids": ["…"] }` replaces the
-caller's channel set for that device. Other users' links are untouched.
+caller's channel set for that device and returns `200 { "channel_ids" }`.
+Other users' links are untouched. At most 50 IDs, duplicates are
+collapsed. An ID that isn't one of the caller's channels is
+`400 validation_error` with a detail `{ "path": "channel_ids.<i>",
+"code": "not_found" }`.
+
+A platform channel's `config` is `{ "chat_id": "-1001234567890" }`.
 
 `GET /channels/:id/deliveries?limit&cursor`:
 
@@ -789,8 +808,9 @@ their own API token. Admin endpoints are not included.
 
 Each operation belongs to exactly one tag, so Swagger UI shows grouped
 sections, in this order: `Health`, `Auth`, `Account`, `Devices`,
-`Device` (firmware endpoints, `deviceToken` security), `Outages`. Later
-milestones add `Firmware`, `Sharing`, `Notifications` and `API tokens` as
+`Device` (firmware endpoints, `deviceToken` security), `Outages`,
+`Notifications`. Later milestones add `Firmware`, `Sharing` and
+`API tokens` as
 their endpoints ship. A tag is declared only once it has operations.
 
 ## 8. Outgoing webhooks

@@ -22,6 +22,8 @@ const validEnv: NodeJS.ProcessEnv = {
   GOOGLE_CLIENT_SECRET: 'gsecret',
   RESEND_API_KEY: 're_123',
   EMAIL_FROM: 'Electricity Monitor <noreply@example.com>',
+  TELEGRAM_PLATFORM_BOT_USERNAME: 'ElecBot',
+  TELEGRAM_WEBHOOK_SECRET: 'w'.repeat(32),
 };
 
 test('loads valid env', () => {
@@ -41,6 +43,7 @@ test('loads valid env', () => {
       from: 'Electricity Monitor <noreply@example.com>',
     },
     trustProxyHops: 0,
+    telegram: { botUsername: 'ElecBot', webhookSecret: 'w'.repeat(32) },
   });
 });
 
@@ -167,4 +170,20 @@ test('worker config rejects an unknown transport', () => {
     loadWorkerConfig({ DATABASE_URL: 'postgres://u:p@h:5432/db', TELEGRAM_TRANSPORT: 'smoke' }),
   );
   expect(err.keys).toEqual(['TELEGRAM_TRANSPORT']);
+});
+
+test('strips a leading @ from the bot username', () => {
+  expect(
+    loadConfig({ ...validEnv, TELEGRAM_PLATFORM_BOT_USERNAME: '@ElecBot' }).telegram.botUsername,
+  ).toBe('ElecBot');
+});
+
+test.each([
+  ['TELEGRAM_WEBHOOK_SECRET', undefined],
+  ['TELEGRAM_WEBHOOK_SECRET', 'w'.repeat(31)],
+  ['TELEGRAM_WEBHOOK_SECRET', `${'w'.repeat(31)}/`],
+  ['TELEGRAM_PLATFORM_BOT_USERNAME', undefined],
+  ['TELEGRAM_PLATFORM_BOT_USERNAME', 'bad'],
+])('rejects %s = %s', (key, value) => {
+  expect(catchError(() => loadConfig({ ...validEnv, [key]: value })).keys).toEqual([key]);
 });

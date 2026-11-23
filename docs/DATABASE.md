@@ -206,7 +206,7 @@ create index one_time_token_user_id_idx on one_time_token (user_id, purpose);
 ```
 
 - Lifetimes: `VERIFY_EMAIL` 24 h, `RESET_PASSWORD` 1 h, `TELEGRAM_LINK`
-  as returned by `POST /channels/telegram-link`.
+  15 min.
 - A used or expired token returns `410 expired`, so rows stay until cleanup
   (§10).
 
