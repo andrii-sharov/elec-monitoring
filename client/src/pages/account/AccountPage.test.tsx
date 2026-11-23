@@ -227,3 +227,19 @@ test('?confirmDelete=1 opens the delete dialog', async () => {
   renderRoute('/account?confirmDelete=1', { me: meFixture() });
   expect(await screen.findByRole('dialog')).toBeInTheDocument();
 });
+
+test('closing and reopening the delete dialog clears the password and the error', async () => {
+  server.use(http.delete(`${base}/api/v1/me`, () => problem('invalid_credentials', 403)));
+  const { user } = await renderAccount();
+  await user.click(screen.getByRole('button', { name: 'Delete account' }));
+  const dialog = await screen.findByRole('dialog');
+  await user.type(within(dialog).getByLabelText('Enter your password to confirm'), 'wrong');
+  await user.click(within(dialog).getByRole('button', { name: 'Delete my account' }));
+  await within(dialog).findByText('Wrong password');
+  await user.keyboard('{Escape}');
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  await user.click(screen.getByRole('button', { name: 'Delete account' }));
+  const reopened = await screen.findByRole('dialog');
+  expect(within(reopened).getByLabelText('Enter your password to confirm')).toHaveValue('');
+  expect(within(reopened).queryByText('Wrong password')).not.toBeInTheDocument();
+});

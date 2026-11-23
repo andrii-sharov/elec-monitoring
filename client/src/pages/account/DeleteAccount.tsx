@@ -45,6 +45,14 @@ export function DeleteAccount({ me }: { me: Me }) {
   const reauth = isApiError(remove.error, 'reauth_required');
   const failure = remove.error && !reauth && !passwordError ? errorMessage(t, remove.error) : null;
 
+  function changeOpen(next: boolean) {
+    setOpen(next);
+    if (next) return;
+    setPassword('');
+    setPasswordError(null);
+    remove.reset();
+  }
+
   function submit(event: FormEvent) {
     event.preventDefault();
     if (me.has_password && password === '') {
@@ -60,7 +68,7 @@ export function DeleteAccount({ me }: { me: Me }) {
         {t('app.account.deleteTitle')}
       </h2>
       <p className="text-sm text-muted-foreground">{t('app.account.deleteBody')}</p>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={changeOpen}>
         <DialogTrigger render={<Button variant="destructive" className="self-start" />}>
           {t('app.account.deleteTitle')}
         </DialogTrigger>
