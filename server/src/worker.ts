@@ -1,32 +1,79 @@
 import { hostname } from 'node:os';
 import { systemClock } from './clock.ts';
-import { loadDatabaseConfigOrExit } from './config.ts';
+import { loadWorkerConfigOrExit } from './config.ts';
 import { createDb } from './db/client.ts';
+import { createI18n } from './i18n.ts';
+import { checkOffline, queueDueOffAlerts } from './monitoring/offline.ts';
+import { runDeliveryLoop } from './notifications/deliveryLoop.ts';
+import { createPacer } from './notifications/pacer.ts';
+import { createNotificationQueue } from './notifications/queue.ts';
+import { createLogTelegramClient, createTelegramClient } from './notifications/telegram.ts';
 import { cleanupRateLimits } from './rateLimit/cleanup.ts';
+import { dailyRunner, runCleanup } from './worker/cleanup.ts';
 import { beat } from './worker/heartbeat.ts';
-import { runLoop } from './worker/loop.ts';
+import { defaultSleep, runLoop } from './worker/loop.ts';
 
-const WORKER_NAME = 'main';
+const MONITOR_NAME = 'main';
+const DELIVERY_NAME = 'delivery';
 const LOOP_INTERVAL_MS = 10_000;
+const TELEGRAM_RATE_PER_S = 30;
 
-const config = loadDatabaseConfigOrExit(process.env);
+const config = loadWorkerConfigOrExit(process.env);
 const { db, close } = createDb(config.databaseUrl);
 const instanceId = `${hostname()}:${process.pid}`;
 const controller = new AbortController();
+const logger = console;
 
 for (const signal of ['SIGTERM', 'SIGINT'] as const) {
   process.once(signal, () => controller.abort());
 }
 
-console.info(`worker started (${instanceId})`);
-await runLoop({
-  intervalMs: LOOP_INTERVAL_MS,
-  tick: async () => {
-    await beat(db, systemClock, WORKER_NAME, instanceId);
-    await cleanupRateLimits(db, systemClock);
-  },
-  signal: controller.signal,
-  logger: console,
+const telegram =
+  config.telegram.transport === 'log'
+    ? createLogTelegramClient(logger)
+    : createTelegramClient(config.telegram.botToken);
+const notifications = createNotificationQueue(systemClock);
+const monitorDeps = { db, clock: systemClock, logger, notifications };
+const dailyCleanup = dailyRunner(systemClock, async () => {
+  logger.info('daily cleanup', await runCleanup(db, systemClock));
 });
+
+async function step(name: string, run: () => Promise<unknown>): Promise<void> {
+  try {
+    await run();
+  } catch (err) {
+    logger.error(`worker step failed: ${name}`, err);
+  }
+}
+
+console.info(`worker started (${instanceId})`);
+await Promise.all([
+  runLoop({
+    intervalMs: LOOP_INTERVAL_MS,
+    tick: async () => {
+      await step('heartbeat', () => beat(db, systemClock, MONITOR_NAME, instanceId));
+      await step('offline check', () => checkOffline(monitorDeps));
+      await step('OFF alerts', () => queueDueOffAlerts(monitorDeps));
+      await step('rate limit cleanup', () => cleanupRateLimits(db, systemClock));
+      await step('daily cleanup', dailyCleanup);
+    },
+    signal: controller.signal,
+    logger,
+  }),
+  runDeliveryLoop({
+    db,
+    clock: systemClock,
+    logger,
+    telegram,
+    i18n: createI18n(),
+    pacer: createPacer({
+      ratePerS: TELEGRAM_RATE_PER_S,
+      clock: systemClock,
+      sleep: (ms) => defaultSleep(ms, controller.signal),
+    }),
+    signal: controller.signal,
+    beat: () => beat(db, systemClock, DELIVERY_NAME, instanceId),
+  }),
+]);
 await close();
 console.info('worker stopped');

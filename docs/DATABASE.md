@@ -781,7 +781,7 @@ Cascades implement the spec without extra code:
 | `session`                       | Delete when revoked or when every refresh token has expired (cascades `refresh_token`) |
 | `device_invite`                 | Delete 30 days after `expires_at`                                                      |
 | `rate_limit_bucket`             | Delete when `window_start` is older than one day (worker, every tick)                  |
-| `delivery`, `device_diagnostic` | Retention to be decided (§12, question 2)                                              |
+| `delivery`, `device_diagnostic` | Delete after 90 days (`delivery.created_at`, `device_diagnostic.started_at`)           |
 | `outage`, `device_boot`         | Keep (history and statistics)                                                          |
 
 ## 11. Migrations
@@ -809,7 +809,7 @@ Cascades implement the spec without extra code:
 1. ~~**Notification rules for viewers.**~~ ✅ Resolved: the rules stay on
    the device and the owner sets them for every recipient. Quiet hours
    are evaluated in the recipient's timezone.
-2. **Retention** for `delivery` and `device_diagnostic`. Suggest 90 days.
+2. ~~**Retention** for `delivery` and `device_diagnostic`.~~ ✅ Resolved: 90 days.
 3. **Firmware storage** (API.md §9, question 4). Decides what
    `firmware_release.image_path` points to. The spec also doesn't define
    "compatible release", so there is no compatibility column yet.

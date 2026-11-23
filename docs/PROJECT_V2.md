@@ -621,7 +621,10 @@ Rough numbers to plan for:
 | Database   | Supabase (Postgres)                                  |
 | Emails     | Resend                                               |
 
-- The worker runs the checker and sends Telegram messages and webhooks.
+- The worker runs two loops in one process: a 10 s monitor loop (offline
+  check, OFF alerts, cleanup) and a delivery loop that sends Telegram
+  messages and webhooks. Each loop has its own `worker_heartbeat` row
+  (`main`, `delivery`).
   Start with one worker instance. Persist the delivery ID across retries
   so webhook consumers can deduplicate uncertain deliveries. The API can
   scale to several instances.
