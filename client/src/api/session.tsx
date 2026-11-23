@@ -26,6 +26,8 @@ export type SessionValue = {
   me: Me | null;
   signedIn(session: Session): void;
   signOut(): Promise<void>;
+  endSession(): void;
+  departed: boolean;
   api: ApiClient;
 };
 
@@ -52,6 +54,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const location = useLocation();
   const [status, setStatus] = useState<SessionStatus>('loading');
+  const [departed, setDeparted] = useState(false);
   const [lost, setLost] = useState<{ key: string; from: string } | null>(null);
   const [{ api, events }] = useState(() => {
     const target = new EventTarget();
@@ -95,17 +98,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       api.setSession(session);
       queryClient.clear();
       queryClient.setQueryData(queryKeys.me, session.user);
+      setDeparted(false);
       setStatus('authenticated');
     },
     [api, queryClient],
   );
 
-  const signOut = useCallback(async () => {
-    await logout(api).catch(() => {});
+  const endSession = useCallback(() => {
     api.setSession(null);
     queryClient.clear();
+    setDeparted(true);
     setStatus('anonymous');
   }, [api, queryClient]);
+
+  const signOut = useCallback(async () => {
+    await logout(api).catch(() => {});
+    endSession();
+  }, [api, endSession]);
 
   const { data: me } = useQuery({
     queryKey: queryKeys.me,
@@ -120,9 +129,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       me: status === 'authenticated' ? (me ?? null) : null,
       signedIn,
       signOut,
+      endSession,
+      departed,
       api,
     }),
-    [status, me, signedIn, signOut, api],
+    [status, me, signedIn, signOut, endSession, departed, api],
   );
 
   return (
@@ -153,10 +164,11 @@ function SessionLoading() {
 }
 
 export function RequireAuth() {
-  const { status } = useSession();
+  const { status, departed } = useSession();
   const location = useLocation();
   if (status === 'loading') return <SessionLoading />;
   if (status === 'anonymous') {
+    if (departed) return <Redirect to="/login" />;
     return <Redirect to={loginPath(location.pathname + location.search)} />;
   }
   return <Outlet />;

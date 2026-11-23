@@ -1,5 +1,6 @@
 import { Navigate, Outlet, type RouteObject } from 'react-router';
 import { RequireAnon, RequireAuth, SessionProvider } from '@/api/session';
+import { AccountPage } from '@/pages/account/AccountPage';
 import { Layout } from './Layout';
 import { AddDevicePage } from '@/pages/devices/AddDevicePage';
 import { DevicePage } from '@/pages/devices/DevicePage';
@@ -43,6 +44,7 @@ export const routes: RouteObject[] = [
               { path: 'devices/new', Component: AddDevicePage },
               { path: 'devices/:id', Component: DevicePage },
               { path: 'notifications', Component: NotificationsPage },
+              { path: 'account', Component: AccountPage },
             ],
           },
         ],
