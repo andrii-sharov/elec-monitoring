@@ -94,6 +94,14 @@ only sends emails.
   `?error=`. OAuth state and the PKCE verifier live in a signed 10-minute
   `em_oauth` cookie.
 - A user can have both a password and Google linked.
+- Client side: the client stores `{ intent, next }` in
+  `sessionStorage['em.google']` and navigates to
+  `/api/auth/google?app=CLIENT&intent=…`. `/auth/google` shows a translated
+  message for `?error=`. Otherwise it uses the refreshed session and goes to
+  `next`: `/devices` by default for `LOGIN`, `/account` for `LINK`. A
+  Google-only user who gets `reauth_required` on account deletion signs in
+  with Google again (`LOGIN`, `next=/account?confirmDelete=1`), and Account
+  opens the delete dialog.
 
 ### Sessions
 
@@ -585,6 +593,14 @@ changes from Account settings. Both React apps use the saved preference
 after sign-in. The server uses it when rendering outgoing messages as
 described in §7. If a recipient has no saved preference, use Ukrainian
 (`uk`), including invites sent to people without an account.
+
+In the client, the UI language is the account's `language` when signed in.
+When signed out it is `localStorage['em.language']`, then the first of
+`navigator.languages` whose prefix is `uk`, `en` or `ru`, then `uk`. The
+switcher on signed-out pages writes `localStorage`; when signed in it also
+sends `PATCH /me`. Sign-up sends the current UI language and the browser
+timezone (`Europe/Kyiv` if unknown). Form validation messages come from the
+shared Zod schemas through the `app.validation.*` keys.
 
 ## 10. Security
 

@@ -5,6 +5,7 @@ import { createBrowserRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 import { AppProviders } from './app/providers.tsx';
 import { routes } from './app/router.tsx';
+import { installZodErrors } from './forms/zodErrors.ts';
 import { createClientI18n, detectLanguage } from './lib/i18n.ts';
 import './styles.css';
 
@@ -15,6 +16,7 @@ function syncDocument(language: string) {
   document.title = i18n.t('common.appName');
 }
 
+installZodErrors(i18n);
 syncDocument(i18n.language);
 i18n.on('languageChanged', syncDocument);
 

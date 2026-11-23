@@ -7,6 +7,7 @@ import { StrictMode } from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { AppProviders } from '../src/app/providers.tsx';
 import { routes } from '../src/app/router.tsx';
+import { installZodErrors } from '../src/forms/zodErrors.ts';
 import { apiUrl } from '../src/lib/config.ts';
 import { createClientI18n } from '../src/lib/i18n.ts';
 import { sessionFixture } from './fixtures.ts';
@@ -32,11 +33,13 @@ function presetSession(me: Me | null) {
 export function renderRoute(path: string, { me = null }: RenderRouteOptions = {}) {
   presetSession(me);
   const user: UserEvent = userEvent.setup();
+  const i18n = createClientI18n('en');
+  installZodErrors(i18n);
   const router = createMemoryRouter(routes, { initialEntries: [path] });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <StrictMode>
-      <AppProviders i18n={createClientI18n('en')} queryClient={queryClient}>
+      <AppProviders i18n={i18n} queryClient={queryClient}>
         <RouterProvider router={router} />
       </AppProviders>
     </StrictMode>,
