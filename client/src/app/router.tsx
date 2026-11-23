@@ -1,6 +1,7 @@
 import { Navigate, Outlet, type RouteObject } from 'react-router';
 import { RequireAnon, RequireAuth, SessionProvider } from '@/api/session';
 import { Layout } from './Layout';
+import { AddDevicePage } from '@/pages/devices/AddDevicePage';
 import { DevicesPage } from '@/pages/devices/DevicesPage';
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 import { GoogleCallbackPage } from '@/pages/auth/GoogleCallbackPage';
@@ -37,6 +38,7 @@ export const routes: RouteObject[] = [
             children: [
               { path: '/', element: <Navigate to="/devices" replace /> },
               { path: 'devices', Component: DevicesPage },
+              { path: 'devices/new', Component: AddDevicePage },
             ],
           },
         ],
