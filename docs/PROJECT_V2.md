@@ -325,7 +325,9 @@ stateDiagram-v2
 - The worker checks every 10 s. An `ONLINE` device goes `OFFLINE` after
   `offline_timeout` (default 120 s) since the last accepted check-in or
   the end of the OTA window reported by `update_finished`, whichever is
-  later. The worker opens an outage and queues any due notification.
+  later. The worker opens an outage and queues any due notification. The
+  device's "state since" time is the missed deadline, not the time the
+  worker ran.
   Check-in, OTA and worker handlers lock the same device row when writing
   state, outages and queue entries. The worker skips rows already locked
   by another transaction.

@@ -531,7 +531,8 @@ create index outage_ota_attempt_id_idx on outage (ota_attempt_id) where ota_atte
 - Only one open outage per device (partial unique index).
 - **OFF alerts.** When the worker opens an outage it sets
   `off_alert_due_at`: right away if the device notifies on short outages,
-  otherwise after the short-outage threshold as well. The worker queues
+  otherwise after the short-outage threshold as well (never earlier than
+  the moment the outage opens). The worker queues
   deliveries when the time comes and sets `off_alert_queued_at`. On
   recovery, `off_alert_queued_at is null` means no OFF alert went out, so
   send at most one summary (PROJECT_V2 §5).
