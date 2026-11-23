@@ -491,6 +491,15 @@ Offline for 2 h 15 min (18:42 → 20:57) · suspected power outage
 Device restarted · 25 s between check-ins
 ```
 
+- A completed interruption with no OFF alert sends a summary instead:
+  `🟠 Home — device was out of contact`, with the same body as the 🟢
+  message. A `LONG` power blip drops "short" from its title.
+- Times use the recipient's timezone, as `21 Nov 18:42`. A range on one
+  local day shows times only (`18:42 → 20:57`), otherwise both dates.
+  Durations are floored: `25 s`, `12 min`, `2 h 15 min`, `1 d 3 h`.
+- Telegram messages are plain text (no `parse_mode`), so device names need
+  no escaping.
+
 Render human-readable notifications in the recipient's preferred language
 and timezone. For a shared device, each recipient gets messages according
 to their own profile, regardless of the device owner's preferences. This

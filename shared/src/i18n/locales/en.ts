@@ -31,6 +31,26 @@ export const en = {
       hours: '{{value}} h',
       days: '{{value}} d',
     },
+    offline: {
+      title: '🔴 {{name}} — device stopped checking in',
+      body: 'Last signal: {{time}}',
+    },
+    recovery: {
+      title: '🟢 {{name}} — device is back online',
+      body: 'Offline for {{duration}} ({{range}})',
+    },
+    summary: {
+      title: '🟠 {{name}} — device was out of contact',
+    },
+    powerBlip: {
+      titleShort: '🟡 {{name}} — suspected short power interruption',
+      titleLong: '🟡 {{name}} — suspected power interruption',
+      body: 'Device restarted · {{duration}} between check-ins',
+    },
+    cause: {
+      POWER: 'suspected power outage',
+      NETWORK: 'suspected network outage',
+    },
   },
 };
 
