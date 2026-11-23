@@ -170,6 +170,7 @@ export const en = {
       too_big_string: 'At most {{max}} characters',
       too_big_number: 'At most {{max}}',
       email: 'Enter a valid email address',
+      required: 'Required',
       invalid: 'Invalid value',
       same_time: 'Start and end must differ',
       password_mismatch: 'Passwords do not match',

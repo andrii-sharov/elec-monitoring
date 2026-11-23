@@ -28,7 +28,7 @@ test('empty submit shows field errors and sends nothing', async () => {
   const { user } = renderRoute('/login');
   await user.click(await screen.findByRole('button', { name: 'Log in' }));
   expect(await screen.findByText('Enter a valid email address')).toBeInTheDocument();
-  expect(screen.getByText('At least 1 characters')).toBeInTheDocument();
+  expect(screen.getByText('Required')).toBeInTheDocument();
   expect(spy).not.toHaveBeenCalled();
 });
 

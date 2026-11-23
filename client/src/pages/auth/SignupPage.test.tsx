@@ -45,3 +45,19 @@ test('valid sign-up sends language and timezone and shows the check-email screen
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
 });
+
+test('an empty name shows Required and sends nothing', async () => {
+  const spy = vi.fn<() => void>();
+  server.use(
+    http.post(`${base}/api/auth/signup`, () => {
+      spy();
+      return new HttpResponse(null, { status: 201 });
+    }),
+  );
+  const { user } = renderRoute('/signup');
+  await user.type(await screen.findByLabelText('Email'), 'johnny@example.com');
+  await user.type(screen.getByLabelText('Password'), 'password1');
+  await user.click(screen.getByRole('button', { name: 'Create account' }));
+  expect(await screen.findByText('Required')).toBeInTheDocument();
+  expect(spy).not.toHaveBeenCalled();
+});

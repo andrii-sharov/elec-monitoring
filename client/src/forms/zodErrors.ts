@@ -11,6 +11,7 @@ function lengthKey(origin: string): 'string' | 'number' {
 export function translateIssue(issue: Issue, t: TFunction): string {
   switch (issue.code) {
     case 'too_small':
+      if (issue.origin === 'string' && issue.minimum === 1) return t('app.validation.required');
       return t(`app.validation.too_small_${lengthKey(issue.origin)}`, { min: issue.minimum });
     case 'too_big':
       return t(`app.validation.too_big_${lengthKey(issue.origin)}`, { max: issue.maximum });
@@ -32,6 +33,7 @@ export function installZodErrors(instance: i18n): void {
 }
 
 function translateDetail(detail: ApiError['details'][number], t: TFunction): string {
+  if (detail.code === 'too_small' && detail.min === 1) return t('app.validation.required');
   if (detail.code === 'too_small') return t('app.validation.too_small_number', { min: detail.min });
   if (detail.code === 'too_big') return t('app.validation.too_big_number', { max: detail.max });
   return t(`app.validation.${detail.code}`, { defaultValue: t('app.validation.invalid') });

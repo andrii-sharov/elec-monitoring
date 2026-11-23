@@ -173,6 +173,7 @@ export const uk: Dictionary = {
       too_big_string: 'Щонайбільше {{max}} символів',
       too_big_number: 'Щонайбільше {{max}}',
       email: 'Вкажіть дійсну адресу електронної пошти',
+      required: "Обов'язкове поле",
       invalid: 'Недійсне значення',
       same_time: 'Початок і кінець мають відрізнятися',
       password_mismatch: 'Паролі не збігаються',

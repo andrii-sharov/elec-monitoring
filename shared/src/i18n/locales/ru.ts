@@ -175,6 +175,7 @@ export const ru: Dictionary = {
       too_big_string: 'Не более {{max}} символов',
       too_big_number: 'Не более {{max}}',
       email: 'Укажите действительный адрес электронной почты',
+      required: 'Обязательное поле',
       invalid: 'Недопустимое значение',
       same_time: 'Начало и конец должны отличаться',
       password_mismatch: 'Пароли не совпадают',

@@ -72,3 +72,17 @@ test('applyServerErrors returns false when a detail has no field', () => {
   expect(applyServerErrors(error, setError, ['email'], t)).toBe(false);
   expect(setError).toHaveBeenCalledWith('email', { type: 'server', message: 'Invalid value' });
 });
+
+test('min 1 string and server detail use the required message', () => {
+  expect(translateIssue(firstIssue(passwordSchema.safeParse('')), t)).not.toBe(
+    'At least 1 characters',
+  );
+  const setError = vi.fn<(name: string, error: { type: string; message: string }) => void>();
+  const error = new ApiError({
+    status: 400,
+    code: 'validation_error',
+    details: [{ path: 'name', code: 'too_small', min: 1 }],
+  });
+  applyServerErrors(error, setError, ['name'], t);
+  expect(setError).toHaveBeenCalledWith('name', { type: 'server', message: 'Required' });
+});
