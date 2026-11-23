@@ -1,5 +1,7 @@
-import { Outlet, type RouteObject } from 'react-router';
+import { Navigate, Outlet, type RouteObject } from 'react-router';
 import { RequireAnon, RequireAuth, SessionProvider } from '@/api/session';
+import { Layout } from './Layout';
+import { DevicesPage } from '@/pages/devices/DevicesPage';
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 import { GoogleCallbackPage } from '@/pages/auth/GoogleCallbackPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
@@ -27,7 +29,18 @@ export const routes: RouteObject[] = [
       { path: 'verify-email', Component: VerifyEmailPage },
       { path: 'reset-password', Component: ResetPasswordPage },
       { path: 'auth/google', Component: GoogleCallbackPage },
-      { Component: RequireAuth, children: [{ path: 'devices' }] },
+      {
+        Component: RequireAuth,
+        children: [
+          {
+            Component: Layout,
+            children: [
+              { path: '/', element: <Navigate to="/devices" replace /> },
+              { path: 'devices', Component: DevicesPage },
+            ],
+          },
+        ],
+      },
       { path: '*', Component: NotFound },
     ],
   },

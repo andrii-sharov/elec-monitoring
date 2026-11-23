@@ -188,6 +188,35 @@ export const en = {
       body: "This page doesn't exist or has moved.",
       home: 'Go to the home page',
     },
+    nav: {
+      devices: 'Devices',
+      notifications: 'Notifications',
+      account: 'Account',
+      apiDocs: 'API docs',
+      main: 'Main navigation',
+    },
+    devices: {
+      title: 'Devices',
+      add: 'Add device',
+      addNeedsVerified: 'Confirm your email to add a device.',
+      emptyTitle: 'No devices yet',
+      emptyBody: 'Add your first device to start monitoring the power.',
+      since: 'since {{moment}}',
+      lastSeen: 'Last seen {{moment}}',
+      never: 'Never seen',
+      shared: 'Shared',
+    },
+    state: {
+      ONLINE: 'Online',
+      OFFLINE: 'Offline',
+      PENDING: 'Pending',
+      UPDATING: 'Updating',
+    },
+    verify: {
+      banner: 'Confirm your email address. Check your inbox for the confirmation link.',
+      resend: 'Resend email',
+      resent: 'Confirmation email sent',
+    },
   },
 };
 
