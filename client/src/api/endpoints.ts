@@ -113,7 +113,10 @@ export function rotateToken(api: ApiClient, id: string) {
 }
 
 export function getOutages(api: ApiClient, id: string, cursor?: string) {
-  return api.request(`${device(id)}/outages`, { query: { cursor }, schema: outagesPageSchema });
+  return api.request(`${device(id)}/outages`, {
+    query: { limit: 20, cursor },
+    schema: outagesPageSchema,
+  });
 }
 
 export function getChannels(api: ApiClient) {
