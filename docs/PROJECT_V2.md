@@ -739,6 +739,11 @@ PORT=3000
 HOST=127.0.0.1                     # optional; unset listens on all interfaces
 ```
 
+The worker reads `DATABASE_URL`, `TELEGRAM_PLATFORM_BOT_TOKEN` and
+`TELEGRAM_TRANSPORT` (`telegram` default | `log`, which only logs messages
+for local runs; the token is required when `telegram`). The API doesn't
+need the bot token.
+
 The API validates these with Zod at startup and exits on a missing or
 invalid value. App URLs must be origins: `https`, or `http` for
 `localhost` and `127.0.0.1`; a trailing slash is removed. The worker and

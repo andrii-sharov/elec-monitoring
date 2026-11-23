@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { ConfigError, loadConfig, loadDatabaseConfig } from './config.ts';
+import { ConfigError, loadConfig, loadDatabaseConfig, loadWorkerConfig } from './config.ts';
 
 function catchError(fn: () => unknown): ConfigError {
   try {
@@ -137,4 +137,34 @@ test('loadDatabaseConfig needs only DATABASE_URL', () => {
     databaseUrl: 'postgres://h/db',
   });
   expect(catchError(() => loadDatabaseConfig({})).keys).toEqual(['DATABASE_URL']);
+});
+
+test('worker config requires a bot token for the telegram transport', () => {
+  const err = catchError(() => loadWorkerConfig({ DATABASE_URL: 'postgres://u:p@h:5432/db' }));
+  expect(err.keys).toEqual(['TELEGRAM_PLATFORM_BOT_TOKEN']);
+});
+
+test('worker config with the telegram transport', () => {
+  expect(
+    loadWorkerConfig({
+      DATABASE_URL: 'postgres://u:p@h:5432/db',
+      TELEGRAM_PLATFORM_BOT_TOKEN: '123:abc',
+    }),
+  ).toEqual({
+    databaseUrl: 'postgres://u:p@h:5432/db',
+    telegram: { transport: 'telegram', botToken: '123:abc' },
+  });
+});
+
+test('worker config with the log transport needs no token or auth secrets', () => {
+  expect(
+    loadWorkerConfig({ DATABASE_URL: 'postgres://u:p@h:5432/db', TELEGRAM_TRANSPORT: 'log' }),
+  ).toEqual({ databaseUrl: 'postgres://u:p@h:5432/db', telegram: { transport: 'log' } });
+});
+
+test('worker config rejects an unknown transport', () => {
+  const err = catchError(() =>
+    loadWorkerConfig({ DATABASE_URL: 'postgres://u:p@h:5432/db', TELEGRAM_TRANSPORT: 'smoke' }),
+  );
+  expect(err.keys).toEqual(['TELEGRAM_TRANSPORT']);
 });

@@ -16,6 +16,17 @@ const originUrl = z
 
 const databaseEnvSchema = z.object({ DATABASE_URL: postgresUrl });
 
+const workerEnvSchema = databaseEnvSchema
+  .extend({
+    TELEGRAM_TRANSPORT: z.enum(['telegram', 'log']).default('telegram'),
+    TELEGRAM_PLATFORM_BOT_TOKEN: z.string().min(1).optional(),
+  })
+  .superRefine((env, ctx) => {
+    if (env.TELEGRAM_TRANSPORT === 'telegram' && !env.TELEGRAM_PLATFORM_BOT_TOKEN) {
+      ctx.addIssue({ code: 'custom', path: ['TELEGRAM_PLATFORM_BOT_TOKEN'], message: 'Required' });
+    }
+  });
+
 const envSchema = databaseEnvSchema
   .extend({
     PORT: z.coerce.number().int().min(1).max(65535).default(3000),
@@ -59,6 +70,11 @@ export type Config = {
 };
 
 export type DatabaseConfig = { databaseUrl: string };
+
+export type WorkerConfig = {
+  databaseUrl: string;
+  telegram: { transport: 'telegram'; botToken: string } | { transport: 'log' };
+};
 
 export class ConfigError extends Error {
   readonly keys: string[];
@@ -108,6 +124,19 @@ export function loadDatabaseConfig(env: NodeJS.ProcessEnv): DatabaseConfig {
   return { databaseUrl: result.data.DATABASE_URL };
 }
 
+export function loadWorkerConfig(env: NodeJS.ProcessEnv): WorkerConfig {
+  const result = workerEnvSchema.safeParse(env);
+  if (!result.success) throw new ConfigError(failedKeys(result.error));
+  const data = result.data;
+  return {
+    databaseUrl: data.DATABASE_URL,
+    telegram:
+      data.TELEGRAM_TRANSPORT === 'log'
+        ? { transport: 'log' }
+        : { transport: 'telegram', botToken: data.TELEGRAM_PLATFORM_BOT_TOKEN ?? '' },
+  };
+}
+
 function exitOnConfigError<T>(load: () => T): T {
   try {
     return load();
@@ -124,4 +153,8 @@ export function loadConfigOrExit(env: NodeJS.ProcessEnv): Config {
 
 export function loadDatabaseConfigOrExit(env: NodeJS.ProcessEnv): DatabaseConfig {
   return exitOnConfigError(() => loadDatabaseConfig(env));
+}
+
+export function loadWorkerConfigOrExit(env: NodeJS.ProcessEnv): WorkerConfig {
+  return exitOnConfigError(() => loadWorkerConfig(env));
 }

@@ -5,6 +5,7 @@ import type { EmailMessage, EmailSender } from '../src/email/sender.ts';
 import type { Tx } from '../src/db/client.ts';
 import type { Logger } from '../src/logger.ts';
 import type { NotificationQueue, OutageEvent } from '../src/notifications/queue.ts';
+import type { SendResult, TelegramClient } from '../src/notifications/telegram.ts';
 import type { RateLimiter } from '../src/rateLimit/limiter.ts';
 
 export class FakeClock implements Clock {
@@ -107,5 +108,24 @@ export class RecordingNotificationQueue implements NotificationQueue {
   powerBlip(_tx: Tx, event: OutageEvent): Promise<void> {
     this.calls.push({ kind: 'powerBlip', ...event });
     return Promise.resolve();
+  }
+}
+
+export class FakeTelegramClient implements TelegramClient {
+  sent: Array<{ chatId: bigint; text: string; silent: boolean; at: Date }> = [];
+  private scripted: SendResult[] = [];
+
+  constructor(private readonly clock: Clock) {}
+
+  script(...results: SendResult[]): void {
+    this.scripted.push(...results);
+  }
+
+  sendMessage(chatId: bigint, text: string, opts: { silent: boolean }): Promise<SendResult> {
+    const result = this.scripted.shift() ?? { type: 'SENT' };
+    if (result.type === 'SENT') {
+      this.sent.push({ chatId, text, silent: opts.silent, at: this.clock.now() });
+    }
+    return Promise.resolve(result);
   }
 }
