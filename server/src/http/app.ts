@@ -38,12 +38,13 @@ export function createApp(deps: AppDeps, extraRoutes?: (app: Express) => void): 
   app.use(
     docsRouter(
       buildOpenApiDocument([
-        healthPaths,
-        signupPaths,
-        sessionPaths,
-        passwordPaths,
-        googlePaths,
-        mePaths,
+        { tag: 'Health', description: 'API and database liveness', paths: [healthPaths] },
+        {
+          tag: 'Auth',
+          description: 'Sign-up, sessions, passwords and Google sign-in',
+          paths: [signupPaths, sessionPaths, passwordPaths, googlePaths],
+        },
+        { tag: 'Account', description: 'Profile of the signed-in user', paths: [mePaths] },
       ]),
     ),
   );

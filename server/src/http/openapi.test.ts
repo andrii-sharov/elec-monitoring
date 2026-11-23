@@ -42,6 +42,34 @@ describe('API docs', () => {
     expect(init.text).toContain('/api/v1/openapi.json');
   });
 
+  describe('groups', () => {
+    test('declares the groups in display order', async () => {
+      const { tags } = await document();
+      expect(tags.map((t: { name: string }) => t.name)).toEqual(['Health', 'Auth', 'Account']);
+      for (const tag of tags) expect(tag.description).toBeTruthy();
+    });
+
+    test('puts every operation in exactly one declared group', async () => {
+      const { paths, tags } = await document();
+      const declared = new Set(tags.map((t: { name: string }) => t.name));
+      for (const [path, item] of Object.entries<Record<string, { tags?: string[] }>>(paths)) {
+        for (const [method, operation] of Object.entries(item)) {
+          expect(operation.tags, `${method} ${path}`).toHaveLength(1);
+          expect(declared.has(operation.tags![0]), `${method} ${path}`).toBe(true);
+        }
+      }
+    });
+
+    test.each([
+      ['/health', 'get', 'Health'],
+      ['/api/auth/login', 'post', 'Auth'],
+      ['/api/auth/google/callback', 'get', 'Auth'],
+      ['/api/v1/me', 'patch', 'Account'],
+    ])('%s %s is in %s', async (path, method, tag) => {
+      expect((await document()).paths[path][method].tags).toEqual([tag]);
+    });
+  });
+
   describe('M1 auth endpoints', () => {
     const authPosts = [
       'signup',

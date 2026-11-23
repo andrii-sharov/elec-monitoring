@@ -7,11 +7,32 @@ const DOCUMENT_PATH = '/api/v1/openapi.json';
 
 export type OpenApiDocument = ReturnType<typeof createDocument>;
 
-export function buildOpenApiDocument(paths: ZodOpenApiPathsObject[]): OpenApiDocument {
+export interface ApiGroup {
+  tag: string;
+  description: string;
+  paths: ZodOpenApiPathsObject[];
+}
+
+function tagOperations(tag: string, paths: ZodOpenApiPathsObject): ZodOpenApiPathsObject {
+  return Object.fromEntries(
+    Object.entries(paths).map(([path, item]) => [
+      path,
+      Object.fromEntries(
+        Object.entries(item).map(([method, operation]) => [method, { ...operation, tags: [tag] }]),
+      ),
+    ]),
+  );
+}
+
+export function buildOpenApiDocument(groups: ApiGroup[]): OpenApiDocument {
   return createDocument({
     openapi: '3.1.0',
     info: { title: 'Electricity Monitor API', version: '2.0.0' },
-    paths: Object.assign({}, ...paths),
+    tags: groups.map(({ tag, description }) => ({ name: tag, description })),
+    paths: Object.assign(
+      {},
+      ...groups.flatMap(({ tag, paths }) => paths.map((p) => tagOperations(tag, p))),
+    ),
     components: {
       schemas: { Error: errorSchema },
       securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } },

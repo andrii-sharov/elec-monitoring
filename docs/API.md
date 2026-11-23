@@ -713,6 +713,12 @@ response schemas, including authentication, errors and examples. Swagger
 UI loads it so integrators can read the reference and try requests with
 their own API token. Admin endpoints are not included.
 
+Each operation belongs to exactly one tag, so Swagger UI shows grouped
+sections. The tags follow this document's sections, in this order:
+`Health`, `Auth`, `Account`. Later milestones add `Device`, `Devices`,
+`Firmware`, `Outages`, `Sharing`, `Notifications` and `API tokens` as
+their endpoints ship. A tag is declared only once it has operations.
+
 ## 8. Outgoing webhooks
 
 See [PROJECT_V2.md §7](PROJECT_V2.md#webhooks). Payload `device`,
