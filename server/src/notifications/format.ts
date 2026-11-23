@@ -8,8 +8,7 @@ const LOCALES: Record<Language, string> = { uk: 'uk-UA', en: 'en-GB', ru: 'ru-RU
 
 function safeTimezone(timezone: string): string {
   try {
-    new Intl.DateTimeFormat('en', { timeZone: timezone });
-    return timezone;
+    return new Intl.DateTimeFormat('en', { timeZone: timezone }).resolvedOptions().timeZone;
   } catch {
     return DEFAULT_TIMEZONE;
   }

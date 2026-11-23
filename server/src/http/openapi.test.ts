@@ -136,6 +136,26 @@ describe('API docs', () => {
   });
 });
 
+describe('M3 notification endpoints', () => {
+  test.each([
+    ['/api/v1/channels/telegram-link', ['post']],
+    ['/api/v1/channels', ['get']],
+    ['/api/v1/devices/{id}/channels', ['get', 'put']],
+  ])('documents %s with bearer auth in Notifications', async (path, methods) => {
+    const { paths } = await document();
+    for (const method of methods) {
+      expect(paths[path][method].security, `${method} ${path}`).toEqual([{ bearerAuth: [] }]);
+      expect(paths[path][method].tags).toEqual(['Notifications']);
+    }
+  });
+
+  test('has the Channel schema and no Telegram webhook path', async () => {
+    const { paths, components } = await document();
+    expect(components.schemas.Channel).toBeDefined();
+    expect(Object.keys(paths).some((p) => p.startsWith('/telegram'))).toBe(false);
+  });
+});
+
 function findOperation(
   paths: Record<string, Record<string, { security?: unknown }>>,
   route: string,

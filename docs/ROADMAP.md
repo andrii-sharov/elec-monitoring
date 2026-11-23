@@ -29,7 +29,7 @@ Status: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 | M0  | [Foundation](#m0--foundation)                                         | ✅     | —          | [M00](plans/M00-foundation.md)      |
 | M1  | [Auth](#m1--auth)                                                     | ✅     | M0         | [M01](plans/M01-auth.md)            |
 | M2  | [Devices and check-ins](#m2--devices-and-check-ins)                   | 🟡     | M1         | [M02](plans/M02-devices.md)         |
-| M3  | [Worker and platform bot](#m3--worker-and-platform-telegram-bot)      | ⬜     | M2         | [M03](plans/M03-worker-telegram.md) |
+| M3  | [Worker and platform bot](#m3--worker-and-platform-telegram-bot)      | 🟡     | M2         | [M03](plans/M03-worker-telegram.md) |
 | M4  | [Client app](#m4--client-app)                                         | ⬜     | M3         | —                                   |
 | M5  | [Firmware core and device setup](#m5--firmware-core-and-device-setup) | ⬜     | M2         | —                                   |
 | M6  | [Sharing](#m6--sharing)                                               | ⬜     | M4         | —                                   |
@@ -52,23 +52,23 @@ is done.
 Open questions from the specs, matched to the milestone they block.
 ✅ marks a decided question. The decision itself lives in the spec.
 
-| #   | Question                                                                                                | Blocks        | Source               | Recommendation                                                                                                                                                                                         |
-| --- | ------------------------------------------------------------------------------------------------------- | ------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Q1  | ✅ UUIDv7: Postgres `uuidv7()` or generated in the server                                               | M0            | D §1                 | Generated in the server (Drizzle `$defaultFn`).                                                                                                                                                        |
-| Q2  | ✅ Test database                                                                                        | M0            | CLAUDE.md            | PGlite in-process for most tests. Lock and `skip locked` tests run against real Postgres as a CI service.                                                                                              |
-| Q3  | ✅ Where shared code lives (i18n dictionaries, shared enums)                                            | M0            | P §9, §13            | npm workspace `shared/`.                                                                                                                                                                               |
-| Q4  | ✅ Rate limit counter store                                                                             | M1            | D §12 Q4             | Postgres table behind a small `RateLimiter` interface. Swap to Redis if several API instances make it a hotspot.                                                                                       |
-| Q5  | ✅ Parent domain and staging host names                                                                 | M1            | P §3, §12            | Pick before Google sign-in work. It also sets OAuth redirect URIs and CORS origins.                                                                                                                    |
-| Q6  | Notification rules and quiet-hours timezone for viewers                                                 | M3            | A §9 Q1–2, D §12 Q1  | Per-recipient rules (`device_notification_rules`), quiet hours in the recipient's timezone. Decide before M3 so fan-out is built once.                                                                 |
-| Q7  | Retention for `delivery` and `device_diagnostic`                                                        | M3            | D §12 Q2             | 90 days.                                                                                                                                                                                               |
-| Q8  | Firmware image storage                                                                                  | M5            | A §9 Q4, D §12 Q3    | Private Supabase Storage bucket. Browser flashing in M5 already needs it, not only OTA.                                                                                                                |
-| Q9  | Who publishes releases, and what "compatible release" means                                             | M5            | A §9 Q3, D §12 Q3    | CI job on a firmware tag builds, signs, uploads and adds a draft release. A script publishes it. One board type means every newer `STABLE` release is compatible.                                      |
-| Q10 | OTA signature scheme and key custody                                                                    | M5            | P §4                 | ECDSA P-256 over the image SHA-256. Private key only in CI secrets. Public key compiled into the first firmware.                                                                                       |
-| Q11 | Admin "API error rate" source                                                                           | M10           | A §5, D §8           | Each API instance upserts a per-minute 5xx counter row, written only on errors.                                                                                                                        |
-| Q12 | OTA maintenance window length                                                                           | M11           | P §4 (not specified) | 10 min (matches the A §2 example).                                                                                                                                                                     |
-| Q13 | Spec fixes: webhook example outage `"id": 123` → UUID (P §7); add `CANCELLED` to `update.status` (A §4) | M8, M11       | A §9, D §12 Q5       | Accept both.                                                                                                                                                                                           |
-| Q14 | Endpoints marked **(proposed)** in API.md                                                               | per milestone | A §9                 | Accept or drop each one in the milestone plan that uses it, then remove the marker. ✅ M1: `resend-verification`, `change-password`, `DELETE /api/auth/google`. ✅ M2: `GET /devices/:id/diagnostics`. |
-| Q15 | Email change                                                                                            | —             | A §9 Q5              | Out of scope for v2.                                                                                                                                                                                   |
+| #   | Question                                                                                                | Blocks        | Source               | Recommendation                                                                                                                                                                                                                                                             |
+| --- | ------------------------------------------------------------------------------------------------------- | ------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Q1  | ✅ UUIDv7: Postgres `uuidv7()` or generated in the server                                               | M0            | D §1                 | Generated in the server (Drizzle `$defaultFn`).                                                                                                                                                                                                                            |
+| Q2  | ✅ Test database                                                                                        | M0            | CLAUDE.md            | PGlite in-process for most tests. Lock and `skip locked` tests run against real Postgres as a CI service.                                                                                                                                                                  |
+| Q3  | ✅ Where shared code lives (i18n dictionaries, shared enums)                                            | M0            | P §9, §13            | npm workspace `shared/`.                                                                                                                                                                                                                                                   |
+| Q4  | ✅ Rate limit counter store                                                                             | M1            | D §12 Q4             | Postgres table behind a small `RateLimiter` interface. Swap to Redis if several API instances make it a hotspot.                                                                                                                                                           |
+| Q5  | ✅ Parent domain and staging host names                                                                 | M1            | P §3, §12            | Pick before Google sign-in work. It also sets OAuth redirect URIs and CORS origins.                                                                                                                                                                                        |
+| Q6  | ✅ Notification rules and quiet-hours timezone for viewers                                              | M3            | A §9 Q1–2, D §12 Q1  | Rules stay on the device, set by the owner for every recipient. Quiet hours are read in the recipient's timezone.                                                                                                                                                          |
+| Q7  | ✅ Retention for `delivery` and `device_diagnostic`                                                     | M3            | D §12 Q2             | 90 days.                                                                                                                                                                                                                                                                   |
+| Q8  | Firmware image storage                                                                                  | M5            | A §9 Q4, D §12 Q3    | Private Supabase Storage bucket. Browser flashing in M5 already needs it, not only OTA.                                                                                                                                                                                    |
+| Q9  | Who publishes releases, and what "compatible release" means                                             | M5            | A §9 Q3, D §12 Q3    | CI job on a firmware tag builds, signs, uploads and adds a draft release. A script publishes it. One board type means every newer `STABLE` release is compatible.                                                                                                          |
+| Q10 | OTA signature scheme and key custody                                                                    | M5            | P §4                 | ECDSA P-256 over the image SHA-256. Private key only in CI secrets. Public key compiled into the first firmware.                                                                                                                                                           |
+| Q11 | Admin "API error rate" source                                                                           | M10           | A §5, D §8           | Each API instance upserts a per-minute 5xx counter row, written only on errors.                                                                                                                                                                                            |
+| Q12 | OTA maintenance window length                                                                           | M11           | P §4 (not specified) | 10 min (matches the A §2 example).                                                                                                                                                                                                                                         |
+| Q13 | Spec fixes: webhook example outage `"id": 123` → UUID (P §7); add `CANCELLED` to `update.status` (A §4) | M8, M11       | A §9, D §12 Q5       | Accept both.                                                                                                                                                                                                                                                               |
+| Q14 | Endpoints marked **(proposed)** in API.md                                                               | per milestone | A §9                 | Accept or drop each one in the milestone plan that uses it, then remove the marker. ✅ M1: `resend-verification`, `change-password`, `DELETE /api/auth/google`. ✅ M2: `GET /devices/:id/diagnostics`. ✅ M3: `POST /channels/telegram-link`, `GET /devices/:id/channels`. |
+| Q15 | Email change                                                                                            | —             | A §9 Q5              | Out of scope for v2.                                                                                                                                                                                                                                                       |
 
 ## Definition of done (every task)
 
@@ -215,24 +215,24 @@ timeout before the worker runs. 👤 Run the fake device on staging.
 message texts, §11 · A §4 Channels, §6 · D §7, §9, §10 Cleanup.
 **Needs:** Q6, Q7.
 
-- [ ] Offline checker every 10 s: `skip locked`, re-check after the
+- [x] Offline checker every 10 s: `skip locked`, re-check after the
       lock, open the outage, set `off_alert_due_at` per
       `notify_short_outages`
-- [ ] Due OFF alerts queued; recovery, summary and power blip queueing
+- [x] Due OFF alerts queued; recovery, summary and power blip queueing
       (implements the M2 interface); at most one summary per completed
       interruption
-- [ ] Fan-out to the device's linked channels with
+- [x] Fan-out to the device's linked channels with
       `on conflict do nothing`
-- [ ] Delivery worker: lease-based claim, send outside the transaction,
+- [x] Delivery worker: lease-based claim, send outside the transaction,
       write the result; platform bot sender at ≤ 30 msg/s; quiet hours
       send with `disable_notification`
-- [ ] Message rendering (P §7 texts) in the recipient's language and
+- [x] Message rendering (P §7 texts) in the recipient's language and
       timezone
-- [ ] `/telegram/webhook/:secret` with the secret header check;
+- [x] `/telegram/webhook/:secret` with the secret header check;
       `/start <code>`, `/status`, `/stop`
-- [ ] `POST /channels/telegram-link`, `GET /channels`,
+- [x] `POST /channels/telegram-link`, `GET /channels`,
       `GET` / `PUT /devices/:id/channels`
-- [ ] Daily cleanup job (D §10, retention per Q7)
+- [x] Daily cleanup job (D §10, retention per Q7)
 
 **Done when:** controlled-clock tests cover sustained loss → OFF alert at
 120 s (and after the threshold when short alerts are off), recovery

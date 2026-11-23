@@ -100,6 +100,9 @@ describe('GET /api/v1/channels', () => {
   });
 });
 
+const get = (auth: string, id: string) =>
+  request(app()).get(`/api/v1/devices/${id}/channels`).set('Authorization', auth);
+
 describe('device channels', () => {
   async function setup() {
     const { user, auth } = await authed();
@@ -114,8 +117,6 @@ describe('device channels', () => {
       .put(`/api/v1/devices/${id}/channels`)
       .set('Authorization', auth)
       .send(body as object);
-  const get = (auth: string, id: string) =>
-    request(app()).get(`/api/v1/devices/${id}/channels`).set('Authorization', auth);
 
   test('PUT replaces the set and GET reads it back', async () => {
     const { auth, dev, a, b } = await setup();

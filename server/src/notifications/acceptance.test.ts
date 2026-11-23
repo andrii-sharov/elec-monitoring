@@ -99,11 +99,13 @@ describe('sustained loss of contact', () => {
   test('the OFF alert goes out at 120 s and only once', async () => {
     const d = await setup();
     await d.boot(BOOT_A);
+    const sentBy120: number[] = [];
     for (let s = 10; s <= 300; s += 10) {
       clock.set(at(s));
       await tick();
-      if (s < 120) expect(telegram.sent).toHaveLength(0);
+      if (s === 110 || s === 120) sentBy120.push(telegram.sent.length);
     }
+    expect(sentBy120).toEqual([0, 1]);
     expect(texts()).toEqual(['🔴 Home — device stopped checking in\nLast signal: 21 Nov 18:42']);
   });
 
