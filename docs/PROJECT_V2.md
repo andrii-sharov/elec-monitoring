@@ -567,6 +567,19 @@ Pages:
 - **Account** — name, timezone, language, linked Google, log out
   everywhere, delete account.
 
+### Device settings and owner actions in the client
+
+- Ping interval and offline timeout are entered in seconds. The
+  short-outage threshold is entered in whole minutes (1–1440) and sent in
+  seconds. The form sends only the fields that changed. It checks that the
+  offline timeout is at least 2 × the ping interval before submitting and
+  shows the same `too_small` message as the server. `auto_update` stays
+  hidden until M11. While `settings_sync.pending` is true, the form shows
+  "Waiting for the device to apply" in the warning color.
+- Settings, re-pair, rotate token and delete render only for the device's
+  owner. The timeline and the device's channel choice show for every role.
+  The server still enforces access.
+
 ### Admin app (React)
 
 A separate app for platform staff uses the same stack as the client app

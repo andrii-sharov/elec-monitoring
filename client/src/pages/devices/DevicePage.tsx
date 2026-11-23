@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage } from '@/forms/errorMessage';
 import { useFormatters } from '@/lib/format';
+import { DeviceDangerZone } from './DeviceDangerZone';
+import { DeviceSettingsForm } from './DeviceSettingsForm';
 import { OutageTimeline } from './OutageTimeline';
 
 export function DevicePage() {
@@ -79,6 +81,12 @@ export function DevicePage() {
         </h2>
         <OutageTimeline deviceId={id} />
       </section>
+      {data.role === 'OWNER' ? (
+        <>
+          <DeviceSettingsForm device={data} />
+          <DeviceDangerZone deviceId={data.id} />
+        </>
+      ) : null}
     </div>
   );
 }
