@@ -26,4 +26,12 @@ export const uk: Dictionary = {
       action: 'Увійти',
     },
   },
+  telegram: {
+    duration: {
+      seconds: '{{value}} с',
+      minutes: '{{value}} хв',
+      hours: '{{value}} год',
+      days: '{{value}} д',
+    },
+  },
 };

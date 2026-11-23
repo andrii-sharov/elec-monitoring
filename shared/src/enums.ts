@@ -41,3 +41,12 @@ export type CheckInType = (typeof checkInTypes)[number];
 
 export const deviceRoles = ['OWNER', 'VIEWER'] as const;
 export type DeviceRole = (typeof deviceRoles)[number];
+
+export const deliveryEvents = ['device.offline', 'device.online', 'device.power_blip'] as const;
+export type DeliveryEvent = (typeof deliveryEvents)[number];
+
+export const deliveryStatuses = ['QUEUED', 'SENT', 'RETRYING', 'FAILED'] as const;
+export type DeliveryStatus = (typeof deliveryStatuses)[number];
+
+export const channelTypes = ['TELEGRAM_PLATFORM', 'TELEGRAM_BOT', 'WEBHOOK'] as const;
+export type ChannelType = (typeof channelTypes)[number];

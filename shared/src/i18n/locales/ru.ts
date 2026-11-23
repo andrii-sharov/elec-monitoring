@@ -28,4 +28,12 @@ export const ru: Dictionary = {
       action: 'Войти',
     },
   },
+  telegram: {
+    duration: {
+      seconds: '{{value}} с',
+      minutes: '{{value}} мин',
+      hours: '{{value}} ч',
+      days: '{{value}} д',
+    },
+  },
 };

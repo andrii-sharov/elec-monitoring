@@ -24,6 +24,14 @@ export const en = {
       action: 'Log in',
     },
   },
+  telegram: {
+    duration: {
+      seconds: '{{value}} s',
+      minutes: '{{value}} min',
+      hours: '{{value}} h',
+      days: '{{value}} d',
+    },
+  },
 };
 
 export type Dictionary = typeof en;
