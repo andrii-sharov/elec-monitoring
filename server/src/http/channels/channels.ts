@@ -24,6 +24,8 @@ import { bearer, deviceIdParam, deviceNotFound, unauthorized } from '../devices/
 import { HttpError, errorResponse } from '../errors.ts';
 import { rateLimit } from '../rateLimit.ts';
 
+const channelParamsSchema = z.object({ id: z.uuid() });
+
 const json = (schema: z.ZodType) => ({ 'application/json': { schema } });
 
 export const channelsPaths: ZodOpenApiPathsObject = {
@@ -52,6 +54,22 @@ export const channelsPaths: ZodOpenApiPathsObject = {
         },
         '401': unauthorized,
         '403': errorResponse('`email_not_verified`'),
+      },
+    },
+  },
+  '/api/v1/channels/{id}': {
+    delete: {
+      summary: 'Delete one of my channels',
+      description:
+        'Removes the channel with its device links and delivery log. Nothing is sent to Telegram.',
+      security: bearer,
+      requestParams: { path: channelParamsSchema },
+      responses: {
+        '204': { description: 'Deleted' },
+        '400': errorResponse('Invalid channel ID'),
+        '401': unauthorized,
+        '403': errorResponse('`email_not_verified`'),
+        '404': errorResponse('Channel not found or not yours'),
       },
     },
   },
@@ -115,6 +133,18 @@ export function channelsRouter(deps: AppDeps): Router {
       .where(eq(notificationChannel.userId, getAuth(res).user.id))
       .orderBy(asc(notificationChannel.createdAt), asc(notificationChannel.id));
     res.json({ items: rows.map(toChannel) });
+  });
+
+  router.delete('/api/v1/channels/:id', ...auth, async (req, res) => {
+    const { id } = channelParamsSchema.parse(req.params);
+    const deleted = await db
+      .delete(notificationChannel)
+      .where(
+        and(eq(notificationChannel.id, id), eq(notificationChannel.userId, getAuth(res).user.id)),
+      )
+      .returning({ id: notificationChannel.id });
+    if (deleted.length === 0) throw new HttpError(404, 'not_found', 'Not found');
+    res.status(204).end();
   });
 
   router.get('/api/v1/devices/:id/channels', ...auth, async (req, res) => {

@@ -6,8 +6,15 @@ import { createUser, signIn } from '../../../test/auth.ts';
 import { createPlatformChannel, linkChannel } from '../../../test/channels.ts';
 import { createTestDb, type TestDb } from '../../../test/db.ts';
 import { createDevice } from '../../../test/devices.ts';
+import { seedDelivery } from '../../../test/deliveries.ts';
 import { FakeClock } from '../../../test/fakes.ts';
-import { appUser, deviceChannel, oneTimeToken } from '../../db/schema/index.ts';
+import {
+  appUser,
+  delivery,
+  deviceChannel,
+  notificationChannel,
+  oneTimeToken,
+} from '../../db/schema/index.ts';
 import { sha256 } from '../../lib/crypto.ts';
 import type { RateLimiter } from '../../rateLimit/limiter.ts';
 
@@ -174,6 +181,52 @@ describe('device channels', () => {
     const stranger = await authed({ email: 'jane@example.com' });
     expect((await get(stranger.auth, dev.id)).status).toBe(404);
     expect((await put(stranger.auth, dev.id, { channel_ids: [] })).status).toBe(404);
+  });
+});
+
+describe('DELETE /api/v1/channels/:id', () => {
+  const del = (auth: string, id: string) =>
+    request(app()).delete(`/api/v1/channels/${id}`).set('Authorization', auth);
+
+  test('deletes the channel with its links and deliveries', async () => {
+    const { user, auth } = await authed();
+    const seeded = await seedDelivery(t.db, { user });
+    const other = await createPlatformChannel(t.db, user.id);
+    await linkChannel(t.db, seeded.device.id, other.id);
+    const res = await del(auth, seeded.channel.id);
+    expect(res.status).toBe(204);
+    const channels = await t.db.select().from(notificationChannel);
+    expect(channels.map((c) => c.id)).toEqual([other.id]);
+    expect(await t.db.select().from(delivery)).toEqual([]);
+    const links = await t.db.select().from(deviceChannel);
+    expect(links.map((l) => l.channelId)).toEqual([other.id]);
+  });
+
+  test("another user's channel is 404 and stays", async () => {
+    const { auth } = await authed();
+    const other = await createUser(t.db, { email: 'jane@example.com' });
+    const foreign = await createPlatformChannel(t.db, other.id);
+    const res = await del(auth, foreign.id);
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('not_found');
+    expect(await t.db.select().from(notificationChannel)).toHaveLength(1);
+  });
+
+  test('unknown id is 404 and a malformed id is 400', async () => {
+    const { auth } = await authed();
+    expect((await del(auth, crypto.randomUUID())).status).toBe(404);
+    const bad = await del(auth, 'not-a-uuid');
+    expect(bad.status).toBe(400);
+    expect(bad.body.error.code).toBe('validation_error');
+  });
+
+  test('requires a verified email and a token', async () => {
+    const { auth } = await authed({ emailVerifiedAt: null });
+    const id = crypto.randomUUID();
+    const res = await del(auth, id);
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('email_not_verified');
+    expect((await request(app()).delete(`/api/v1/channels/${id}`)).status).toBe(401);
   });
 });
 

@@ -639,6 +639,11 @@ newest first:
 Channels belong to the caller. Viewers attach their own channels to
 shared devices.
 
+`DELETE /channels/:id` → `204`. Only the channel's owner can delete it;
+a missing channel or another user's channel is `404 not_found`. The
+device links and the delivery log of the channel are deleted with it.
+Nothing is sent to Telegram.
+
 `POST /channels/telegram-link` → `201`:
 
 ```json
