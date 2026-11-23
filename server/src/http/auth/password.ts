@@ -1,6 +1,11 @@
+import {
+  changePasswordBodySchema,
+  forgotBodySchema,
+  languageSchema,
+  resetBodySchema,
+} from '@elec/shared/api';
 import { eq, sql } from 'drizzle-orm';
 import { Router } from 'express';
-import { z } from 'zod';
 import type { ZodOpenApiPathsObject } from 'zod-openapi';
 import {
   consumeOneTimeToken,
@@ -18,14 +23,6 @@ import type { AppDeps } from '../app.ts';
 import { HttpError, errorResponse } from '../errors.ts';
 import { rateLimit } from '../rateLimit.ts';
 import { getAuth, requireUser } from './middleware.ts';
-import { emailSchema, languageSchema, passwordSchema } from './schemas.ts';
-
-const forgotBodySchema = z.object({ email: emailSchema });
-const resetBodySchema = z.object({ token: z.string().min(1).max(200), password: passwordSchema });
-const changeBodySchema = z.object({
-  current_password: z.string().min(1).max(128),
-  new_password: passwordSchema,
-});
 
 const rateLimited = errorResponse('Too many requests, with `Retry-After`');
 const validation = errorResponse('Invalid body');
@@ -61,7 +58,7 @@ export const passwordPaths: ZodOpenApiPathsObject = {
       summary: 'Change the password of the signed-in user',
       description: 'Ends every other session.',
       security: [{ bearerAuth: [] }],
-      requestBody: { content: { 'application/json': { schema: changeBodySchema } } },
+      requestBody: { content: { 'application/json': { schema: changePasswordBodySchema } } },
       responses: {
         '204': { description: 'Password changed' },
         '400': validation,
@@ -130,7 +127,7 @@ export function passwordRouter(deps: AppDeps): Router {
     requireUser(deps),
     rateLimit(rateLimiter, 'change-password', { user: REAUTH_PER_USER }),
     async (req, res) => {
-      const body = changeBodySchema.parse(req.body);
+      const body = changePasswordBodySchema.parse(req.body);
       const { user, sessionId } = getAuth(res);
       if (!user.passwordHash) {
         throw new HttpError(409, 'conflict', 'The account has no password');

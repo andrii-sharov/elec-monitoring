@@ -18,5 +18,24 @@
         "assertFunctionNames": ["expect", "expectViolation"]
       }
     ]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["shared/src/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["node:*"],
+                "message": "shared/src must stay runtime-neutral"
+              }
+            ]
+          }
+        ],
+        "no-restricted-globals": ["error", "Buffer", "process"]
+      }
+    }
+  ]
 }

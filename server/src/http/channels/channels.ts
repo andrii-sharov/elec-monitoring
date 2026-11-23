@@ -1,3 +1,10 @@
+import {
+  channelIdsSchema,
+  channelListSchema,
+  deviceParamsSchema,
+  putChannelIdsSchema,
+  telegramLinkSchema,
+} from '@elec/shared/api';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { Router } from 'express';
 import { z } from 'zod';
@@ -7,32 +14,16 @@ import {
   issueOneTimeToken,
   ONE_TIME_TTL_S,
 } from '../../auth/oneTimeTokens.ts';
-import { channelSchema, toChannel } from '../../channels/views.ts';
+import { toChannel } from '../../channels/views.ts';
 import { deviceChannel, notificationChannel } from '../../db/schema/index.ts';
 import { getAccessibleDevice } from '../../devices/access.ts';
 import { TELEGRAM_LINK_PER_USER } from '../../rateLimit/limiter.ts';
 import type { AppDeps } from '../app.ts';
 import { getAuth, requireUser, requireVerifiedEmail } from '../auth/middleware.ts';
-import {
-  bearer,
-  deviceIdParam,
-  deviceNotFound,
-  deviceParamsSchema,
-  unauthorized,
-} from '../devices/devices.ts';
+import { bearer, deviceIdParam, deviceNotFound, unauthorized } from '../devices/devices.ts';
 import { HttpError, errorResponse } from '../errors.ts';
 import { rateLimit } from '../rateLimit.ts';
 
-const MAX_CHANNEL_IDS = 50;
-
-const linkResponseSchema = z.object({
-  url: z.string().meta({ example: 'https://t.me/ElecBot?start=abc' }),
-  group_url: z.string().meta({ example: 'https://t.me/ElecBot?startgroup=abc' }),
-  expires_at: z.string().meta({ example: '2026-11-21T16:57:00Z' }),
-});
-
-const channelIdsSchema = z.object({ channel_ids: z.array(z.uuid()) });
-const putBodySchema = z.strictObject({ channel_ids: z.array(z.uuid()).max(MAX_CHANNEL_IDS) });
 const json = (schema: z.ZodType) => ({ 'application/json': { schema } });
 
 export const channelsPaths: ZodOpenApiPathsObject = {
@@ -43,7 +34,7 @@ export const channelsPaths: ZodOpenApiPathsObject = {
         'Returns a link valid for 15 minutes. Pressing **Start** in the bot creates a channel and attaches it to every device you own. An earlier unused link stops working.',
       security: bearer,
       responses: {
-        '201': { description: 'Bot links', content: json(linkResponseSchema) },
+        '201': { description: 'Bot links', content: json(telegramLinkSchema) },
         '401': unauthorized,
         '403': errorResponse('`email_not_verified`'),
         '429': errorResponse('Too many requests'),
@@ -57,7 +48,7 @@ export const channelsPaths: ZodOpenApiPathsObject = {
       responses: {
         '200': {
           description: 'Channels, oldest first',
-          content: json(z.object({ items: z.array(channelSchema) })),
+          content: json(channelListSchema),
         },
         '401': unauthorized,
         '403': errorResponse('`email_not_verified`'),
@@ -81,7 +72,7 @@ export const channelsPaths: ZodOpenApiPathsObject = {
         'Replaces only your own links. Other users keep theirs. At most 50 IDs, and every ID must be one of your channels.',
       security: bearer,
       requestParams: { path: deviceParamsSchema },
-      requestBody: { content: json(putBodySchema) },
+      requestBody: { content: json(putChannelIdsSchema) },
       responses: {
         '200': { description: 'The new set', content: json(channelIdsSchema) },
         '400': errorResponse('Invalid body or unknown channel'),
@@ -142,7 +133,7 @@ export function channelsRouter(deps: AppDeps): Router {
   router.put('/api/v1/devices/:id/channels', ...auth, async (req, res) => {
     const { user } = getAuth(res);
     const id = deviceIdParam(req);
-    const { channel_ids } = putBodySchema.parse(req.body ?? {});
+    const { channel_ids } = putChannelIdsSchema.parse(req.body ?? {});
     await getAccessibleDevice(db, user.id, id, 'read');
     const unique = [...new Set(channel_ids)];
 

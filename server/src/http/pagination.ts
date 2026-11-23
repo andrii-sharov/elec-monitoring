@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { HttpError } from './errors.ts';
 
-export const limitSchema = z.coerce.number().int().min(1).max(100).default(50);
+export { limitSchema } from '@elec/shared/api';
 
 export function encodeCursor(values: string[]): string {
   return Buffer.from(JSON.stringify(values)).toString('base64url');

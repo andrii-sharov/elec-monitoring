@@ -1,6 +1,6 @@
+import { languageSchema, signupBodySchema, tokenBodySchema } from '@elec/shared/api';
 import { eq, sql } from 'drizzle-orm';
 import { Router } from 'express';
-import { z } from 'zod';
 import type { ZodOpenApiPathsObject } from 'zod-openapi';
 import { consumeOneTimeToken, issueOneTimeToken } from '../../auth/oneTimeTokens.ts';
 import { hashPassword } from '../../auth/password.ts';
@@ -13,23 +13,6 @@ import type { AppDeps } from '../app.ts';
 import { HttpError, errorResponse } from '../errors.ts';
 import { rateLimit } from '../rateLimit.ts';
 import { getAuth, requireUser } from './middleware.ts';
-import {
-  emailSchema,
-  languageSchema,
-  nameSchema,
-  passwordSchema,
-  timezoneSchema,
-} from './schemas.ts';
-
-const signupBodySchema = z.object({
-  email: emailSchema,
-  password: passwordSchema,
-  name: nameSchema,
-  language: languageSchema,
-  timezone: timezoneSchema,
-});
-
-const tokenBodySchema = z.object({ token: z.string().min(1).max(200) });
 
 const rateLimited = errorResponse('Too many requests, with `Retry-After`');
 const validation = errorResponse('Invalid body');

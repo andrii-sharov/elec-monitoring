@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
+import { languageSchema, meDeleteSchema, mePatchSchema, meSchema, type Me } from '@elec/shared/api';
 import { Router } from 'express';
-import { z } from 'zod';
 import type { ZodOpenApiPathsObject } from 'zod-openapi';
 import { verifyDummyPassword, verifyPassword } from '../../auth/password.ts';
 import { appUser } from '../../db/schema/index.ts';
@@ -9,24 +9,7 @@ import type { AppDeps } from '../app.ts';
 import { clearRefreshCookie } from '../cookies.ts';
 import { HttpError, errorResponse } from '../errors.ts';
 import { getAuth, requireUser, type User } from '../auth/middleware.ts';
-import { languageSchema, nameSchema, timezoneSchema } from '../auth/schemas.ts';
 import { rateLimit } from '../rateLimit.ts';
-
-export const meSchema = z
-  .object({
-    id: z.string(),
-    email: z.string(),
-    email_verified: z.boolean(),
-    name: z.string(),
-    language: languageSchema,
-    timezone: z.string(),
-    has_password: z.boolean(),
-    google_linked: z.boolean(),
-    is_admin: z.boolean(),
-  })
-  .meta({ id: 'Me' });
-
-export type Me = z.infer<typeof meSchema>;
 
 export function toMe(user: User): Me {
   return {
@@ -41,14 +24,6 @@ export function toMe(user: User): Me {
     is_admin: user.isAdmin,
   };
 }
-
-const patchBodySchema = z.strictObject({
-  name: nameSchema.optional(),
-  language: languageSchema.optional(),
-  timezone: timezoneSchema.optional(),
-});
-
-const deleteBodySchema = z.object({ password: z.string().max(128).optional() });
 
 const REAUTH_WINDOW_MS = 300_000;
 
@@ -66,7 +41,7 @@ export const mePaths: ZodOpenApiPathsObject = {
     patch: {
       summary: 'Update name, language or timezone',
       security: bearer,
-      requestBody: { content: { 'application/json': { schema: patchBodySchema } } },
+      requestBody: { content: { 'application/json': { schema: mePatchSchema } } },
       responses: {
         '200': meOk,
         '400': errorResponse('Invalid body'),
@@ -78,7 +53,7 @@ export const mePaths: ZodOpenApiPathsObject = {
       description:
         'Needs `password` for accounts with one. A Google-only account must have signed in within the last 5 minutes.',
       security: bearer,
-      requestBody: { content: { 'application/json': { schema: deleteBodySchema } } },
+      requestBody: { content: { 'application/json': { schema: meDeleteSchema } } },
       responses: {
         '204': { description: 'Account deleted' },
         '401': unauthorized,
@@ -99,7 +74,7 @@ export function meRouter(deps: AppDeps): Router {
 
   router.patch('/api/v1/me', requireUser(deps), async (req, res) => {
     const { user } = getAuth(res);
-    const changes = patchBodySchema.parse(req.body ?? {});
+    const changes = mePatchSchema.parse(req.body ?? {});
     if (Object.keys(changes).length === 0) {
       res.json(toMe(user));
       return;
@@ -118,7 +93,7 @@ export function meRouter(deps: AppDeps): Router {
     rateLimit(rateLimiter, 'delete-account', { user: REAUTH_PER_USER }),
     async (req, res) => {
       const { user, sessionCreatedAt } = getAuth(res);
-      const { password } = deleteBodySchema.parse(req.body ?? {});
+      const { password } = meDeleteSchema.parse(req.body ?? {});
       if (user.passwordHash) {
         const valid = password
           ? await verifyPassword(password, user.passwordHash)

@@ -1,7 +1,7 @@
+import { loginBodySchema, sessionSchema } from '@elec/shared/api';
 import { eq } from 'drizzle-orm';
 import type { Response } from 'express';
 import { Router } from 'express';
-import { z } from 'zod';
 import type { ZodOpenApiPathsObject } from 'zod-openapi';
 import { ACCESS_TOKEN_TTL_S, signAccessToken } from '../../auth/jwt.ts';
 import { verifyDummyPassword, verifyPassword } from '../../auth/password.ts';
@@ -13,29 +13,18 @@ import {
 } from '../../auth/sessions.ts';
 import { appUser } from '../../db/schema/index.ts';
 import { AUTH_PER_IP, LOGIN_PER_EMAIL } from '../../rateLimit/limiter.ts';
-import { meSchema, toMe } from '../account/me.ts';
+import { toMe } from '../account/me.ts';
 import type { AppDeps } from '../app.ts';
 import { clearRefreshCookie, readRefreshCookie, setRefreshCookie } from '../cookies.ts';
 import { requireAppOrigin } from '../cors.ts';
 import { HttpError, errorResponse } from '../errors.ts';
 import { rateLimit } from '../rateLimit.ts';
 import { getAuth, requireUser, type User } from './middleware.ts';
-import { emailSchema } from './schemas.ts';
-
-const loginBodySchema = z.object({ email: emailSchema, password: z.string().min(1).max(128) });
-
-export const sessionResponseSchema = z
-  .object({
-    access_token: z.string(),
-    expires_in: z.literal(ACCESS_TOKEN_TTL_S),
-    user: meSchema,
-  })
-  .meta({ id: 'Session' });
 
 const rateLimited = errorResponse('Too many requests, with `Retry-After`');
 const sessionOk = {
   description: 'Signed in. Sets the `em_refresh` cookie',
-  content: { 'application/json': { schema: sessionResponseSchema } },
+  content: { 'application/json': { schema: sessionSchema } },
 };
 
 export const sessionPaths: ZodOpenApiPathsObject = {

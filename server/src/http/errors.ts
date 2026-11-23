@@ -1,46 +1,13 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
-import { ZodError, z, type core } from 'zod';
+import { errorSchema, type ErrorCode, type ErrorDetail } from '@elec/shared/api';
+import { ZodError, type core } from 'zod';
 import type { Logger } from '../logger.ts';
 
-export type ErrorCode =
-  | 'validation_error'
-  | 'unauthorized'
-  | 'forbidden'
-  | 'jwt_required'
-  | 'insufficient_scope'
-  | 'email_not_verified'
-  | 'not_found'
-  | 'conflict'
-  | 'expired'
-  | 'rate_limited'
-  | 'invalid_credentials'
-  | 'reauth_required'
-  | 'internal';
-
-export const errorSchema = z
-  .object({
-    error: z.object({
-      code: z.string().meta({ example: 'not_found' }),
-      message: z.string().meta({ example: 'Device not found' }),
-      details: z
-        .array(
-          z.looseObject({
-            path: z.string(),
-            code: z.string(),
-            min: z.number().optional(),
-            max: z.number().optional(),
-          }),
-        )
-        .optional(),
-    }),
-  })
-  .meta({ id: 'Error' });
+export type { ErrorCode, ErrorDetail };
 
 export function errorResponse(description: string) {
   return { description, content: { 'application/json': { schema: errorSchema } } };
 }
-
-export type ErrorDetail = { path: string; code: string; min?: number; max?: number };
 
 export class HttpError extends Error {
   readonly status: number;

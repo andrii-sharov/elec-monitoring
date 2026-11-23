@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { createI18n } from '../i18n.ts';
-import type { OutageItem } from '../http/devices/views.ts';
+import type { OutageItem } from '@elec/shared/api';
 import { renderDeliveryText, type DeliveryPayload } from './render.ts';
 
 const i18n = createI18n();

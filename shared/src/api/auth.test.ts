@@ -4,8 +4,9 @@ import {
   languageSchema,
   nameSchema,
   passwordSchema,
+  settingsPatchSchema,
   timezoneSchema,
-} from './schemas.ts';
+} from './index.ts';
 
 test('emailSchema trims and lowercases', () => {
   expect(emailSchema.parse('  John@Example.COM ')).toBe('john@example.com');
@@ -34,4 +35,13 @@ test('timezoneSchema accepts IANA names and canonicalizes them', () => {
   expect(timezoneSchema.parse('Europe/Kyiv')).toBe('Europe/Kyiv');
   expect(timezoneSchema.parse('utc')).toBe('UTC');
   expect(timezoneSchema.safeParse('Mars/Base').success).toBe(false);
+});
+
+test('quiet hours with equal times fail with a reason param and no message text', () => {
+  const result = settingsPatchSchema.safeParse({ quiet_hours: { start: '22:00', end: '22:00' } });
+  expect(result.success).toBe(false);
+  const issue = result.error?.issues[0];
+  expect(issue?.path).toEqual(['quiet_hours', 'end']);
+  expect(issue?.code).toBe('custom');
+  expect(issue && 'params' in issue ? issue.params : undefined).toEqual({ reason: 'same_time' });
 });

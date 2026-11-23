@@ -1,4 +1,12 @@
-import { diagnosticKinds, outageCauses, outageKinds, outageTypes } from '@elec/shared';
+import { diagnosticKinds } from '@elec/shared';
+import {
+  checkRange,
+  outagesPageSchema,
+  outagesQuerySchema,
+  page,
+  rangeQueryFields,
+  deviceParamsSchema,
+} from '@elec/shared/api';
 import { and, desc, eq, gt, isNull, lt, or, sql, type SQL } from 'drizzle-orm';
 import { Router } from 'express';
 import { z } from 'zod';
@@ -8,42 +16,14 @@ import { getAccessibleDevice } from '../../devices/access.ts';
 import type { AppDeps } from '../app.ts';
 import { getAuth, requireUser } from '../auth/middleware.ts';
 import { HttpError, errorResponse } from '../errors.ts';
-import { decodeCursor, encodeCursor, limitSchema } from '../pagination.ts';
-import {
-  bearer,
-  deviceIdParam,
-  deviceNotFound,
-  deviceParamsSchema,
-  unauthorized,
-} from './devices.ts';
-import { outageItemSchema, toOutageItem } from './views.ts';
+import { decodeCursor, encodeCursor } from '../pagination.ts';
+import { bearer, deviceIdParam, deviceNotFound, unauthorized } from './devices.ts';
+import { toOutageItem } from './views.ts';
 
 type Range = { from?: string; to?: string };
 
-const rangeFields = {
-  from: z.iso.datetime({ offset: true }).optional(),
-  to: z.iso.datetime({ offset: true }).optional(),
-  limit: limitSchema,
-  cursor: z.string().max(512).optional(),
-};
-
-function checkRange(q: Range, ctx: z.RefinementCtx) {
-  if (q.from && q.to && new Date(q.from) > new Date(q.to)) {
-    ctx.addIssue({ code: 'custom', path: ['from'], message: 'from must not be after to' });
-  }
-}
-
-const outagesQuerySchema = z
-  .object({
-    ...rangeFields,
-    type: z.enum(outageTypes).optional(),
-    cause: z.enum(outageCauses).optional(),
-    kind: z.enum(outageKinds).optional(),
-  })
-  .superRefine(checkRange);
-
 const diagnosticsQuerySchema = z
-  .object({ ...rangeFields, kind: z.enum(diagnosticKinds).optional() })
+  .object({ ...rangeQueryFields, kind: z.enum(diagnosticKinds).optional() })
   .superRefine(checkRange);
 
 const diagnosticItemSchema = z
@@ -58,9 +38,6 @@ const diagnosticItemSchema = z
     boot_wifi_evicted: z.number().int(),
   })
   .meta({ id: 'DiagnosticItem' });
-
-const page = (item: z.ZodType) =>
-  z.object({ items: z.array(item), next_cursor: z.string().nullable() });
 
 const cursorDate = z.iso.datetime({ offset: true });
 
@@ -98,7 +75,7 @@ export const historyPaths: ZodOpenApiPathsObject = {
       responses: {
         '200': {
           description: 'A page of outages',
-          content: { 'application/json': { schema: page(outageItemSchema) } },
+          content: { 'application/json': { schema: outagesPageSchema } },
         },
         '400': errorResponse('Invalid query or cursor'),
         '401': unauthorized,

@@ -1,7 +1,7 @@
+import { errorSchema } from '@elec/shared/api';
 import { Router } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import { createDocument, type ZodOpenApiPathsObject } from 'zod-openapi';
-import { errorSchema } from './errors.ts';
 
 const DOCUMENT_PATH = '/api/v1/openapi.json';
 

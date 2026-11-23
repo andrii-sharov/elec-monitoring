@@ -1,6 +1,7 @@
+import { settingsPatchSchema } from '@elec/shared/api';
 import { describe, expect, test } from 'vitest';
 import type { DeviceRow } from './access.ts';
-import { applySettingsPatch, settingsPatchSchema } from './settings.ts';
+import { applySettingsPatch } from './settings.ts';
 
 const LAST_SEEN = new Date('2026-11-21T16:40:20Z');
 

@@ -773,7 +773,7 @@ elec-monitoring/
   server/
   client/
   admin/
-  shared/      # npm workspace: translations and enums used by server and apps
+  shared/      # npm workspace: translations, enums and API schemas (@elec/shared/api)
 ```
 
 ## 14. Milestones

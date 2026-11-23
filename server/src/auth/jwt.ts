@@ -1,7 +1,8 @@
+import { ACCESS_TOKEN_TTL_S } from '@elec/shared/api';
 import { SignJWT, jwtVerify } from 'jose';
 import type { Clock } from '../clock.ts';
 
-export const ACCESS_TOKEN_TTL_S = 900;
+export { ACCESS_TOKEN_TTL_S };
 
 const AUDIENCE = 'access';
 

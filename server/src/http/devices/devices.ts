@@ -1,3 +1,12 @@
+import {
+  createDeviceBodySchema,
+  createDeviceResponseSchema,
+  deviceListSchema,
+  deviceParamsSchema,
+  devicePatchSchema,
+  deviceSchema,
+  pairingCodeSchema,
+} from '@elec/shared/api';
 import { count, eq } from 'drizzle-orm';
 import { Router, type Request } from 'express';
 import { z } from 'zod';
@@ -6,35 +15,17 @@ import { appUser, device } from '../../db/schema/index.ts';
 import { getAccessibleDevice } from '../../devices/access.ts';
 import { PAIRING_CODE_TTL_MS, hashPairingCode, newPairingCode } from '../../devices/credentials.ts';
 import { findDeviceView, findDeviceViews } from '../../devices/queries.ts';
-import { applySettingsPatch, settingsPatchSchema } from '../../devices/settings.ts';
+import { applySettingsPatch } from '../../devices/settings.ts';
 import type { AppDeps } from '../app.ts';
 import { getAuth, requireUser, requireVerifiedEmail } from '../auth/middleware.ts';
 import { HttpError, errorResponse } from '../errors.ts';
-import { deviceListItemSchema, deviceSchema, toDevice, toDeviceListItem } from './views.ts';
+import { toDevice, toDeviceListItem } from './views.ts';
 
 export const MAX_DEVICES_PER_USER = 20;
-
-export const deviceNameSchema = z.string().trim().min(1).max(64);
-
-const createBodySchema = z.object({ name: deviceNameSchema });
-
-const patchBodySchema = z.strictObject({
-  name: deviceNameSchema.optional(),
-  settings: settingsPatchSchema.optional(),
-});
-
-export const deviceParamsSchema = z.object({ id: z.uuid() });
 
 export function deviceIdParam(req: Request): string {
   return deviceParamsSchema.parse(req.params).id;
 }
-
-const pairingCodeSchema = z.object({
-  pairing_code: z.string().meta({ example: 'K7Q2M9XD' }),
-  pairing_code_expires_at: z.string().meta({ example: '2026-11-21T17:12:00Z' }),
-});
-
-const createResponseSchema = pairingCodeSchema.extend({ device: deviceSchema });
 
 export const bearer = [{ bearerAuth: [] }];
 export const unauthorized = errorResponse('Missing or invalid access token');
@@ -59,7 +50,7 @@ export const devicesPaths: ZodOpenApiPathsObject = {
       responses: {
         '200': {
           description: 'Own devices, oldest first',
-          content: json(z.object({ items: z.array(deviceListItemSchema) })),
+          content: json(deviceListSchema),
         },
         '401': unauthorized,
       },
@@ -68,9 +59,12 @@ export const devicesPaths: ZodOpenApiPathsObject = {
       summary: 'Create a device',
       description: 'Returns a pairing code valid for 30 minutes. At most 20 devices per owner.',
       security: bearer,
-      requestBody: { content: json(createBodySchema) },
+      requestBody: { content: json(createDeviceBodySchema) },
       responses: {
-        '201': { description: 'Device and pairing code', content: json(createResponseSchema) },
+        '201': {
+          description: 'Device and pairing code',
+          content: json(createDeviceResponseSchema),
+        },
         '400': errorResponse('Invalid body'),
         '401': unauthorized,
         '403': errorResponse('`email_not_verified`'),
@@ -95,7 +89,7 @@ export const devicesPaths: ZodOpenApiPathsObject = {
         'Changing `ping_interval_s` increments the desired settings version. `offline_timeout_s` must be at least twice `ping_interval_s`.',
       security: bearer,
       requestParams: { path: deviceParamsSchema },
-      requestBody: { content: json(patchBodySchema) },
+      requestBody: { content: json(devicePatchSchema) },
       responses: {
         '200': { description: 'The updated device', content: json(deviceSchema) },
         '400': errorResponse('Invalid body'),
@@ -147,7 +141,7 @@ export function devicesRouter(deps: AppDeps): Router {
 
   router.post('/api/v1/devices', auth, requireVerifiedEmail, async (req, res) => {
     const { user } = getAuth(res);
-    const { name } = createBodySchema.parse(req.body ?? {});
+    const { name } = createDeviceBodySchema.parse(req.body ?? {});
     const now = clock.now();
     const pairing = newPairingCodeFields(now);
     const id = await db.transaction(async (tx) => {
@@ -196,7 +190,7 @@ export function devicesRouter(deps: AppDeps): Router {
 
   router.patch('/api/v1/devices/:id', auth, async (req, res) => {
     const id = deviceIdParam(req);
-    const body = patchBodySchema.parse(req.body ?? {});
+    const body = devicePatchSchema.parse(req.body ?? {});
     const role = await db.transaction(async (tx) => {
       const access = await getAccessibleDevice(tx, getAuth(res).user.id, id, 'manage', {
         lock: true,

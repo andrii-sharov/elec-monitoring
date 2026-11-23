@@ -1,6 +1,6 @@
 import type { DeliveryEvent, Language } from '@elec/shared';
 import type { i18n } from 'i18next';
-import type { OutageItem } from '../http/devices/views.ts';
+import type { OutageItem } from '@elec/shared/api';
 import { formatDuration, formatMoment, formatRange } from './format.ts';
 
 export type DeliveryPayload = {
