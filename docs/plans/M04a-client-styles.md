@@ -109,7 +109,7 @@ function createPreference<T extends string>(options: {
   apply(value: T): void;
 }): Preference<T>;
 
-const appStyleIds = ["classic", "sonar", "switchboard", "lamp"] as const;
+const appStyleIds = ['classic', 'sonar', 'switchboard', 'lamp'] as const;
 type AppStyleId = (typeof appStyleIds)[number];
 
 type AppStyleDefinition = {
@@ -179,7 +179,7 @@ type AppStyleDefinition = {
 
 ```ts
 type StripSegment = {
-  kind: "on" | "outage" | "blip" | "unknown";
+  kind: 'on' | 'outage' | 'blip' | 'unknown';
   start: number;
   end: number;
 };
