@@ -53,6 +53,7 @@ describe('API docs', () => {
         'Device',
         'Outages',
         'Notifications',
+        'Firmware',
       ]);
       for (const tag of tags) expect(tag.description).toBeTruthy();
     });

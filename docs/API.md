@@ -94,6 +94,7 @@ Validation errors add `details`:
 | API token                       | 60 / min per token    |
 | Client app JWT                  | 120 / min per user    |
 | Auth / claim                    | 10 / min per IP       |
+| Firmware image download         | 20 / min per IP       |
 | Log in                          | 10 / 15 min per email |
 | Sign up, forgot password        | 3 / h per email       |
 | Resend verification             | 3 / h per user        |
@@ -486,7 +487,8 @@ links and queued notifications for the device.
 | POST   | `/devices/:id/firmware-update`                | write | owner    | Queue or explicitly retry a firmware install |
 | DELETE | `/devices/:id/firmware-update` **(proposed)** | write | owner    | Cancel a queued install                      |
 | GET    | `/firmware/releases` **(proposed)**           | read  | any user | Published releases                           |
-| GET    | `/firmware/manifest.json` **(proposed)**      | none  | public   | ESP Web Tools manifest                       |
+| GET    | `/firmware/manifest.json`                     | none  | public   | ESP Web Tools manifest                       |
+| GET    | `/firmware/images/:version/factory.bin`       | none  | public   | Factory image for browser flashing           |
 
 `POST /devices/:id/firmware-update` body `{ "version": "2.1.0" }`
 (optional, default latest compatible) → `202` with the `update` object.
@@ -499,8 +501,34 @@ links and queued notifications for the device.
 `DELETE` cancels a queued attempt that has not started. `409` once
 installing.
 
-`/firmware/manifest.json` is the ESP Web Tools manifest for browser
-flashing. It points to the latest stable image.
+`GET /firmware/manifest.json` is the ESP Web Tools manifest for browser
+flashing. It points at the newest published `STABLE` release by
+`version_code`. `Cache-Control: no-store`. `404 not_found` when no release
+is published.
+
+```json
+{
+  "name": "Electricity Monitor",
+  "version": "2.0.0",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32-C3",
+      "parts": [
+        { "path": "https://api.<domain>/api/v1/firmware/images/2.0.0/factory.bin", "offset": 0 }
+      ]
+    }
+  ]
+}
+```
+
+`GET /firmware/images/:version/factory.bin` streams the merged factory
+image (bootloader, partition table, `boot_app0` and app at offset 0) of a
+published release from the private bucket. `200 application/octet-stream`
+with `Content-Length` and `Cache-Control: public, max-age=86400, immutable`.
+An unknown, draft or malformed version is `404`. Rate limit: 20 / min per
+IP. CORS allows the client origin, because ESP Web Tools fetches it from
+the browser.
 
 ### Outages and stats
 
@@ -846,7 +874,7 @@ in PROJECT_V2.md §3–§12. Section numbers below refer to PROJECT_V2.md.
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | §4 Remote configuration: device fetches settings and reports applied | No endpoints, only a sentence                                                   | `GET /api/v1/device/settings`, `POST /api/v1/device/settings/applied`, `X-Settings-Version` ping header |
 | §4 OTA: device downloads the signed image                            | No download location                                                            | `GET /api/v1/device/firmware/:version` (or signed storage URL in `pending`)                             |
-| §4 Browser flashing with ESP Web Tools                               | No manifest or image source                                                     | `GET /api/v1/firmware/manifest.json`                                                                    |
+| §4 Browser flashing with ESP Web Tools                               | No manifest or image source                                                     | ✅ `GET /api/v1/firmware/manifest.json`, `GET /api/v1/firmware/images/:version/factory.bin` (M5)        |
 | §9 "Update available" in the client                                  | Nothing lists releases                                                          | `GET /api/v1/firmware/releases`, `firmware.available` in device details                                 |
 | §7 Connect platform Telegram                                         | `POST /channels` covers only own bot and webhook                                | `POST /channels/telegram-link`                                                                          |
 | §7 Telegram bot webhook                                              | Only in §12                                                                     | Listed in §6 here                                                                                       |

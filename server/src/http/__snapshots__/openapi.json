@@ -32,6 +32,10 @@
     {
       "name": "Notifications",
       "description": "Notification channels and which devices use them"
+    },
+    {
+      "name": "Firmware",
+      "description": "Firmware images for flashing from the browser"
     }
   ],
   "paths": {
@@ -2477,6 +2481,148 @@
           },
           "404": {
             "description": "Device not found or not accessible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/firmware/manifest.json": {
+      "get": {
+        "summary": "ESP Web Tools manifest",
+        "description": "Points at the newest published `STABLE` release, for flashing from the browser. Not cached.",
+        "tags": [
+          "Firmware"
+        ],
+        "responses": {
+          "200": {
+            "description": "Manifest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string",
+                      "example": "2.0.0"
+                    },
+                    "new_install_prompt_erase": {
+                      "type": "boolean"
+                    },
+                    "builds": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "chipFamily": {
+                            "type": "string",
+                            "const": "ESP32-C3"
+                          },
+                          "parts": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "path": {
+                                  "type": "string",
+                                  "format": "uri"
+                                },
+                                "offset": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "path",
+                                "offset"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "chipFamily",
+                          "parts"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "version",
+                    "new_install_prompt_erase",
+                    "builds"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No published release",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/firmware/images/{version}/factory.bin": {
+      "get": {
+        "summary": "Factory image of a published release",
+        "description": "Bootloader, partition table and app merged at offset 0. Published releases only. Cached for a day. Rate limit 20 / min per IP.",
+        "tags": [
+          "Firmware"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "version",
+            "schema": {
+              "type": "string",
+              "example": "2.0.0"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image bytes",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown, draft or malformed version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests, with `Retry-After`",
             "content": {
               "application/json": {
                 "schema": {
