@@ -1,7 +1,8 @@
 [data-app-style='lamp'] {
   --app-font-body: 'Onest Variable', ui-sans-serif, system-ui, sans-serif;
   --app-font-heading: var(--app-font-body);
-  --radius: 1.5rem;
+  --radius: 0.75rem;
+  --lamp-card-radius: 1.5rem;
   --app-surface-ring: color-mix(in oklab, var(--foreground) 6%, transparent);
   --app-surface-shadow: 0 1px 2px color-mix(in oklab, var(--foreground) 8%, transparent);
   --app-motion-duration: 900ms;

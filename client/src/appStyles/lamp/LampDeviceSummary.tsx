@@ -12,7 +12,7 @@ export function LampDeviceSummary({ device }: DeviceSummaryProps) {
       viewTransition
       data-app-style-slot="lamp"
       data-state={device.state}
-      className="lamp-card flex h-full flex-col gap-4 rounded-(--radius) bg-card p-6 text-card-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      className="lamp-card flex h-full flex-col gap-4 rounded-(--lamp-card-radius) bg-card p-6 text-card-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
     >
       <LampStatusMark state={device.state} lastSeenAt={device.last_seen_at} />
       <span className="flex flex-col gap-1">
