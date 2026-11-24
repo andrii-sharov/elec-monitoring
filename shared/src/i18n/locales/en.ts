@@ -69,6 +69,38 @@ export const en = {
       help: 'Commands:\n/status — your devices\n/stop — unlink this chat',
     },
   },
+  device: {
+    setup: {
+      title: 'Electricity Monitor setup',
+      language: 'Language',
+      wifiName: 'Wi-Fi network',
+      wifiHint: 'Only 2.4 GHz Wi-Fi works.',
+      wifiScan: 'Networks nearby',
+      wifiPassword: 'Wi-Fi password',
+      pairingCode: 'Pairing code',
+      pairingCodeHint: 'Shown in the app when you add a device.',
+      pairingCodeKeep: 'Leave empty to keep this device paired and change only the Wi-Fi.',
+      save: 'Connect',
+      status: {
+        connecting: 'Connecting to Wi-Fi…',
+        wifiNotFound: 'Wi-Fi network not found. Check the name and that it is 2.4 GHz.',
+        wifiAuthFailed: 'Wrong Wi-Fi password.',
+        wifiFailed: "Couldn't connect to the Wi-Fi. Try again.",
+        claiming: 'Pairing with your account…',
+        codeInvalid: 'Pairing code not found. Get a new code in the app.',
+        codeExpired: 'The pairing code has expired. Get a new code in the app.',
+        serverUnreachable:
+          "Can't reach the server. Check that the Wi-Fi has internet and try again.",
+        done: 'Done. The device restarts and starts monitoring. You can close this page.',
+      },
+      errors: {
+        ssidRequired: 'Enter the Wi-Fi network name.',
+        passwordTooLong: 'The Wi-Fi password is 8 to 63 characters, or empty for an open network.',
+        codeFormat: 'The pairing code is 8 letters and digits.',
+        codeRequired: 'Enter the pairing code from the app.',
+      },
+    },
+  },
   app: {
     common: {
       loading: 'Loading…',

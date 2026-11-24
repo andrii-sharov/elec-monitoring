@@ -18,7 +18,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "firmware:strings": "node scripts/firmware-strings.ts"
   },
   "dependencies": {
     "zod": "^4.6.7"
