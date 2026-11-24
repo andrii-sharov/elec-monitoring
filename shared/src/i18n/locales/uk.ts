@@ -105,6 +105,12 @@ export const uk: Dictionary = {
       light: 'Світла',
       dark: 'Темна',
     },
+    appStyle: {
+      classic: { name: 'Класичний', description: 'Охайні картки зі значками стану.' },
+      sonar: { name: 'Сонар', description: 'Спокійні рядки з пульсом на кожен зв’язок.' },
+      switchboard: { name: 'Щиток', description: 'Електрощиток з вимикачем для кожного пристрою.' },
+      lamp: { name: 'Лампа', description: 'М’які картки, що світяться, поки є світло.' },
+    },
     auth: {
       email: 'Електронна пошта',
       password: 'Пароль',

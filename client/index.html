@@ -7,9 +7,14 @@
     <script>
       (function () {
         var choice = null;
+        var appStyle = null;
         try {
           choice = localStorage.getItem('em.theme');
+          appStyle = localStorage.getItem('em.appStyle');
         } catch (error) {}
+        var appStyles = ['classic', 'sonar', 'switchboard', 'lamp'];
+        document.documentElement.dataset.appStyle =
+          appStyles.indexOf(appStyle) === -1 ? 'classic' : appStyle;
         var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         var dark = choice === 'dark' || (choice !== 'light' && prefersDark);
         document.documentElement.classList.toggle('dark', dark);

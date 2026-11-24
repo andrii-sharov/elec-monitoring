@@ -103,6 +103,12 @@ export const en = {
       light: 'Light',
       dark: 'Dark',
     },
+    appStyle: {
+      classic: { name: 'Classic', description: 'Clean cards with status badges.' },
+      sonar: { name: 'Sonar', description: 'Calm rows with a pulse on every check-in.' },
+      switchboard: { name: 'Switchboard', description: 'A breaker panel with a lever per device.' },
+      lamp: { name: 'Lamp', description: 'Soft cards that glow while the power is on.' },
+    },
     auth: {
       email: 'Email',
       password: 'Password',

@@ -1,12 +1,12 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
+@import './appStyles/classic/style.css';
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
   color-scheme: light;
-  --radius: 0.625rem;
   --background: #dbe9ee;
   --surface: #ffffff;
   --foreground: #203844;
@@ -61,7 +61,8 @@
 }
 
 @theme inline {
-  --font-heading: var(--font-sans);
+  --font-sans: var(--app-font-body);
+  --font-heading: var(--app-font-heading);
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-foreground: var(--foreground);
@@ -102,7 +103,12 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background: var(--app-backdrop);
+    background-attachment: fixed;
+  }
+  [data-app-style] {
+    font-family: var(--app-font-body);
   }
   html {
     @apply font-sans;

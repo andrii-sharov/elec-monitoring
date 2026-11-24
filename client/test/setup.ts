@@ -28,6 +28,7 @@ afterEach(() => {
   server.resetHandlers();
   localStorage.clear();
   document.documentElement.className = '';
+  delete document.documentElement.dataset.appStyle;
 });
 
 afterAll(() => {

@@ -108,6 +108,15 @@ export const ru: Dictionary = {
       light: 'Светлая',
       dark: 'Тёмная',
     },
+    appStyle: {
+      classic: { name: 'Классический', description: 'Аккуратные карточки со значками состояния.' },
+      sonar: { name: 'Сонар', description: 'Спокойные строки с пульсом на каждую связь.' },
+      switchboard: {
+        name: 'Щиток',
+        description: 'Электрощиток с рубильником для каждого устройства.',
+      },
+      lamp: { name: 'Лампа', description: 'Мягкие карточки, которые светятся, пока есть свет.' },
+    },
     auth: {
       email: 'Электронная почта',
       password: 'Пароль',
