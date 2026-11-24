@@ -3,6 +3,7 @@
 @import 'shadcn/tailwind.css';
 @import './appStyles/classic/style.css';
 @import './appStyles/sonar/style.css';
+@import './appStyles/switchboard/style.css';
 
 @custom-variant dark (&:is(.dark *));
 
