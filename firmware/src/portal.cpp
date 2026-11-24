@@ -74,14 +74,27 @@ void messages(String& page, const PortalStrings& s) {
 const char* kStyle =
     "body{font-family:system-ui,sans-serif;max-width:26rem;margin:1.5rem auto;padding:0 1rem}"
     "label{display:block;margin-top:1rem;font-weight:600}"
-    "input{width:100%;box-sizing:border-box;padding:.6rem;font-size:1rem;margin-top:.3rem}"
+    "input{width:100%;box-sizing:border-box;padding:.6rem;font-size:1rem;margin-top:.3rem;"
+    "border:1px solid #888;border-radius:6px}"
+    "input[aria-invalid]{border:2px solid #b3261e}"
     "button{margin-top:1.5rem;width:100%;padding:.8rem;font-size:1rem}"
-    "small{display:block;color:#555;margin-top:.3rem}#m{margin-top:1rem;font-weight:600}"
-    "nav a{margin-right:.8rem}";
+    "small{display:block;color:#555;margin-top:.3rem}.err{color:#b3261e;font-weight:600}"
+    "#m{margin-top:1rem;font-weight:600}nav a{margin-right:.8rem}";
 
 const char* kScript =
     "const f=document.getElementById('f'),m=document.getElementById('m'),b=f.querySelector('button');"
-    "function show(k){const e=document.querySelector('[data-k=\"'+k+'\"]');m.textContent=e?e.textContent:''}"
+    "const fields=['ssid','password','code'];"
+    "const owner={SSID_REQUIRED:'ssid',WIFI_NOT_FOUND:'ssid',PASSWORD_TOO_LONG:'password',"
+    "WIFI_AUTH_FAILED:'password',CODE_FORMAT:'code',CODE_REQUIRED:'code',CODE_INVALID:'code',"
+    "CODE_EXPIRED:'code'};"
+    "function text(k){const e=document.querySelector('[data-k=\"'+k+'\"]');return e?e.textContent:''}"
+    "function clearField(n){const i=document.getElementById(n),e=document.getElementById('e-'+n);"
+    "i.removeAttribute('aria-invalid');e.textContent='';e.hidden=true}"
+    "function show(k){m.textContent='';fields.forEach(clearField);const n=owner[k];"
+    "if(!n){m.textContent=text(k);return}"
+    "const i=document.getElementById(n),e=document.getElementById('e-'+n);"
+    "i.setAttribute('aria-invalid','true');e.textContent=text(k);e.hidden=false;i.focus()}"
+    "fields.forEach(n=>document.getElementById(n).addEventListener('input',()=>clearField(n)));"
     "const busy=['CONNECTING','CLAIMING'];"
     "async function poll(){const r=await fetch('/status').then(r=>r.json()).catch(()=>null);"
     "if(!r){setTimeout(poll,1000);return}show(r.status);"
@@ -90,6 +103,12 @@ const char* kScript =
     "const r=await fetch('/setup',{method:'POST',body:new URLSearchParams(new FormData(f))})"
     ".then(r=>r.json()).catch(()=>({error:'WIFI_FAILED'}));"
     "if(r.error){show(r.error);b.disabled=false}else{show(r.status);poll()}};";
+
+void fieldError(String& page, const char* name) {
+  page += "<small class=\"err\" id=\"e-";
+  page += name;
+  page += "\" hidden></small>";
+}
 
 void handleRoot() {
   size_t lang = pickLanguage(server.arg("lang").c_str(), server.header("Accept-Language").c_str());
@@ -118,8 +137,10 @@ void handleRoot() {
   page += s.title;
   page += "</h1><form id=\"f\"><label for=\"ssid\">";
   page += s.wifiName;
-  page += "</label><input id=\"ssid\" name=\"ssid\" list=\"nets\" maxlength=\"32\" required "
-          "autocomplete=\"off\"><small>";
+  page += "</label><input id=\"ssid\" name=\"ssid\" list=\"nets\" maxlength=\"32\" "
+          "autocomplete=\"off\" aria-describedby=\"h-ssid e-ssid\">";
+  fieldError(page, "ssid");
+  page += "<small id=\"h-ssid\">";
   page += s.wifiHint;
   page += "</small><datalist id=\"nets\" aria-label=\"";
   page += s.wifiScan;
@@ -131,11 +152,15 @@ void handleRoot() {
   }
   page += "</datalist><label for=\"password\">";
   page += s.wifiPassword;
-  page += "</label><input id=\"password\" name=\"password\" type=\"password\" maxlength=\"63\">"
-          "<label for=\"code\">";
+  page += "</label><input id=\"password\" name=\"password\" type=\"password\" "
+          "maxlength=\"63\" aria-describedby=\"e-password\">";
+  fieldError(page, "password");
+  page += "<label for=\"code\">";
   page += s.pairingCode;
   page += "</label><input id=\"code\" name=\"code\" autocapitalize=\"characters\" "
-          "autocomplete=\"off\" maxlength=\"16\"><small>";
+          "autocomplete=\"off\" maxlength=\"16\" aria-describedby=\"e-code h-code\">";
+  fieldError(page, "code");
+  page += "<small id=\"h-code\">";
   page += hasToken ? s.pairingCodeKeep : s.pairingCodeHint;
   page += "</small><button type=\"submit\">";
   page += s.save;
@@ -166,6 +191,7 @@ void handleSetup() {
     sendJson(409, "status", setupStatusName(flow->status()));
     return;
   }
+  net::discardEvents();
   net::connectFromSetup(flow->form().ssid, flow->form().password);
   sendJson(202, "status", setupStatusName(flow->status()));
 }
@@ -186,7 +212,10 @@ void onStatusChange() {
   SetupStatus status = flow->status();
   if (status == reported) return;
   reported = status;
-  if (wifiFailed(status) || status == SetupStatus::Claiming) {
+  if (wifiFailed(status)) {
+    Serial.printf("setup wifi -> %s (reason %u)\n", setupStatusName(status),
+                  flow->lastWifiReason());
+  } else if (status == SetupStatus::Claiming) {
     Serial.printf("setup wifi -> %s\n", setupStatusName(status));
   }
   if (wifiFailed(status)) net::stopStation();
@@ -226,6 +255,10 @@ void loop(uint64_t nowMs) {
   for (const net::Event& event : net::poll(nowMs)) {
     if (event.kind == net::EventKind::GotIp) flow->onWifiConnected();
     if (event.kind == net::EventKind::Disconnected) flow->onWifiFailed(event.reason);
+  }
+  if (flow->takeWifiRetry()) {
+    Serial.printf("setup wifi retry (reason %u)\n", flow->lastWifiReason());
+    net::connectFromSetup(flow->form().ssid, flow->form().password);
   }
   flow->tick(nowMs);
   onStatusChange();

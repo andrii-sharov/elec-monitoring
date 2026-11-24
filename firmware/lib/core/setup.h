@@ -45,6 +45,8 @@ class SetupFlow {
   bool shouldSave() const { return status_ == SetupStatus::Done; }
   const SetupForm& form() const { return form_; }
   const std::optional<ClaimResult>& claim() const { return claim_; }
+  bool takeWifiRetry();
+  uint16_t lastWifiReason() const { return lastWifiReason_; }
   void enableIdleExit(uint64_t nowMs);
   bool shouldExit(uint64_t nowMs) const;
 
@@ -54,6 +56,9 @@ class SetupFlow {
   SetupForm form_;
   uint64_t deadlineMs_ = 0;
   std::optional<ClaimResult> claim_;
+  uint8_t wifiFailures_ = 0;
+  uint16_t lastWifiReason_ = 0;
+  bool wifiRetry_ = false;
   bool idleExit_ = false;
   uint64_t lastActivityMs_ = 0;
 };

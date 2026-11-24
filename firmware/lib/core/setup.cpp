@@ -9,6 +9,8 @@ constexpr size_t kCodeLength = 8;
 constexpr uint64_t kWifiTimeoutMs = 30000;
 constexpr uint64_t kIdleExitMs = 600000;
 constexpr uint16_t kReasonAssocLeave = 8;
+constexpr uint8_t kNotFoundAttempts = 2;
+constexpr uint8_t kOtherAttempts = 3;
 
 bool isCode(const std::string& code) {
   if (code.size() != kCodeLength) return false;
@@ -78,6 +80,9 @@ bool SetupFlow::submit(const SetupForm& form, uint64_t nowMs) {
   if (validateSetupForm(form, hasToken_) != SetupError::None) return false;
   form_ = {form.ssid, form.password, normalizePairingCode(form.pairingCode)};
   claim_.reset();
+  wifiFailures_ = 0;
+  lastWifiReason_ = 0;
+  wifiRetry_ = false;
   deadlineMs_ = nowMs + kWifiTimeoutMs;
   lastActivityMs_ = nowMs;
   status_ = SetupStatus::Connecting;
@@ -90,12 +95,23 @@ void SetupFlow::onWifiConnected() {
 }
 
 void SetupFlow::onWifiFailed(uint16_t reason) {
-  if (reason == kReasonAssocLeave) return;
-  if (status_ == SetupStatus::Connecting) status_ = wifiFailure(reason);
+  if (reason == kReasonAssocLeave || status_ != SetupStatus::Connecting) return;
+  lastWifiReason_ = reason;
+  wifiFailures_++;
+  SetupStatus failure = wifiFailure(reason);
+  uint8_t attempts = failure == SetupStatus::WifiNotFound ? kNotFoundAttempts : kOtherAttempts;
+  if (wifiFailures_ >= attempts) {
+    status_ = failure;
+    wifiRetry_ = false;
+  } else {
+    wifiRetry_ = true;
+  }
 }
 
 void SetupFlow::tick(uint64_t nowMs) {
-  if (status_ == SetupStatus::Connecting && nowMs >= deadlineMs_) status_ = SetupStatus::WifiFailed;
+  if (status_ != SetupStatus::Connecting || nowMs < deadlineMs_) return;
+  status_ = wifiFailures_ > 0 ? wifiFailure(lastWifiReason_) : SetupStatus::WifiFailed;
+  wifiRetry_ = false;
 }
 
 void SetupFlow::onClaimResult(int httpStatus, const std::optional<ClaimResult>& result) {
@@ -110,6 +126,12 @@ void SetupFlow::onClaimResult(int httpStatus, const std::optional<ClaimResult>& 
   } else {
     status_ = SetupStatus::ServerUnreachable;
   }
+}
+
+bool SetupFlow::takeWifiRetry() {
+  bool retry = wifiRetry_ && status_ == SetupStatus::Connecting;
+  wifiRetry_ = false;
+  return retry;
 }
 
 void SetupFlow::enableIdleExit(uint64_t nowMs) {

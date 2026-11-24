@@ -84,7 +84,7 @@ export const en = {
       status: {
         connecting: 'Connecting to Wi-Fi…',
         wifiNotFound: 'Wi-Fi network not found. Check the name and that it is 2.4 GHz.',
-        wifiAuthFailed: 'Wrong Wi-Fi password.',
+        wifiAuthFailed: "Couldn't sign in to this Wi-Fi. Check the password.",
         wifiFailed: "Couldn't connect to the Wi-Fi. Try again.",
         claiming: 'Pairing with your account…',
         codeInvalid: 'Pairing code not found. Get a new code in the app.',

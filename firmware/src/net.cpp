@@ -79,6 +79,14 @@ void connectFromSetup(const std::string& ssid, const std::string& password) {
 
 void stopStation() { WiFi.disconnect(false, false); }
 
+void discardEvents() {
+  RawEvent raw;
+  while (queue != nullptr && xQueueReceive(queue, &raw, 0) == pdTRUE) {
+  }
+  up = false;
+  ready = false;
+}
+
 std::vector<Event> poll(uint64_t nowMs) {
   std::vector<Event> events;
   RawEvent raw;

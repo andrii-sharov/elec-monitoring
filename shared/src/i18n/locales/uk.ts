@@ -87,7 +87,7 @@ export const uk: Dictionary = {
       status: {
         connecting: 'Підключення до Wi-Fi…',
         wifiNotFound: 'Мережу Wi-Fi не знайдено. Перевірте назву і що це 2,4 ГГц.',
-        wifiAuthFailed: 'Неправильний пароль Wi-Fi.',
+        wifiAuthFailed: 'Не вдалося увійти в цю мережу Wi-Fi. Перевірте пароль.',
         wifiFailed: 'Не вдалося підключитися до Wi-Fi. Спробуйте ще раз.',
         claiming: 'Сполучення з вашим обліковим записом…',
         codeInvalid: 'Код сполучення не знайдено. Отримайте новий код у застосунку.',

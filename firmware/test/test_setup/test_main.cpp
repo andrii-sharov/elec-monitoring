@@ -95,20 +95,67 @@ void test_submit_keeps_normalized_code() {
   TEST_ASSERT_EQUAL_STRING("K7Q2M9XD", flow.form().pairingCode.c_str());
 }
 
-void test_wifi_failure_reasons() {
+void failTimes(SetupFlow& flow, uint16_t reason, int times) {
+  for (int i = 0; i < times; i++) flow.onWifiFailed(reason);
+}
+
+void test_wifi_failure_reasons_after_retries() {
   struct Case {
     uint16_t reason;
+    int attempts;
     SetupStatus status;
-  } cases[] = {{201, SetupStatus::WifiNotFound},  {202, SetupStatus::WifiAuthFailed},
-               {15, SetupStatus::WifiAuthFailed}, {204, SetupStatus::WifiAuthFailed},
-               {2, SetupStatus::WifiFailed},      {205, SetupStatus::WifiFailed}};
+  } cases[] = {{201, 2, SetupStatus::WifiNotFound},  {202, 3, SetupStatus::WifiAuthFailed},
+               {15, 3, SetupStatus::WifiAuthFailed}, {204, 3, SetupStatus::WifiAuthFailed},
+               {2, 3, SetupStatus::WifiFailed},      {205, 3, SetupStatus::WifiFailed}};
   for (const Case& c : cases) {
     SetupFlow flow(false);
     flow.submit(form(), 0);
+    failTimes(flow, c.reason, c.attempts - 1);
+    assertStatus(SetupStatus::Connecting, flow);
     flow.onWifiFailed(c.reason);
     assertStatus(c.status, flow);
+    TEST_ASSERT_EQUAL_UINT16(c.reason, flow.lastWifiReason());
     TEST_ASSERT_FALSE(flow.shouldSave());
   }
+}
+
+void test_one_handshake_timeout_retries_instead_of_failing() {
+  SetupFlow flow(false);
+  flow.submit(form(), 0);
+  flow.onWifiFailed(15);
+  assertStatus(SetupStatus::Connecting, flow);
+  TEST_ASSERT_TRUE(flow.takeWifiRetry());
+  TEST_ASSERT_FALSE(flow.takeWifiRetry());
+  flow.onWifiConnected();
+  assertStatus(SetupStatus::Claiming, flow);
+}
+
+void test_no_retry_after_the_final_failure() {
+  SetupFlow flow(false);
+  flow.submit(form(), 0);
+  failTimes(flow, 202, 2);
+  TEST_ASSERT_TRUE(flow.takeWifiRetry());
+  flow.onWifiFailed(202);
+  TEST_ASSERT_FALSE(flow.takeWifiRetry());
+}
+
+void test_timeout_reports_the_last_failure_reason() {
+  SetupFlow flow(false);
+  flow.submit(form(), 0);
+  flow.onWifiFailed(15);
+  flow.tick(30 * kS);
+  assertStatus(SetupStatus::WifiAuthFailed, flow);
+}
+
+void test_resubmit_resets_failure_count() {
+  SetupFlow flow(false);
+  flow.submit(form(), 0);
+  failTimes(flow, 202, 3);
+  assertStatus(SetupStatus::WifiAuthFailed, flow);
+  flow.submit(form(), 1 * kS);
+  failTimes(flow, 202, 2);
+  assertStatus(SetupStatus::Connecting, flow);
+  TEST_ASSERT_EQUAL_UINT16(202, flow.lastWifiReason());
 }
 
 void test_wifi_timeout() {
@@ -227,7 +274,7 @@ void test_submission_restarts_idle_timer() {
   SetupFlow flow(true);
   flow.enableIdleExit(0);
   flow.submit(form(), 500 * kS);
-  flow.onWifiFailed(202);
+  failTimes(flow, 202, 3);
   TEST_ASSERT_FALSE(flow.shouldExit(1099 * kS));
   TEST_ASSERT_TRUE(flow.shouldExit(1100 * kS));
 }
@@ -248,6 +295,8 @@ void test_own_disconnect_is_not_a_failure() {
   flow.submit(form(), 0);
   flow.onWifiFailed(8);
   assertStatus(SetupStatus::Connecting, flow);
+  TEST_ASSERT_FALSE(flow.takeWifiRetry());
+  TEST_ASSERT_EQUAL_UINT16(0, flow.lastWifiReason());
 }
 
 void test_language_from_query_wins() {
@@ -285,7 +334,11 @@ int main() {
   RUN_TEST(test_submit_connects_and_rejects_while_busy);
   RUN_TEST(test_submit_rejects_invalid_form);
   RUN_TEST(test_submit_keeps_normalized_code);
-  RUN_TEST(test_wifi_failure_reasons);
+  RUN_TEST(test_wifi_failure_reasons_after_retries);
+  RUN_TEST(test_one_handshake_timeout_retries_instead_of_failing);
+  RUN_TEST(test_no_retry_after_the_final_failure);
+  RUN_TEST(test_timeout_reports_the_last_failure_reason);
+  RUN_TEST(test_resubmit_resets_failure_count);
   RUN_TEST(test_wifi_timeout);
   RUN_TEST(test_claim_success_saves);
   RUN_TEST(test_claim_failures_never_save);

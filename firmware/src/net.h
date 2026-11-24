@@ -15,6 +15,7 @@ void beginStation(const std::string& ssid, const std::string& password);
 void beginAccessPoint(const std::string& apName);
 void connectFromSetup(const std::string& ssid, const std::string& password);
 void stopStation();
+void discardEvents();
 std::vector<Event> poll(uint64_t nowMs);
 bool wifiUp();
 bool linkReady();

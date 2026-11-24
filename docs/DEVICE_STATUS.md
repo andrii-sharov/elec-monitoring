@@ -16,7 +16,9 @@ Join the network from a phone. The setup page opens by itself (or go to
 `http://192.168.4.1`). Enter the Wi-Fi name, password and the pairing code
 from the app. Only 2.4 GHz Wi-Fi works.
 
-- The device tests the Wi-Fi and claims the code before saving anything.
+- The device tests the Wi-Fi (up to 3 tries) and claims the code before
+  saving anything. An error appears under the field it is about: Wi-Fi
+  name, password or pairing code.
   A wrong password or a bad code leaves the old settings in place.
 - If the device is already paired, leave the code empty to change only
   the Wi-Fi.
@@ -44,25 +46,27 @@ from the app. Only 2.4 GHz Wi-Fi works.
 `pio device monitor` (115200 baud), from `firmware/`. The log never shows
 the device token, the Wi-Fi password or the pairing code.
 
-| Line                                                            | Meaning                                                               |
-| --------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `boot fw 2.0.0 server … reason POWER_ON id b738… ota key 1a2b…` | Boot: firmware version, server, reset reason, boot id, OTA key        |
-| `wifi connected ip … rssi -61`                                  | Wi-Fi connected                                                       |
-| `wifi lost reason 201`                                          | Wi-Fi dropped, with the driver reason code                            |
-| `wifi down for 60 s, reconnecting`                              | No Wi-Fi for 60 s, forcing a reconnect                                |
-| `time synced` / `time not synced`                               | Clock set over SNTP, or gave up after 30 s and continues anyway       |
-| `BOOT -> 204`                                                   | First check-in of this boot delivered                                 |
-| `BOOT -> -1, retry in 4 s`                                      | Couldn't reach the server, retrying with backoff (up to 60 s)         |
-| `PING -> 204 (seq 42, events 2)`                                | Ping delivered with 2 Wi-Fi diagnostic records                        |
-| `PING -> 429, retry in 30 s`                                    | Rate limited, waiting for `Retry-After`                               |
-| `PING -> 401, re-pair the device`                               | Token rejected (rotated or device deleted). Check-ins every 5 min     |
-| `setup mode ElecMonitor-3F2A (button\|no config)`               | Setup mode started and why                                            |
-| `setup wifi -> WIFI_AUTH_FAILED`                                | Setup Wi-Fi test result (`WIFI_NOT_FOUND`, `WIFI_FAILED`, `CLAIMING`) |
-| `claim -> 404`                                                  | Pairing code claim result (`200` ok, `404` unknown, `410` expired)    |
-| `setup done, restarting`                                        | Settings saved, restarting in 3 s                                     |
-| `setup timed out, restarting`                                   | Button setup mode ended after 10 min without a submission             |
-| `heap free … min …`                                             | Free heap every 10 min. `min` should stay steady                      |
-| `E (…) wifi:…`                                                  | Wi-Fi driver message, harmless if check-ins still get `204`           |
+| Line                                                            | Meaning                                                                                           |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `boot fw 2.0.0 server … reason POWER_ON id b738… ota key 1a2b…` | Boot: firmware version, server, reset reason, boot id, OTA key                                    |
+| `wifi connected ip … rssi -61`                                  | Wi-Fi connected                                                                                   |
+| `wifi lost reason 201`                                          | Wi-Fi dropped, with the driver reason code                                                        |
+| `wifi down for 60 s, reconnecting`                              | No Wi-Fi for 60 s, forcing a reconnect                                                            |
+| `time synced` / `time not synced`                               | Clock set over SNTP, or gave up after 30 s and continues anyway                                   |
+| `BOOT -> 204`                                                   | First check-in of this boot delivered                                                             |
+| `BOOT -> -1, retry in 4 s`                                      | Couldn't reach the server, retrying with backoff (up to 60 s)                                     |
+| `PING -> 204 (seq 42, events 2)`                                | Ping delivered with 2 Wi-Fi diagnostic records                                                    |
+| `PING -> 429, retry in 30 s`                                    | Rate limited, waiting for `Retry-After`                                                           |
+| `PING -> 401, re-pair the device`                               | Token rejected (rotated or device deleted). Check-ins every 5 min                                 |
+| `setup mode ElecMonitor-3F2A (button\|no config)`               | Setup mode started and why                                                                        |
+| `setup wifi retry (reason 15)`                                  | Setup Wi-Fi attempt failed, trying again (up to 3 tries, 2 for network not found)                 |
+| `setup wifi -> WIFI_AUTH_FAILED (reason 15)`                    | Setup Wi-Fi test result after the retries (`WIFI_NOT_FOUND`, `WIFI_FAILED`), with the last reason |
+| `setup wifi -> CLAIMING`                                        | Wi-Fi works, claiming the pairing code                                                            |
+| `claim -> 404`                                                  | Pairing code claim result (`200` ok, `404` unknown, `410` expired)                                |
+| `setup done, restarting`                                        | Settings saved, restarting in 3 s                                                                 |
+| `setup timed out, restarting`                                   | Button setup mode ended after 10 min without a submission                                         |
+| `heap free … min …`                                             | Free heap every 10 min. `min` should stay steady                                                  |
+| `E (…) wifi:…`                                                  | Wi-Fi driver message, harmless if check-ins still get `204`                                       |
 
 Negative statuses are network errors: `-1` can't connect (server down,
 TLS failed), `-11` no answer within 10 s.

@@ -90,7 +90,7 @@ export const ru: Dictionary = {
       status: {
         connecting: 'Подключение к Wi-Fi…',
         wifiNotFound: 'Сеть Wi-Fi не найдена. Проверьте название и что это 2,4 ГГц.',
-        wifiAuthFailed: 'Неверный пароль Wi-Fi.',
+        wifiAuthFailed: 'Не удалось войти в эту сеть Wi-Fi. Проверьте пароль.',
         wifiFailed: 'Не удалось подключиться к Wi-Fi. Попробуйте ещё раз.',
         claiming: 'Сопряжение с вашей учётной записью…',
         codeInvalid: 'Код сопряжения не найден. Получите новый код в приложении.',
