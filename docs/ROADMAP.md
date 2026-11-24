@@ -30,7 +30,7 @@ Status: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 | M1  | [Auth](#m1--auth)                                                     | ✅     | M0         | [M01](plans/M01-auth.md)            |
 | M2  | [Devices and check-ins](#m2--devices-and-check-ins)                   | 🟡     | M1         | [M02](plans/M02-devices.md)         |
 | M3  | [Worker and platform bot](#m3--worker-and-platform-telegram-bot)      | 🟡     | M2         | [M03](plans/M03-worker-telegram.md) |
-| M4  | [Client app](#m4--client-app)                                         | ⬜     | M3         | [M04](plans/M04-client.md)          |
+| M4  | [Client app](#m4--client-app)                                         | 🟡     | M3         | [M04](plans/M04-client.md)          |
 | M5  | [Firmware core and device setup](#m5--firmware-core-and-device-setup) | ⬜     | M2         | —                                   |
 | M6  | [Sharing](#m6--sharing)                                               | ⬜     | M4         | —                                   |
 | M7  | [API tokens and public API](#m7--api-tokens-and-public-rest-api)      | ⬜     | M4         | —                                   |
@@ -246,17 +246,17 @@ staging, stop the fake device, and receive the OFF and ON messages.
 **Goal:** users sign in, add a device and watch it, in the browser.
 **Spec:** P §9 Client app, Localization · P §12 Vercel.
 
-- [ ] `client/`: Vite, React, TypeScript, React Router, TanStack Query,
+- [x] `client/`: Vite, React, TypeScript, React Router, TanStack Query,
       shadcn/ui on Tailwind, React Hook Form + Zod, i18next with the
       shared dictionaries; CI builds it
-- [ ] API client: access token in memory, refresh through the cookie on
+- [x] API client: access token in memory, refresh through the cookie on
       load and on `401`
-- [ ] Sign up, log in, Google, verify email, forgot and reset password
-- [ ] Devices list; Device page (status, outage timeline, settings,
+- [x] Sign up, log in, Google, verify email, forgot and reset password
+- [x] Devices list; Device page (status, outage timeline, settings,
       re-pair, rotate token, delete); Add-device wizard (name → pairing
       code → wait for the first check-in)
-- [ ] Connect platform Telegram and choose channels per device
-- [ ] Account: name, timezone, language, Google link / unlink, change
+- [x] Connect platform Telegram and choose channels per device
+- [x] Account: name, timezone, language, Google link / unlink, change
       password, log out everywhere, delete account
 - [ ] Vercel project with SPA fallback; staging API URL per environment
 

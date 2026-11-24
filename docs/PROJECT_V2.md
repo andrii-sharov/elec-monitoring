@@ -545,7 +545,12 @@ errors, rate limits, and request and response shapes.
 
 Vite + React + TypeScript, React Router, TanStack Query, shadcn/ui
 components on Tailwind CSS, forms with React Hook Form and Zod, and
-i18next for translations. All data goes through our API.
+i18next for translations. All data goes through our API. Colors and the
+light, dark and system themes follow [theme.md](theme.md).
+
+Polling pauses in hidden tabs: devices list every 30 s, device page every
+15 s, add-device wizard every 3 s while the device is `PENDING`, Telegram
+connect every 3 s until a new channel appears or the link expires.
 
 Pages:
 
@@ -667,7 +672,14 @@ Rough numbers to plan for:
   on EC2. The initial staging deployment uses `systemd` and Caddy.
 - Each React app has its own Vercel project rooted at `client/` or
   `admin/`. Configure the SPA fallback to `index.html` for React Router
-  deep links.
+  deep links; `client/vercel.json` rewrites every path to `/index.html`
+  (static files are served first). The manual steps are in
+  [deploy/README.md](../deploy/README.md#client-app-on-vercel).
+- The client's only build-time setting is `VITE_API_URL`, the API origin.
+  Preview builds and the `v2` branch use the staging API
+  (`https://staging-api.<domain>`); the `v2` branch is served at
+  `https://staging-app.<domain>`. Preview `*.vercel.app` URLs can't sign
+  in, because CORS and the refresh cookie allow only the stable origins.
 - The parent domain `<domain>` is `elec-monitoring.homes`.
 - Custom domains in production: the client app on the apex `https://<domain>`,
   `https://admin.<domain>` and `https://api.<domain>`; `www.<domain>`

@@ -21,6 +21,8 @@ changing behaviour, and update the spec if a decision changes.
 - [DATABASE.md](docs/DATABASE.md) is the source of truth for the PostgreSQL
   schema: tables, constraints and indexes. Update it when a table changes.
 - [PROJECT_V1.md](docs/archived/PROJECT_V1.md) records the released v1 design.
+- [theme.md](docs/theme.md) is the source of truth for app colors. Update it
+  when a color token changes.
 - [DEVICE_STATUS.md](docs/DEVICE_STATUS.md) covers LED states and serial log
   messages. Update it when firmware LED or log behaviour changes.
 

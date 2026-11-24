@@ -227,3 +227,39 @@ journalctl -u caddy -n 50 --no-pager
 - In the Supabase SQL editor, `select * from worker_heartbeat;` shows
   `beat_at` moving forward about every 10 seconds.
 - `curl -m 5 http://<elastic-ip>:3000/health` from your computer fails.
+
+# Client app on Vercel
+
+Set up by hand once; Vercel then builds every push. The client lives in
+`client/` and depends on the `shared/` workspace. The staging API already
+allows `CLIENT_URL=https://staging-app.elec-monitoring.homes`.
+
+1. **Import.** In Vercel choose Add New > Project and import the GitHub
+   repository.
+2. **Settings.**
+   - Root Directory: `client`. Enable "Include source files outside of the
+     Root Directory in the Build Step", because `shared/` is a workspace
+     dependency.
+   - Framework Preset: Vite.
+   - Build Command: `npm run build`. Output Directory: `dist`.
+   - Install Command: leave the default; with the files outside the root
+     included, Vercel installs from the repo root workspace.
+   - Node.js Version: 26 if Vercel offers it, otherwise the newest it
+     offers. The root `package.json` has `engines.node >= 26`, so on an
+     older Node the install may warn or fail. If it fails, wait until
+     Vercel offers Node 26 and redeploy; do not lower `engines`.
+3. **Environment variable.** Add `VITE_API_URL` =
+   `https://staging-api.elec-monitoring.homes` for the Preview environment
+   and for the `v2` branch (Production Branch stays `main`; add the
+   variable as a Preview variable scoped to the `v2` branch too).
+4. **Domain.** In Domains add `staging-app.elec-monitoring.homes` and
+   assign it to the `v2` Git branch.
+5. **DNS.** Vercel shows the `CNAME` target for that domain. In Porkbun
+   add a `CNAME` record `staging-app` pointing to that value. Wait until
+   Vercel shows the domain as valid.
+6. **Check.** Open `https://staging-app.elec-monitoring.homes/login`, then
+   reload a deep link such as `/account`: it must load the app, not a 404.
+
+Preview `*.vercel.app` URLs can't sign in: the API's CORS and the refresh
+cookie allow only the stable origins. Test sign-in on
+`staging-app.elec-monitoring.homes`.
