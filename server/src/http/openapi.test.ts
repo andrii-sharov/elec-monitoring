@@ -158,7 +158,7 @@ describe('M3 notification endpoints', () => {
 });
 
 function findOperation(
-  paths: Record<string, Record<string, { security?: unknown }>>,
+  paths: Record<string, Record<string, { security?: unknown; tags?: string[] }>>,
   route: string,
 ) {
   const [method, path] = route.split(' ') as [string, string];
@@ -201,5 +201,19 @@ describe('M2 device endpoints', () => {
     expect(Object.keys(components.schemas)).toEqual(
       expect.arrayContaining(['Device', 'DeviceListItem', 'OutageItem', 'DiagnosticItem']),
     );
+  });
+});
+
+describe('M5 firmware endpoints', () => {
+  const firmwareApi = [
+    'get /api/v1/firmware/manifest.json',
+    'get /api/v1/firmware/images/{version}/factory.bin',
+  ];
+
+  test.each(firmwareApi)('%s is public and in Firmware', async (route) => {
+    const operation = findOperation((await document()).paths, route);
+    expect(operation).toBeDefined();
+    expect(operation!.security).toBeUndefined();
+    expect(operation!.tags).toEqual(['Firmware']);
   });
 });

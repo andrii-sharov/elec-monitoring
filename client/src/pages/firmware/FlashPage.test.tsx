@@ -4,7 +4,9 @@ import { meFixture } from '../../../test/fixtures.ts';
 import { renderRoute } from '../../../test/render.tsx';
 import { loadInstallButton } from './loadInstallButton.ts';
 
-vi.mock('./loadInstallButton.ts', () => ({ loadInstallButton: vi.fn(() => Promise.resolve()) }));
+vi.mock('./loadInstallButton.ts', () => ({
+  loadInstallButton: vi.fn<() => Promise<unknown>>(() => Promise.resolve()),
+}));
 
 afterEach(() => {
   Reflect.deleteProperty(navigator, 'serial');

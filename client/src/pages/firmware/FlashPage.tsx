@@ -42,9 +42,7 @@ export function FlashPage() {
               <span slot="not-allowed">{t('app.flash.notAllowed')}</span>
             </esp-web-install-button>
           ) : (
-            <p role="status" className="text-sm">
-              {t('app.flash.unsupported')}
-            </p>
+            <output className="text-sm">{t('app.flash.unsupported')}</output>
           )}
         </CardContent>
       </Card>
