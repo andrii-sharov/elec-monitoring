@@ -152,7 +152,9 @@
     --app-motion-duration: 0ms;
   }
   [data-motion],
-  [data-motion] * {
+  [data-motion] *,
+  [data-motion]::before,
+  [data-motion]::after {
     animation: none !important;
     transition: none !important;
   }
