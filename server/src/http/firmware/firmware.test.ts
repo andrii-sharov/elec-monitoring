@@ -110,6 +110,33 @@ describe('GET /api/v1/firmware/images/:version/factory.bin', () => {
     expect([...(res.body as Buffer)]).toEqual([1, 2, 3]);
   });
 
+  test('omits Content-Length when the store does not know the size', async () => {
+    await release('2.0.0');
+    const unsized: FirmwareStore = {
+      get: async () => ({
+        size: 0,
+        body: new ReadableStream({
+          start(controller) {
+            controller.enqueue(new Uint8Array([7, 8]));
+            controller.close();
+          },
+        }),
+      }),
+      put: async () => {},
+    };
+    const res = await request(app({ firmware: unsized }))
+      .get('/api/v1/firmware/images/2.0.0/factory.bin')
+      .buffer(true)
+      .parse((r, done) => {
+        const chunks: Buffer[] = [];
+        r.on('data', (c: Buffer) => chunks.push(c));
+        r.on('end', () => done(null, Buffer.concat(chunks)));
+      });
+    expect(res.status).toBe(200);
+    expect(res.headers['content-length']).toBeUndefined();
+    expect([...(res.body as Buffer)]).toEqual([7, 8]);
+  });
+
   test('is 404 for a draft or unknown version', async () => {
     await release('2.1.0', { publishedAt: null });
     await store.put('2.1.0/factory.bin', new Uint8Array([1]));

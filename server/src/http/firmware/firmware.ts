@@ -111,9 +111,9 @@ export function firmwareRouter(deps: AppDeps): Router {
 
       res.set({
         'Content-Type': 'application/octet-stream',
-        'Content-Length': String(file.size),
         'Cache-Control': 'public, max-age=86400, immutable',
       });
+      if (file.size > 0) res.set('Content-Length', String(file.size));
       await pipeline(Readable.fromWeb(file.body as NodeReadableStream), res);
     },
   );

@@ -41,6 +41,12 @@ void init() {
   if (queue != nullptr) return;
   queue = xQueueCreate(16, sizeof(RawEvent));
   WiFi.onEvent(onWifiEvent);
+}
+
+void startSntp() {
+  static bool started = false;
+  if (started) return;
+  started = true;
   configTime(0, 0, "pool.ntp.org", "time.google.com");
 }
 }  // namespace
@@ -49,6 +55,7 @@ void beginStation(const std::string& ssid, const std::string& password) {
   init();
   stationMode = true;
   WiFi.mode(WIFI_STA);
+  startSntp();
   WiFi.setAutoReconnect(true);
   WiFi.begin(ssid.c_str(), password.empty() ? nullptr : password.c_str());
   WiFi.setTxPower(WIFI_POWER_8_5dBm);
@@ -60,6 +67,7 @@ void beginAccessPoint(const std::string& name) {
   WiFi.setAutoReconnect(false);
   WiFi.disconnect(false, false);
   WiFi.mode(WIFI_AP_STA);
+  startSntp();
   WiFi.softAP(name.c_str());
   WiFi.setTxPower(WIFI_POWER_8_5dBm);
 }
