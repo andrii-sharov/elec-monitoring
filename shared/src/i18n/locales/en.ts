@@ -103,6 +103,11 @@ export const en = {
       light: 'Light',
       dark: 'Dark',
     },
+    welcome: {
+      lead: 'Choose how Elec looks. You can change it any time in Account.',
+      useStyle: 'Use this style',
+      keepClassic: 'Keep Classic',
+    },
     appearance: {
       title: 'Appearance',
       hint: 'Saved in this browser',

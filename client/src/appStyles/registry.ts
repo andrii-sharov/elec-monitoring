@@ -37,3 +37,11 @@ export const appStylePreference = createPreference({
     document.documentElement.dataset.appStyle = id;
   },
 });
+
+export function hasStoredAppStyle(): boolean {
+  try {
+    return localStorage.getItem(appStyleStorageKey) !== null;
+  } catch {
+    return true;
+  }
+}

@@ -2,6 +2,7 @@ import { Navigate, Outlet, type RouteObject } from 'react-router';
 import { RequireAnon, RequireAuth, SessionProvider } from '@/api/session';
 import { AccountPage } from '@/pages/account/AccountPage';
 import { Layout } from './Layout';
+import { RequireAppearance } from './RequireAppearance';
 import { AddDevicePage } from '@/pages/devices/AddDevicePage';
 import { DevicePage } from '@/pages/devices/DevicePage';
 import { DevicesPage } from '@/pages/devices/DevicesPage';
@@ -13,6 +14,7 @@ import { SignupPage } from '@/pages/auth/SignupPage';
 import { VerifyEmailPage } from '@/pages/auth/VerifyEmailPage';
 import { NotificationsPage } from '@/pages/notifications/NotificationsPage';
 import { NotFound } from '@/pages/NotFound';
+import { WelcomeAppearancePage } from '@/pages/welcome/WelcomeAppearancePage';
 
 export const routes: RouteObject[] = [
   {
@@ -36,15 +38,21 @@ export const routes: RouteObject[] = [
       {
         Component: RequireAuth,
         children: [
+          { path: 'welcome/appearance', Component: WelcomeAppearancePage },
           {
-            Component: Layout,
+            Component: RequireAppearance,
             children: [
-              { path: '/', element: <Navigate to="/devices" replace /> },
-              { path: 'devices', Component: DevicesPage },
-              { path: 'devices/new', Component: AddDevicePage },
-              { path: 'devices/:id', Component: DevicePage },
-              { path: 'notifications', Component: NotificationsPage },
-              { path: 'account', Component: AccountPage },
+              {
+                Component: Layout,
+                children: [
+                  { path: '/', element: <Navigate to="/devices" replace /> },
+                  { path: 'devices', Component: DevicesPage },
+                  { path: 'devices/new', Component: AddDevicePage },
+                  { path: 'devices/:id', Component: DevicePage },
+                  { path: 'notifications', Component: NotificationsPage },
+                  { path: 'account', Component: AccountPage },
+                ],
+              },
             ],
           },
         ],

@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
-import { afterAll, afterEach, beforeAll, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest';
 import { server } from './server.ts';
 
 function noop() {}
@@ -21,6 +21,10 @@ function matchMedia(query: string): MediaQueryList {
 beforeAll(() => {
   vi.stubGlobal('matchMedia', matchMedia);
   server.listen({ onUnhandledFrame: 'error' });
+});
+
+beforeEach(() => {
+  localStorage.setItem('em.appStyle', 'classic');
 });
 
 afterEach(() => {
