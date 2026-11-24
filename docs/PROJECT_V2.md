@@ -836,8 +836,9 @@ own host and Elastic IP.
   Verify the API health endpoint, worker heartbeat, auth refresh, a
   device check-in and a client deep link as those features land. Gate
   production releases on passing CI and staging smoke tests.
-- Firmware: CI runs the native unit tests and builds the staging and
-  production images. A `fw-v*` tag builds, signs and attaches a draft
+- Firmware: CI runs the native unit tests, builds the staging and
+  production images, tests the signing scripts and checks that the
+  generated setup portal strings are up to date. A `fw-v*` tag builds, signs and attaches a draft
   GitHub Release (see Firmware distribution in §4). Publishing to an
   environment is the `firmware:release` server script.
 - Keep deployment credentials in CI or provider secrets. Set the API base

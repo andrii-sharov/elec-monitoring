@@ -36,10 +36,33 @@ jobs:
       - run: npm test
       - name: Release script
         run: |
-          shellcheck deploy/*.sh
+          shellcheck deploy/*.sh firmware/scripts/*.sh
           bash deploy/staging-release.test.sh
       - name: Migrations match the schema
         run: |
           npm run db:generate -w server
           git diff --exit-code -- server/drizzle
           test -z "$(git status --porcelain -- server/drizzle)"
+      - name: Portal strings are up to date
+        run: |
+          npm run firmware:strings -w shared
+          git diff --exit-code -- firmware/src/generated
+
+  firmware:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: firmware
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: platformio-${{ runner.os }}-${{ hashFiles('firmware/platformio.ini') }}
+      - run: pip install platformio==6.2.0
+      - run: pio test -e native
+      - run: pio run -e staging -e production
+      - run: bash scripts/release.test.sh

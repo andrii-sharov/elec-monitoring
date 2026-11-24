@@ -1,0 +1,56 @@
+name: Firmware release
+
+on:
+  push:
+    tags: ['fw-v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Version from tag
+        id: version
+        run: |
+          version=${GITHUB_REF_NAME#fw-v}
+          if [[ ! $version =~ ^(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})$ ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME is not fw-v<MAJOR.MINOR.PATCH>"
+            exit 1
+          fi
+          echo "version=$version" >>"$GITHUB_OUTPUT"
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: platformio-${{ runner.os }}-${{ hashFiles('firmware/platformio.ini') }}
+      - run: pip install platformio==6.2.0
+      - run: pio test -e native
+        working-directory: firmware
+      - name: Build, sign and verify
+        env:
+          FW_VERSION: ${{ steps.version.outputs.version }}
+          FIRMWARE_SIGNING_KEY: ${{ secrets.FIRMWARE_SIGNING_KEY }}
+        run: |
+          mkdir -p assets
+          for env in staging production; do
+            (cd firmware && pio run -e "$env")
+            out="dist/$env"
+            mkdir -p "$out"
+            cp "firmware/.pio/build/$env/firmware.bin" "$out/app.bin"
+            cp "firmware/.pio/build/$env/firmware.factory.bin" "$out/factory.bin"
+            firmware/scripts/sign.sh "$out/app.bin"
+            firmware/scripts/verify-release.sh "$out" firmware/keys/ota-signing.pub.pem
+            for file in app.bin factory.bin app.sig; do
+              cp "$out/$file" "assets/elec-fw-$FW_VERSION-$env-$file"
+            done
+          done
+      - name: Draft GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: gh release create "$GITHUB_REF_NAME" --draft --title "Firmware $VERSION" assets/*
