@@ -355,6 +355,12 @@ export const uk: Dictionary = {
       save: 'Зберегти канали',
       saved: 'Канали збережено',
     },
+    lamp: {
+      online: '{{name}}: світло є вже {{duration}}',
+      offline: '{{name}}: немає зв’язку вже {{duration}}',
+      pending: '{{name}}: чекаємо на перший зв’язок',
+      updating: '{{name}}: оновлюється',
+    },
     powerStrip: {
       title: 'Останні 7 днів',
       summary: 'Останні 7 днів: відключень {{outages}}, коротких збоїв {{blips}}',

@@ -4,6 +4,7 @@
 @import './appStyles/classic/style.css';
 @import './appStyles/sonar/style.css';
 @import './appStyles/switchboard/style.css';
+@import './appStyles/lamp/style.css';
 
 @custom-variant dark (&:is(.dark *));
 

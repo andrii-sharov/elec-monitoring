@@ -11,11 +11,15 @@ type StateDurationProps = {
 
 export const stateDurationTickMs = 30_000;
 
-export function useStateDurationText(state: DeviceState, since: string): string {
-  const { t } = useTranslation();
+export function useLiveDuration(since: string): string {
   const format = useFormatters();
   const now = useNow(stateDurationTickMs);
-  const duration = format.duration((now - new Date(since).getTime()) / 1000);
+  return format.duration((now - new Date(since).getTime()) / 1000);
+}
+
+function useStateDurationText(state: DeviceState, since: string): string {
+  const { t } = useTranslation();
+  const duration = useLiveDuration(since);
   switch (state) {
     case 'ONLINE':
       return t('app.device.duration.online', { duration });

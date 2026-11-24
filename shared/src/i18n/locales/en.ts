@@ -350,6 +350,12 @@ export const en = {
       save: 'Save channels',
       saved: 'Channels saved',
     },
+    lamp: {
+      online: 'The power is on at {{name}}, {{duration}} now',
+      offline: 'No contact with {{name}} for {{duration}}',
+      pending: 'Waiting for {{name}} to check in',
+      updating: '{{name}} is updating',
+    },
     powerStrip: {
       title: 'Last 7 days',
       summary: 'Last 7 days: outages {{outages}}, power blips {{blips}}',

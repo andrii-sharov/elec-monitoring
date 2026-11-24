@@ -358,6 +358,12 @@ export const ru: Dictionary = {
       save: 'Сохранить каналы',
       saved: 'Каналы сохранены',
     },
+    lamp: {
+      online: '{{name}}: свет есть уже {{duration}}',
+      offline: '{{name}}: нет связи уже {{duration}}',
+      pending: '{{name}}: ждём первой связи',
+      updating: '{{name}}: обновляется',
+    },
     powerStrip: {
       title: 'Последние 7 дней',
       summary: 'Последние 7 дней: отключений {{outages}}, коротких сбоев {{blips}}',
