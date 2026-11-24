@@ -1,9 +1,14 @@
+import { cn } from 'cn';
 import { CheckIcon, ChevronDownIcon } from 'lucide-react';
 import { useId, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  selectItemClassName,
+  selectPopupClassName,
+  selectTriggerClassName,
+} from '@/components/ui/select';
 
 export type PickerOption<T extends string> = { value: T; label: string };
 
@@ -56,19 +61,26 @@ export function PickerField<T extends string>({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           render={
-            <Button
+            <button
               id={buttonId}
               type="button"
-              variant="outline"
-              className="justify-between"
+              data-slot="select-trigger"
+              data-size="default"
+              className={cn(selectTriggerClassName, 'w-full')}
               aria-labelledby={`${labelId} ${buttonId}`}
             />
           }
         >
-          {current}
-          <ChevronDownIcon />
+          <span data-slot="select-value" className="flex flex-1 text-left">
+            {current}
+          </span>
+          <ChevronDownIcon className="pointer-events-none size-4 text-muted-foreground" />
         </PopoverTrigger>
-        <PopoverContent align="start" className="flex w-72 flex-col gap-2">
+        <PopoverContent
+          align="start"
+          data-look="select-content"
+          className={cn(selectPopupClassName, 'flex flex-col gap-1 p-1')}
+        >
           {search ? (
             <Input
               type="search"
@@ -82,12 +94,22 @@ export function PickerField<T extends string>({
               <li key={option.value}>
                 <button
                   type="button"
+                  data-slot="select-item"
                   aria-pressed={option.value === value}
-                  className="flex w-full items-center justify-between rounded-md px-2 py-1 text-left text-sm hover:bg-secondary focus-visible:bg-secondary focus-visible:outline-none"
+                  className={cn(
+                    selectItemClassName,
+                    'hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground',
+                  )}
                   onClick={() => choose(option.value)}
                 >
-                  {option.label}
-                  {option.value === value ? <CheckIcon className="size-4" /> : null}
+                  <span className="flex flex-1 shrink-0 gap-2 whitespace-nowrap">
+                    {option.label}
+                  </span>
+                  {option.value === value ? (
+                    <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center">
+                      <CheckIcon className="pointer-events-none" />
+                    </span>
+                  ) : null}
                 </button>
               </li>
             ))}
