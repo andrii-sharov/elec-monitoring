@@ -43,8 +43,8 @@ function captureBody<T>(url: string, method: 'patch' | 'post' | 'delete', status
 test('changing language to uk sends the patch and switches the page', async () => {
   const bodies = captureBody('/api/v1/me', 'patch', 200, meFixture({ language: 'uk' }));
   const { user } = await renderAccount();
-  await user.click(screen.getByRole('combobox', { name: 'Interface language' }));
-  await user.click(await screen.findByRole('option', { name: 'Українська' }));
+  await user.click(screen.getByRole('button', { name: /Interface language/ }));
+  await user.click(await screen.findByRole('button', { name: 'Українська' }));
   await user.click(screen.getByRole('button', { name: 'Save' }));
   await screen.findByRole('heading', { level: 1, name: 'Обліковий запис' });
   expect(bodies).toEqual([{ language: 'uk' }]);

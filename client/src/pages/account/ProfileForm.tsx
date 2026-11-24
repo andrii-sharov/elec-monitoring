@@ -8,16 +8,9 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { isApiError } from '@/api/errors';
 import { useUpdateMe } from '@/api/useUpdateMe';
+import { PickerField } from '@/components/PickerField';
 import { TimezoneSelect } from '@/components/TimezoneSelect';
 import { Button } from '@/components/ui/button';
-import { Field, FieldLabel } from '@/components/ui/field';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { errorMessage } from '@/forms/errorMessage';
 import { FormAlert } from '@/forms/FormAlert';
 import { TextField } from '@/forms/TextField';
@@ -86,25 +79,12 @@ export function ProfileForm({ me }: { me: Me }) {
           control={control}
           name="language"
           render={({ field }) => (
-            <Field>
-              <FieldLabel>{t('app.account.language')}</FieldLabel>
-              <Select
-                items={languageItems}
-                value={field.value}
-                onValueChange={(next: Language | null) => next && field.onChange(next)}
-              >
-                <SelectTrigger aria-label={t('app.account.language')}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {languageItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
+            <PickerField
+              label={t('app.account.language')}
+              value={field.value}
+              options={languageItems}
+              onChange={(next: Language) => field.onChange(next)}
+            />
           )}
         />
         <Controller
