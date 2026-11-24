@@ -2,6 +2,7 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import './appStyles/classic/style.css';
+@import './appStyles/sonar/style.css';
 
 @custom-variant dark (&:is(.dark *));
 

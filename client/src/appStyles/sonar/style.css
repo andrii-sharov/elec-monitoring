@@ -1,0 +1,104 @@
+[data-app-style='sonar'] {
+  --app-font-body: 'Geologica Variable', ui-sans-serif, system-ui, sans-serif;
+  --app-font-heading: var(--app-font-body);
+  --radius: 1rem;
+  --app-surface-ring: transparent;
+  --app-surface-shadow: 0 10px 30px -12px color-mix(in oklab, var(--primary) 18%, transparent);
+  --app-motion-duration: 600ms;
+  --app-motion-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --app-backdrop: linear-gradient(
+    to bottom,
+    var(--background),
+    color-mix(in oklab, var(--background) 88%, var(--primary))
+  );
+}
+
+.sonar-row,
+.sonar-hero {
+  box-shadow: var(--app-surface-shadow);
+  transition: transform var(--app-motion-duration) var(--app-motion-ease);
+}
+
+.sonar-row:hover {
+  transform: translateY(-1px);
+}
+
+.sonar-row[data-state='OFFLINE'] {
+  background: color-mix(in oklab, var(--card) 85%, var(--status-offline));
+}
+
+.sonar-dot {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 9999px;
+  color: var(--status-pending);
+  background: currentColor;
+}
+
+.sonar-dot[data-size='lg'] {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.sonar-dot[data-state='ONLINE'] {
+  color: var(--status-online);
+}
+
+.sonar-dot[data-state='OFFLINE'] {
+  color: var(--status-offline);
+  background: transparent;
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+
+.sonar-dot[data-state='PENDING'],
+.sonar-dot[data-state='UPDATING'] {
+  background: transparent;
+  border: 2px dashed currentColor;
+}
+
+.sonar-dot::before,
+.sonar-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid currentColor;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sonar-dot[data-state='ONLINE']::after {
+  animation: sonar-idle 4s var(--app-motion-ease) infinite;
+}
+
+.sonar-dot[data-pulse]::before {
+  animation: sonar-pulse calc(var(--app-motion-duration) * 2) var(--app-motion-ease);
+}
+
+@keyframes sonar-idle {
+  0% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  40%,
+  100% {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+
+@keyframes sonar-pulse {
+  0% {
+    opacity: 0.9;
+    transform: scale(1);
+    border-width: 3px;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(3.2);
+    border-width: 1px;
+  }
+}
