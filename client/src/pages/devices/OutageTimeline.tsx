@@ -1,4 +1,5 @@
 import type { OutageItem } from '@elec/shared/api';
+import { PlugZap, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useOutages } from '@/api/queries';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,11 @@ function OutageRow({ outage }: { outage: OutageItem }) {
   return (
     <li className={`flex flex-col gap-1 rounded-lg border p-3 ${color}`}>
       <span className="flex items-center gap-2 font-medium">
-        <span aria-hidden="true">{blip ? '⚡' : '🔌'}</span>
+        {blip ? (
+          <Zap aria-hidden="true" className="size-4" />
+        ) : (
+          <PlugZap aria-hidden="true" className="size-4" />
+        )}
         {t(`app.outage.type.${outage.type}`)}
       </span>
       <span>

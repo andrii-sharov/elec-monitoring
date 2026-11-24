@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { StatusBadge } from '@/components/StatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFormatters } from '@/lib/format';
+import { ClassicStatusMark } from './ClassicStatusMark';
 import type { DeviceSummaryProps } from '../slots';
 
 export function ClassicDeviceSummary({ device }: DeviceSummaryProps) {
@@ -19,7 +19,7 @@ export function ClassicDeviceSummary({ device }: DeviceSummaryProps) {
         <CardHeader>
           <CardTitle className="flex flex-wrap items-center gap-2">
             <span>{device.name}</span>
-            <StatusBadge state={device.state} />
+            <ClassicStatusMark state={device.state} />
             {device.role === 'VIEWER' ? (
               <Badge variant="secondary">{t('app.devices.shared')}</Badge>
             ) : null}

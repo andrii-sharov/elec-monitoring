@@ -11,7 +11,7 @@ import { createDevice, newPairingCode } from '@/api/endpoints';
 import { queryKeys, useDevice } from '@/api/queries';
 import { useSession } from '@/api/session';
 import { PairingCode } from '@/components/PairingCode';
-import { StatusBadge } from '@/components/StatusBadge';
+import { useAppStyle } from '@/appStyles/AppStyleProvider';
 import { buttonVariants, Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { errorMessage } from '@/forms/errorMessage';
@@ -75,6 +75,7 @@ function NameStep({ onCreated }: { onCreated: (pairing: Pairing) => void }) {
 }
 
 function PairingStep({ initial }: { initial: Pairing }) {
+  const { StatusMark } = useAppStyle().slots;
   const { t } = useTranslation();
   const { api } = useSession();
   const [pairing, setPairing] = useState(initial);
@@ -111,7 +112,7 @@ function PairingStep({ initial }: { initial: Pairing }) {
         <CardHeader>
           <CardTitle className="flex flex-wrap items-center gap-2">
             <span>{t('app.addDevice.doneTitle')}</span>
-            <StatusBadge state={device.data.state} />
+            <StatusMark state={device.data.state} lastSeenAt={device.data.last_seen_at} />
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-start gap-3">

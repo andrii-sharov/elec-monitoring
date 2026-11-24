@@ -2,11 +2,10 @@ import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import { useDevice } from '@/api/queries';
 import { isApiError } from '@/api/errors';
-import { StatusBadge } from '@/components/StatusBadge';
+import { useAppStyle } from '@/appStyles/AppStyleProvider';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage } from '@/forms/errorMessage';
-import { useFormatters } from '@/lib/format';
 import { DeviceChannels } from './DeviceChannels';
 import { DeviceDangerZone } from './DeviceDangerZone';
 import { DeviceSettingsForm } from './DeviceSettingsForm';
@@ -14,7 +13,7 @@ import { OutageTimeline } from './OutageTimeline';
 
 export function DevicePage() {
   const { t } = useTranslation();
-  const format = useFormatters();
+  const { DeviceHero } = useAppStyle().slots;
   const { id = '' } = useParams();
   const device = useDevice(id);
 
@@ -49,33 +48,9 @@ export function DevicePage() {
   }
 
   const { data } = device;
-  const { rssi, uptime_s: uptime } = data.telemetry;
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-2">
-        <h1 className="flex flex-wrap items-center gap-2 font-heading text-2xl font-semibold">
-          <span>{data.name}</span>
-          <StatusBadge state={data.state} />
-        </h1>
-        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-          <span>{t('app.device.since', { moment: format.since(data.state_since) })}</span>
-          <span>
-            {data.last_seen_at
-              ? t('app.device.lastSeen', { moment: format.moment(data.last_seen_at) })
-              : t('app.device.never')}
-          </span>
-          {rssi === null ? null : <span>{t('app.device.rssi', { value: rssi })}</span>}
-          {uptime === null ? null : (
-            <span>{t('app.device.uptime', { duration: format.duration(uptime) })}</span>
-          )}
-        </div>
-        {data.open_outage ? (
-          <p className="font-medium text-status-offline">
-            <span aria-hidden="true">🔴 </span>
-            {t('app.device.offlineSince', { moment: format.moment(data.open_outage.started_at) })}
-          </p>
-        ) : null}
-      </header>
+      <DeviceHero device={data} />
       <section aria-labelledby="timeline-title" className="flex flex-col gap-3">
         <h2 id="timeline-title" className="font-heading text-lg font-medium">
           {t('app.device.timeline')}

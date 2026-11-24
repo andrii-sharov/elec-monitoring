@@ -11,3 +11,7 @@
   --app-motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --app-backdrop: var(--background);
 }
+
+.classic-badge[data-motion='change'] {
+  animation: app-fade-in calc(var(--app-motion-duration) * 2) var(--app-motion-ease);
+}

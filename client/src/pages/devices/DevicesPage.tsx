@@ -1,52 +1,21 @@
-import type { DeviceListItem } from '@elec/shared/api';
+import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import { useDevices } from '@/api/queries';
 import { useSession } from '@/api/session';
-import { StatusBadge } from '@/components/StatusBadge';
-import { Badge } from '@/components/ui/badge';
+import { useAppStyle } from '@/appStyles/AppStyleProvider';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage } from '@/forms/errorMessage';
-import { useFormatters } from '@/lib/format';
-
-function DeviceCard({ device }: { device: DeviceListItem }) {
-  const { t } = useTranslation();
-  const format = useFormatters();
-  return (
-    <Link
-      to={`/devices/${device.id}`}
-      className="block rounded-xl focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-    >
-      <Card className="h-full hover:bg-secondary/40">
-        <CardHeader>
-          <CardTitle className="flex flex-wrap items-center gap-2">
-            <span>{device.name}</span>
-            <StatusBadge state={device.state} />
-            {device.role === 'VIEWER' ? (
-              <Badge variant="secondary">{t('app.devices.shared')}</Badge>
-            ) : null}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-1 text-sm text-muted-foreground">
-          <span>{t('app.devices.since', { moment: format.since(device.state_since) })}</span>
-          <span>
-            {device.last_seen_at
-              ? t('app.devices.lastSeen', { moment: format.moment(device.last_seen_at) })
-              : t('app.devices.never')}
-          </span>
-        </CardContent>
-      </Card>
-    </Link>
-  );
-}
 
 export function DevicesPage() {
   const { t } = useTranslation();
   const { me } = useSession();
   const navigate = useNavigate();
   const devices = useDevices();
+  const style = useAppStyle();
+  const { DeviceSummary } = style.slots;
   const verified = me?.email_verified ?? false;
 
   const addButton = (
@@ -85,10 +54,10 @@ export function DevicesPage() {
           </CardContent>
         </Card>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {devices.data.items.map((device) => (
-            <li key={device.id}>
-              <DeviceCard device={device} />
+        <ul className={style.deviceListClassName}>
+          {devices.data.items.map((device, index) => (
+            <li key={device.id} data-motion="enter" style={{ '--i': index } as CSSProperties}>
+              <DeviceSummary device={device} index={index} />
             </li>
           ))}
         </ul>

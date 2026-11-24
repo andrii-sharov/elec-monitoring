@@ -1,13 +1,13 @@
-import { StatusBadge } from '@/components/StatusBadge';
 import type { AppStyleDefinition } from '../registry';
 import { ClassicDeviceHero } from './ClassicDeviceHero';
 import { ClassicDeviceSummary } from './ClassicDeviceSummary';
+import { ClassicStatusMark } from './ClassicStatusMark';
 
 export const classic: AppStyleDefinition = {
   id: 'classic',
   loadFonts: () => Promise.resolve(),
   slots: {
-    StatusMark: StatusBadge,
+    StatusMark: ClassicStatusMark,
     DeviceSummary: ClassicDeviceSummary,
     DeviceHero: ClassicDeviceHero,
   },
