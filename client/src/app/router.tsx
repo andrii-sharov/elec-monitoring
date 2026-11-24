@@ -12,6 +12,7 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { SignupPage } from '@/pages/auth/SignupPage';
 import { VerifyEmailPage } from '@/pages/auth/VerifyEmailPage';
+import { FlashPage } from '@/pages/firmware/FlashPage';
 import { NotificationsPage } from '@/pages/notifications/NotificationsPage';
 import { NotFound } from '@/pages/NotFound';
 import { WelcomeAppearancePage } from '@/pages/welcome/WelcomeAppearancePage';
@@ -49,6 +50,7 @@ export const routes: RouteObject[] = [
                   { path: 'devices', Component: DevicesPage },
                   { path: 'devices/new', Component: AddDevicePage },
                   { path: 'devices/:id', Component: DevicePage },
+                  { path: 'flash', Component: FlashPage },
                   { path: 'notifications', Component: NotificationsPage },
                   { path: 'account', Component: AccountPage },
                 ],

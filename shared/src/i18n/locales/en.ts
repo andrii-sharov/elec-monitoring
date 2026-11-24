@@ -268,7 +268,8 @@ export const en = {
       expired: 'The pairing code has expired.',
       renew: 'Get a new code',
       stepsTitle: 'Set up the device',
-      stepFlash: 'Own ESP only: flash the firmware. A Flash firmware page is coming later.',
+      stepFlash: 'Own ESP32-C3 only: flash the firmware.',
+      flashLink: 'Flash firmware first',
       stepWifi:
         'Open the setup page of the device and enter your Wi-Fi details and this pairing code.',
       stepWait: 'The device connects and starts sending pings.',
@@ -276,6 +277,17 @@ export const en = {
       doneTitle: 'The device is online',
       doneBody: 'Monitoring has started.',
       open: 'Open device',
+    },
+    flash: {
+      title: 'Flash firmware',
+      intro:
+        'Install the Electricity Monitor firmware on your own ESP32-C3 board from this browser.',
+      stepPlug: 'Plug the board in with a USB cable that carries data.',
+      stepInstall: 'Click Install and pick the serial port of the board.',
+      stepWifi: 'Then connect to the ElecMonitor-XXXX Wi-Fi from your phone to set it up.',
+      install: 'Install',
+      unsupported: 'Use Chrome or Edge on a computer to flash firmware.',
+      notAllowed: 'Flashing works only on a secure (HTTPS) page.',
     },
     device: {
       duration: {

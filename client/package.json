@@ -20,6 +20,7 @@
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",
     "cn": "^0.5.2",
+    "esp-web-tools": "^10.5.2",
     "i18next": "^27.2.5",
     "lucide-react": "^1.78.0",
     "react": "^19.3.1",

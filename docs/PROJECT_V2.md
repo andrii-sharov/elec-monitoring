@@ -632,7 +632,13 @@ Pages:
   "delete".
 - **Add device** — wizard: name → pairing code → (flash) → wait for
   first ping.
-- **Flash firmware** — ESP Web Tools.
+- **Flash firmware** (`/flash`, signed in) — ESP Web Tools install button
+  fed by `GET /api/v1/firmware/manifest.json`, with steps (plug in a data
+  USB cable, Install and pick the port, then join `ElecMonitor-XXXX` from a
+  phone). `esp-web-tools` loads with a dynamic import only on this page.
+  Browsers without Web Serial see "Use Chrome or Edge on a computer"
+  instead of the button. The add-device wizard's pairing step links here
+  in a new tab, so the pairing code stays visible.
 - **Notifications** — connect platform Telegram bot, add own bot, add
   webhook, delivery log.
 - **API tokens** — create (shown once), list, revoke.

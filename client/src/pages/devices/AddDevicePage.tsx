@@ -156,7 +156,12 @@ function PairingStep({ initial }: { initial: Pairing }) {
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <ol className="flex list-decimal flex-col gap-1 pl-5 text-sm">
-            <li>{t('app.addDevice.stepFlash')}</li>
+            <li>
+              {t('app.addDevice.stepFlash')}{' '}
+              <Link to="/flash" target="_blank" rel="noopener" className="underline">
+                {t('app.addDevice.flashLink')}
+              </Link>
+            </li>
             <li>{t('app.addDevice.stepWifi')}</li>
             <li>{t('app.addDevice.stepWait')}</li>
           </ol>

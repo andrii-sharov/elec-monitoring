@@ -181,3 +181,13 @@ test('a poll error is shown instead of waiting forever', async () => {
   expect(await screen.findByRole('alert')).toBeInTheDocument();
   expect(screen.queryByText('Waiting for the device to connect…')).toBeNull();
 });
+
+test('the pairing step links to the flash page in a new tab', async () => {
+  handlers();
+  const { user } = renderRoute('/devices/new', { me: meFixture() });
+  await createHome(user);
+  const link = await screen.findByRole('link', { name: 'Flash firmware first' });
+  expect(link).toHaveAttribute('href', '/flash');
+  expect(link).toHaveAttribute('target', '_blank');
+  expect(link).toHaveAttribute('rel', 'noopener');
+});
