@@ -545,8 +545,18 @@ errors, rate limits, and request and response shapes.
 
 Vite + React + TypeScript, React Router, TanStack Query, shadcn/ui
 components on Tailwind CSS, forms with React Hook Form and Zod, and
-i18next for translations. All data goes through our API. Colors and the
-light, dark and system themes follow [theme.md](theme.md).
+i18next for translations. All data goes through our API. Colors, the
+light, dark and system themes, and the four app styles (Classic, Sonar,
+Switchboard, Lamp) follow [theme.md](theme.md). Icons are Lucide, always
+next to text and hidden from screen readers; the client uses no emoji
+status markers (Telegram messages keep theirs).
+
+The signed-in header has the logo, Devices and Notifications on the left
+and an account menu on the right (the name's initial, then the name on
+wider screens) with Account, API docs (new tab) and Sign out. The
+language switcher shows only on signed-out pages; signed-in users change
+language in Account. Route changes crossfade with the View Transitions
+API where the browser supports it.
 
 Polling pauses in hidden tabs: devices list every 30 s, device page every
 15 s, add-device wizard every 3 s while the device is `PENDING`, Telegram
@@ -555,9 +565,20 @@ connect every 3 s until a new channel appears or the link expires.
 Pages:
 
 - **Sign up / Log in / Google sign-in / Verify email / Reset password**
-- **Devices** — cards with 🟢 / 🔴 / ⚪, "since", last seen; shared
-  devices marked.
-- **Device** — status, timeline of outages, stats (day / week / month),
+- **Welcome** — on the first signed-in page load in a browser with no
+  saved app style, the user is sent to `/welcome/appearance?next=…` to
+  pick one, with a live preview of the whole page. **Use this style** or
+  **Keep Classic** saves the choice and continues to `next` (checked like
+  every `next`). It happens once per browser.
+- **Devices** — rendered by the app style's `DeviceSummary`: state with
+  a status mark and its text, how long the state has lasted, last seen;
+  shared devices marked.
+- **Device** — the app style's `DeviceHero` on top: in Sonar, Switchboard
+  and Lamp a live duration that ticks every 30 s ("Power on for 3 h 12 min",
+  "No contact for 25 min", "Waiting for the first check-in", "Updating"),
+  and in Sonar and Switchboard a 7-day power strip built from the loaded
+  outages (time before the oldest loaded outage is unknown while more
+  pages exist). Then status, timeline of outages, stats (day / week / month),
   settings and their applied status, firmware version, update availability,
   Install button, automatic update setting, queued and running updates,
   update result, members & invites, channels, "re-pair", "rotate token",
@@ -570,7 +591,8 @@ Pages:
 - **API tokens** — create (shown once), list, revoke.
 - **API docs** — Swagger UI backed by the generated OpenAPI document.
 - **Account** — name, timezone, language, linked Google, log out
-  everywhere, delete account.
+  everywhere, delete account. Appearance: theme and app style, applied at
+  once and saved in this browser.
 
 ### Device settings and owner actions in the client
 

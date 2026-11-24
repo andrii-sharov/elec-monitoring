@@ -259,9 +259,16 @@ staging, stop the fake device, and receive the OFF and ON messages.
 - [x] Account: name, timezone, language, Google link / unlink, change
       password, log out everywhere, delete account
 - [ ] Vercel project with SPA fallback; staging API URL per environment
+- [ ] App styles, icons, account menu and motion ([M04a](plans/M04a-client-styles.md))
 
 **Done when:** component tests cover form validation and token refresh.
-👤 Walk every page on staging, including a deep link reload.
+👤 Walk every page on staging, including a deep link reload. 👤 Each app
+style in light and dark at phone and desktop width; pickers show each
+style correctly whatever the current style; the first-visit picker opens
+once per browser; Sonar ring, Switchboard lever and Lamp flicker play
+once when a device goes offline and back; nothing moves with Reduce
+motion on; no flash of Classic on reload; account menu, style picker,
+theme control and power strip work by keyboard.
 
 ## M5 — Firmware core and device setup
 
