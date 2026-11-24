@@ -387,7 +387,10 @@ create table firmware_release (
   `text` versions does not.
 - `published_at` `null` is a draft. Automatic OTA offers only published
   `STABLE` releases.
-- `image_path` points at the stored image. Storage is still open (§12).
+- `image_path` is the release folder `<version>` in the environment's
+  private `firmware` Storage bucket. It holds `app.bin` (OTA) and
+  `factory.bin` (browser flashing). `size_bytes` and `sha256` describe
+  `app.bin`.
 
 ### `firmware_update_attempt`
 
@@ -810,9 +813,10 @@ Cascades implement the spec without extra code:
    the device and the owner sets them for every recipient. Quiet hours
    are evaluated in the recipient's timezone.
 2. ~~**Retention** for `delivery` and `device_diagnostic`.~~ ✅ Resolved: 90 days.
-3. **Firmware storage** (API.md §9, question 4). Decides what
-   `firmware_release.image_path` points to. The spec also doesn't define
-   "compatible release", so there is no compatibility column yet.
+3. ~~**Firmware storage**~~ ✅ Resolved: a private Supabase Storage bucket
+   per environment, `image_path` is the version folder (§5). Every newer
+   published `STABLE` release is compatible (one board type), so there is
+   no compatibility column.
 4. ~~**Rate limit counters.**~~ ✅ Resolved: Postgres table `rate_limit_bucket` (§8).
 5. **API.md gap.** `update.status` in API.md lists `QUEUED`, `INSTALLING`,
    `FINISHED`, `TIMED_OUT`, but `POST /device/updates/:id/start` returns

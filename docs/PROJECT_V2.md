@@ -146,7 +146,33 @@ only sends emails.
   - **pairing code** from the client app.
 - On first connect the ESP exchanges the pairing code for its permanent
   **device token** (`POST /api/v1/device/claim`) and stores it in flash.
-- The server URL is built into the firmware.
+- The server URL is built into the firmware. Each PlatformIO environment
+  is tied to one server: `staging` (`https://staging-api.elec-monitoring.homes`)
+  and `production` (`https://api.elec-monitoring.homes`). A local build can
+  set `custom_server_url` in a git-ignored `platformio_override.ini`. A
+  board stays tied to the environment it was flashed for.
+- **Framework (permanent).** PlatformIO with the pioarduino platform
+  pinned to an exact release (Arduino core 3.x, ESP-IDF 5). Its prebuilt
+  bootloader has app rollback on (`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`).
+- **Partition table (permanent),** 4 MB flash, 64 KB aligned apps:
+
+  | Name     | Type | SubType  | Offset     | Size       |
+  | -------- | ---- | -------- | ---------- | ---------- |
+  | nvs      | data | nvs      | `0x9000`   | `0x5000`   |
+  | otadata  | data | ota      | `0xE000`   | `0x2000`   |
+  | app0     | app  | ota_0    | `0x10000`  | `0x1E0000` |
+  | app1     | app  | ota_1    | `0x1F0000` | `0x1E0000` |
+  | reserved | data | `0x99`   | `0x3D0000` | `0x20000`  |
+  | coredump | data | coredump | `0x3F0000` | `0x10000`  |
+
+  `reserved` is unused space kept for a future data partition, since the
+  table can't change after devices ship. The bootloader, the partition
+  table and the OTA verifying key can't change over OTA.
+
+- **TLS.** The firmware trusts ISRG Root X1 and X2 (Let's Encrypt). Caddy
+  pins its ACME issuer to Let's Encrypt so it never falls back to another
+  CA. The CA list can change later over OTA. HTTPS waits for SNTP time
+  (up to 30 s after getting an IP, then it tries anyway).
 
 ### Monitoring signals
 
@@ -241,6 +267,27 @@ firmware installed. A user flashing their own board downloads the compiled
 image in the browser. The initial firmware supports OTA so later releases
 can be installed over Wi-Fi. Remote settings take effect independently of
 firmware releases.
+
+- **Signing.** ECDSA P-256 over the SHA-256 of `app.bin`. The DER
+  signature is stored as-is in `firmware_release.signature`. One key for
+  staging and production. The public key
+  (`firmware/keys/ota-signing.pub.pem`) is built into every firmware, and
+  the device logs its fingerprint at boot. The private key exists only as
+  the GitHub secret `FIRMWARE_SIGNING_KEY` and in an offline password
+  manager backup. Losing it ends OTA for every shipped device.
+- **Storage.** One private Supabase Storage bucket `firmware` per
+  environment. A release lives at `<version>/app.bin` (OTA) and
+  `<version>/factory.bin` (bootloader, partition table, `boot_app0` and app
+  merged at offset 0, for browser flashing). The API streams files from the
+  bucket, and nothing links to the bucket directly.
+- **Releases.** A `fw-v<MAJOR.MINOR.PATCH>` tag runs a workflow that builds
+  the staging and production images, signs them, checks each signature
+  against the committed public key and attaches them to a draft GitHub
+  Release. A server script, run once per environment, verifies the files,
+  uploads them and adds a draft `firmware_release` row, or publishes an
+  existing draft. `version_code = major × 1 000 000 + minor × 1 000 + patch`.
+  With one board type, every published `STABLE` release with a higher
+  `version_code` is compatible.
 
 #### Update discovery and installation policy
 
@@ -789,6 +836,10 @@ own host and Elastic IP.
   Verify the API health endpoint, worker heartbeat, auth refresh, a
   device check-in and a client deep link as those features land. Gate
   production releases on passing CI and staging smoke tests.
+- Firmware: CI runs the native unit tests and builds the staging and
+  production images. A `fw-v*` tag builds, signs and attaches a draft
+  GitHub Release (see Firmware distribution in §4). Publishing to an
+  environment is the `firmware:release` server script.
 - Keep deployment credentials in CI or provider secrets. Set the API base
   URL per Vercel environment. Browser builds contain public config only.
 

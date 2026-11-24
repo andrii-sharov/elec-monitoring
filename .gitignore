@@ -1,8 +1,6 @@
 node_modules/
 dist/
 .env
-firmware/.pio/
-firmware/include/secrets.h
 .DS_Store
 .zed/
 *.tsbuildinfo

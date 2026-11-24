@@ -883,8 +883,10 @@ in PROJECT_V2.md §3–§12. Section numbers below refer to PROJECT_V2.md.
    or follow the owner's?
 2. **Quiet hours timezone.** Owner's, or each recipient's? Spec §7 says
    messages use the recipient's timezone, so per-recipient seems natural.
-3. **Who publishes firmware releases?** The admin app is read-only. A CI
-   step or CLI script with an admin token, or an admin endpoint?
-4. **Where are firmware images stored?** Not in the §12 deployment table
-   (Supabase Storage is an option since Supabase is already used).
+3. ~~**Who publishes firmware releases?**~~ ✅ Resolved: a `fw-v*` tag
+   builds and signs a draft GitHub Release, and the `firmware:release`
+   server script uploads and publishes it per environment (PROJECT_V2.md
+   §4 Firmware distribution).
+4. ~~**Where are firmware images stored?**~~ ✅ Resolved: a private Supabase
+   Storage bucket per environment, streamed by the API.
 5. **Email change.** Not in the spec. Out of scope for v2?

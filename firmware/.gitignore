@@ -1,0 +1,4 @@
+.pio/
+platformio_override.ini
+keys/*
+!keys/*.pub.pem
