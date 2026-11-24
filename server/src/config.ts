@@ -16,6 +16,33 @@ const originUrl = z
 
 const databaseEnvSchema = z.object({ DATABASE_URL: postgresUrl });
 
+const firmwareEnvShape = {
+  FIRMWARE_STORE: z.enum(['supabase', 'fs']).default('supabase'),
+  SUPABASE_URL: z.url({ protocol: /^https?$/ }).optional(),
+  SUPABASE_SECRET_KEY: z.string().min(1).optional(),
+  FIRMWARE_BUCKET: z
+    .string()
+    .regex(/^[a-z0-9][a-z0-9_-]{0,62}$/)
+    .default('firmware'),
+  FIRMWARE_DIR: z.string().min(1).optional(),
+};
+
+type FirmwareEnv = z.output<z.ZodObject<typeof firmwareEnvShape>>;
+
+function requireFirmwareKeys(env: FirmwareEnv, ctx: z.RefinementCtx): void {
+  const required =
+    env.FIRMWARE_STORE === 'supabase'
+      ? (['SUPABASE_URL', 'SUPABASE_SECRET_KEY'] as const)
+      : (['FIRMWARE_DIR'] as const);
+  for (const key of required) {
+    if (!env[key]) ctx.addIssue({ code: 'custom', path: [key], message: 'Required' });
+  }
+}
+
+const firmwareReleaseEnvSchema = databaseEnvSchema
+  .extend(firmwareEnvShape)
+  .superRefine(requireFirmwareKeys);
+
 const workerEnvSchema = databaseEnvSchema
   .extend({
     TELEGRAM_TRANSPORT: z.enum(['telegram', 'log']).default('telegram'),
@@ -46,23 +73,10 @@ const envSchema = databaseEnvSchema
       .transform((value) => value.replace(/^@/, ''))
       .pipe(z.string().regex(/^[A-Za-z0-9_]{5,32}$/)),
     TELEGRAM_WEBHOOK_SECRET: z.string().regex(/^[A-Za-z0-9_-]{32,256}$/),
-    FIRMWARE_STORE: z.enum(['supabase', 'fs']).default('supabase'),
-    SUPABASE_URL: z.url({ protocol: /^https?$/ }).optional(),
-    SUPABASE_SECRET_KEY: z.string().min(1).optional(),
-    FIRMWARE_BUCKET: z
-      .string()
-      .regex(/^[a-z0-9][a-z0-9_-]{0,62}$/)
-      .default('firmware'),
-    FIRMWARE_DIR: z.string().min(1).optional(),
+    ...firmwareEnvShape,
   })
   .superRefine((env, ctx) => {
-    const required =
-      env.FIRMWARE_STORE === 'supabase'
-        ? (['SUPABASE_URL', 'SUPABASE_SECRET_KEY'] as const)
-        : (['FIRMWARE_DIR'] as const);
-    for (const key of required) {
-      if (!env[key]) ctx.addIssue({ code: 'custom', path: [key], message: 'Required' });
-    }
+    requireFirmwareKeys(env, ctx);
     if (env.EMAIL_TRANSPORT === 'resend' && !env.RESEND_API_KEY) {
       ctx.addIssue({
         code: 'custom',
@@ -97,6 +111,8 @@ export type Config = {
 
 export type DatabaseConfig = { databaseUrl: string };
 
+export type FirmwareReleaseConfig = { databaseUrl: string; firmware: FirmwareStoreConfig };
+
 export type WorkerConfig = {
   databaseUrl: string;
   telegram: { transport: 'telegram'; botToken: string } | { transport: 'log' };
@@ -125,7 +141,7 @@ function toEmailConfig(env: z.output<typeof envSchema>): EmailConfig {
   };
 }
 
-function toFirmwareConfig(env: z.output<typeof envSchema>): FirmwareStoreConfig {
+function toFirmwareConfig(env: FirmwareEnv): FirmwareStoreConfig {
   if (env.FIRMWARE_STORE === 'fs') return { store: 'fs', dir: env.FIRMWARE_DIR ?? '' };
   return {
     store: 'supabase',
@@ -165,6 +181,12 @@ export function loadDatabaseConfig(env: NodeJS.ProcessEnv): DatabaseConfig {
   return { databaseUrl: result.data.DATABASE_URL };
 }
 
+export function loadFirmwareReleaseConfig(env: NodeJS.ProcessEnv): FirmwareReleaseConfig {
+  const result = firmwareReleaseEnvSchema.safeParse(env);
+  if (!result.success) throw new ConfigError(failedKeys(result.error));
+  return { databaseUrl: result.data.DATABASE_URL, firmware: toFirmwareConfig(result.data) };
+}
+
 export function loadWorkerConfig(env: NodeJS.ProcessEnv): WorkerConfig {
   const result = workerEnvSchema.safeParse(env);
   if (!result.success) throw new ConfigError(failedKeys(result.error));
@@ -198,4 +220,8 @@ export function loadDatabaseConfigOrExit(env: NodeJS.ProcessEnv): DatabaseConfig
 
 export function loadWorkerConfigOrExit(env: NodeJS.ProcessEnv): WorkerConfig {
   return exitOnConfigError(() => loadWorkerConfig(env));
+}
+
+export function loadFirmwareReleaseConfigOrExit(env: NodeJS.ProcessEnv): FirmwareReleaseConfig {
+  return exitOnConfigError(() => loadFirmwareReleaseConfig(env));
 }

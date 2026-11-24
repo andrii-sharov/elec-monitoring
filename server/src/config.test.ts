@@ -1,5 +1,11 @@
 import { expect, test } from 'vitest';
-import { ConfigError, loadConfig, loadDatabaseConfig, loadWorkerConfig } from './config.ts';
+import {
+  ConfigError,
+  loadConfig,
+  loadDatabaseConfig,
+  loadFirmwareReleaseConfig,
+  loadWorkerConfig,
+} from './config.ts';
 
 function catchError(fn: () => unknown): ConfigError {
   try {
@@ -223,4 +229,25 @@ test.each([
   ['TELEGRAM_PLATFORM_BOT_USERNAME', 'bad'],
 ])('rejects %s = %s', (key, value) => {
   expect(catchError(() => loadConfig({ ...validEnv, [key]: value })).keys).toEqual([key]);
+});
+
+test('the firmware release script needs only the database and the store', () => {
+  expect(
+    loadFirmwareReleaseConfig({
+      DATABASE_URL: 'postgres://u:p@h:5432/db',
+      SUPABASE_URL: 'https://proj.supabase.co',
+      SUPABASE_SECRET_KEY: 'sb_secret_x',
+    }),
+  ).toEqual({
+    databaseUrl: 'postgres://u:p@h:5432/db',
+    firmware: {
+      store: 'supabase',
+      url: 'https://proj.supabase.co',
+      secretKey: 'sb_secret_x',
+      bucket: 'firmware',
+    },
+  });
+  expect(
+    catchError(() => loadFirmwareReleaseConfig({ DATABASE_URL: 'postgres://u:p@h:5432/db' })).keys,
+  ).toEqual(['SUPABASE_SECRET_KEY', 'SUPABASE_URL']);
 });
