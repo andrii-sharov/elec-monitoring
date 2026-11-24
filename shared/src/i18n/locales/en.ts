@@ -103,6 +103,11 @@ export const en = {
       light: 'Light',
       dark: 'Dark',
     },
+    appearance: {
+      title: 'Appearance',
+      hint: 'Saved in this browser',
+      style: 'App style',
+    },
     appStyle: {
       classic: { name: 'Classic', description: 'Clean cards with status badges.' },
       sonar: { name: 'Sonar', description: 'Calm rows with a pulse on every check-in.' },

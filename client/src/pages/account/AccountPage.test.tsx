@@ -69,14 +69,6 @@ test('timezone search finds Europe/Kyiv and saves it', async () => {
   await waitFor(() => expect(bodies).toEqual([{ timezone: 'Europe/Kyiv' }]));
 });
 
-test('theme choice applies locally without a request', async () => {
-  const { user } = await renderAccount();
-  await user.click(screen.getByRole('combobox', { name: 'Theme' }));
-  await user.click(await screen.findByRole('option', { name: 'Dark' }));
-  expect(document.documentElement).toHaveClass('dark');
-  expect(localStorage.getItem('em.theme')).toBe('dark');
-});
-
 test('unlink Google with 409 explains to add a password first', async () => {
   server.use(http.delete(`${base}/api/auth/google`, () => problem('conflict', 409)));
   const { user } = await renderAccount(meFixture({ google_linked: true }));

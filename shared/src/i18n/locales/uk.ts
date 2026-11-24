@@ -105,6 +105,11 @@ export const uk: Dictionary = {
       light: 'Світла',
       dark: 'Темна',
     },
+    appearance: {
+      title: 'Вигляд',
+      hint: 'Зберігається в цьому браузері',
+      style: 'Стиль застосунку',
+    },
     appStyle: {
       classic: { name: 'Класичний', description: 'Охайні картки зі значками стану.' },
       sonar: { name: 'Сонар', description: 'Спокійні рядки з пульсом на кожен зв’язок.' },

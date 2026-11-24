@@ -108,6 +108,11 @@ export const ru: Dictionary = {
       light: 'Светлая',
       dark: 'Тёмная',
     },
+    appearance: {
+      title: 'Внешний вид',
+      hint: 'Сохраняется в этом браузере',
+      style: 'Стиль приложения',
+    },
     appStyle: {
       classic: { name: 'Классический', description: 'Аккуратные карточки со значками состояния.' },
       sonar: { name: 'Сонар', description: 'Спокойные строки с пульсом на каждую связь.' },

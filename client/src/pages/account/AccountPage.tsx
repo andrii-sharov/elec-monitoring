@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSession } from '@/api/session';
+import { AppearanceCard } from './AppearanceCard';
 import { ChangePasswordForm } from './ChangePasswordForm';
 import { DeleteAccount } from './DeleteAccount';
 import { ProfileForm } from './ProfileForm';
@@ -17,6 +18,7 @@ export function AccountPage() {
       {me ? (
         <>
           <ProfileForm key={me.id} me={me} />
+          <AppearanceCard />
           <SignInMethods me={me} />
           {me.has_password ? <ChangePasswordForm /> : null}
           <SessionsCard />

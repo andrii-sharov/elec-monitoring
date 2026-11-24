@@ -22,7 +22,6 @@ import { errorMessage } from '@/forms/errorMessage';
 import { FormAlert } from '@/forms/FormAlert';
 import { TextField } from '@/forms/TextField';
 import { applyServerErrors } from '@/forms/zodErrors';
-import { themeChoices, useTheme, type ThemeChoice } from '@/lib/theme';
 
 const profileSchema = z.object({
   name: nameSchema,
@@ -38,14 +37,9 @@ function valuesOf(me: Me): Values {
   return { name: me.name, language: me.language, timezone: me.timezone };
 }
 
-function isTheme(value: string | null): value is ThemeChoice {
-  return themeChoices.some((choice) => choice === value);
-}
-
 export function ProfileForm({ me }: { me: Me }) {
   const { t } = useTranslation();
   const updateMe = useUpdateMe();
-  const [theme, setTheme] = useTheme();
   const [formError, setFormError] = useState<string | null>(null);
   const {
     register,
@@ -59,7 +53,6 @@ export function ProfileForm({ me }: { me: Me }) {
     value,
     label: t(`app.common.languages.${value}`),
   }));
-  const themeItems = themeChoices.map((value) => ({ value, label: t(`app.theme.${value}`) }));
 
   function submit(values: Values) {
     const body: Partial<Values> = {};
@@ -127,25 +120,6 @@ export function ProfileForm({ me }: { me: Me }) {
             />
           )}
         />
-        <Field>
-          <FieldLabel>{t('app.theme.label')}</FieldLabel>
-          <Select
-            items={themeItems}
-            value={theme}
-            onValueChange={(next: string | null) => isTheme(next) && setTheme(next)}
-          >
-            <SelectTrigger aria-label={t('app.theme.label')}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {themeItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
         <Button type="submit" className="self-start" disabled={updateMe.isPending || !isDirty}>
           {t('app.account.save')}
         </Button>
