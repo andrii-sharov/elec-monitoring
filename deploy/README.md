@@ -260,6 +260,8 @@ allows `CLIENT_URL=https://staging-app.elec-monitoring.homes`.
 6. **Check.** Open `https://staging-app.elec-monitoring.homes/login`, then
    reload a deep link such as `/account`: it must load the app, not a 404.
 
+Production Branch `main` has no `client/` yet, so production builds from `main` will fail until M12: either set an Ignored Build Step for `main` or leave the production project unconnected until then.
+
 Preview `*.vercel.app` URLs can't sign in: the API's CORS and the refresh
 cookie allow only the stable origins. Test sign-in on
 `staging-app.elec-monitoring.homes`.

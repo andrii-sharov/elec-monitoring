@@ -1,4 +1,5 @@
 import { screen } from '@testing-library/react';
+import { act } from 'react';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { deviceFixture, meFixture, outageFixture } from '../../../test/fixtures.ts';
@@ -68,4 +69,27 @@ test('an unknown device shows not found with a link back', async () => {
   renderRoute(`/devices/${id}`, { me: meFixture() });
   expect(await screen.findByText('Device not found')).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Back to devices' })).toHaveAttribute('href', '/devices');
+});
+
+test('a failed background poll keeps the page and unsaved settings', async () => {
+  let calls = 0;
+  server.use(
+    http.get(`${base}/api/v1/devices/${id}`, () => {
+      calls += 1;
+      if (calls > 1) {
+        return HttpResponse.json({ error: { code: 'internal', message: 'boom' } }, { status: 500 });
+      }
+      return HttpResponse.json(deviceFixture({ name: 'Home' }));
+    }),
+  );
+  const { user } = renderRoute(`/devices/${id}`, { me: meFixture() });
+  await screen.findByRole('heading', { name: /Home/ });
+  const name = await screen.findByLabelText('Name');
+  await user.type(name, ' edited');
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(15_000);
+  });
+  expect(calls).toBeGreaterThan(1);
+  expect(screen.getByRole('heading', { name: /Home/ })).toBeInTheDocument();
+  expect(screen.getByLabelText('Name')).toHaveValue('Home edited');
 });

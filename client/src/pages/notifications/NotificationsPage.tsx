@@ -39,7 +39,7 @@ export function NotificationsPage() {
           <output aria-label={t('app.common.loading')} className="flex flex-col gap-3">
             <Skeleton className="h-12" />
           </output>
-        ) : channels.isError ? (
+        ) : channels.isError && !channels.data ? (
           <div role="alert" className="flex items-center gap-2 text-danger">
             <span>{errorMessage(t, channels.error)}</span>
             <Button variant="outline" size="sm" onClick={() => void channels.refetch()}>

@@ -69,7 +69,7 @@ export function DevicesPage() {
           <Skeleton className="h-28" />
           <Skeleton className="h-28" />
         </output>
-      ) : devices.isError ? (
+      ) : devices.isError && !devices.data ? (
         <div role="alert" className="flex items-center gap-2 text-danger">
           <span>{errorMessage(t, devices.error)}</span>
           <Button variant="outline" size="sm" onClick={() => void devices.refetch()}>

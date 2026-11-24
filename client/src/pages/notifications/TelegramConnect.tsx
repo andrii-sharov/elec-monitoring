@@ -39,13 +39,13 @@ function LinkPanel({ link, onConnected }: LinkPanelProps) {
     <div className="flex flex-col items-start gap-3">
       <p className="text-sm text-muted-foreground">{t('app.notifications.connectHint')}</p>
       <div className="flex flex-wrap gap-2">
-        <a href={link.url} target="_blank" rel="noopener" className={buttonVariants()}>
+        <a href={link.url} target="_blank" rel="noopener noreferrer" className={buttonVariants()}>
           {t('app.notifications.openTelegram')}
         </a>
         <a
           href={link.groupUrl}
           target="_blank"
-          rel="noopener"
+          rel="noopener noreferrer"
           className={buttonVariants({ variant: 'outline' })}
         >
           {t('app.notifications.addToGroup')}

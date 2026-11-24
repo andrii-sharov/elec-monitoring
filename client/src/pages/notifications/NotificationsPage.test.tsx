@@ -60,7 +60,7 @@ test('connect shows both links and stops polling after a new channel appears', a
   const open = await screen.findByRole('link', { name: 'Open in Telegram' });
   expect(open).toHaveAttribute('href', 'https://t.me/ElecBot?start=abc');
   expect(open).toHaveAttribute('target', '_blank');
-  expect(open).toHaveAttribute('rel', 'noopener');
+  expect(open).toHaveAttribute('rel', 'noopener noreferrer');
   expect(screen.getByRole('link', { name: 'Add to a group' })).toHaveAttribute(
     'href',
     'https://t.me/ElecBot?startgroup=abc',

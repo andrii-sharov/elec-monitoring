@@ -23,7 +23,8 @@ export function DeviceChannels({ deviceId }: { deviceId: string }) {
 
   const save = useMutation({
     mutationFn: (ids: string[]) => putDeviceChannels(api, deviceId, { channel_ids: ids }),
-    onSuccess: async () => {
+    onSuccess: async (response) => {
+      queryClient.setQueryData(queryKeys.deviceChannels(deviceId), response);
       setEdited(null);
       toast.success(t('app.channel.saved'));
       await queryClient.invalidateQueries({ queryKey: queryKeys.deviceChannels(deviceId) });

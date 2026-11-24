@@ -104,7 +104,7 @@ main() {
   echo "$sha" >"$candidate/REVISION"
   cd "$candidate"
   npm ci --no-audit --no-fund --loglevel=error
-  npm run build --silent
+  npm run build --silent -w shared -w server
 
   begin migrate
   sudo systemd-run --wait --pipe --collect --quiet --uid=elec --gid=elec \

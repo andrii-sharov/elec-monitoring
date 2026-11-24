@@ -92,3 +92,29 @@ test('the header links to the API docs', async () => {
   expect(screen.getByRole('link', { name: 'Notifications' })).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Account' })).toBeInTheDocument();
 });
+
+test('the UI follows the account language', async () => {
+  devicesHandler([]);
+  renderRoute('/devices', { me: meFixture({ language: 'uk' }) });
+  expect(await screen.findByRole('heading', { name: 'Пристрої' })).toBeInTheDocument();
+});
+
+test('a failed background poll keeps the list', async () => {
+  let calls = 0;
+  server.use(
+    http.get(`${base}/api/v1/devices`, () => {
+      calls += 1;
+      if (calls > 1) {
+        return HttpResponse.json({ error: { code: 'internal', message: 'boom' } }, { status: 500 });
+      }
+      return HttpResponse.json({ items: [deviceFixture({ name: 'Home' })] });
+    }),
+  );
+  renderRoute('/devices', { me: meFixture() });
+  await screen.findByRole('link', { name: /Home/ });
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(30_000);
+  });
+  expect(calls).toBeGreaterThan(1);
+  expect(screen.getByRole('link', { name: /Home/ })).toBeInTheDocument();
+});

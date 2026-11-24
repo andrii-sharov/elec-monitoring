@@ -26,7 +26,7 @@ export function DevicePage() {
       </output>
     );
   }
-  if (device.isError) {
+  if (device.isError && !device.data) {
     if (isApiError(device.error, 'not_found')) {
       return (
         <div className="flex flex-col items-start gap-3">

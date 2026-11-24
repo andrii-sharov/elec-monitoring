@@ -793,6 +793,12 @@ PORT=3000
 HOST=127.0.0.1                     # optional; unset listens on all interfaces
 ```
 
+Client build variable, set in Vercel and not in the server env file:
+
+```
+VITE_API_URL=https://staging-api.<domain>   # client build variable, origin only
+```
+
 The worker reads `DATABASE_URL`, `TELEGRAM_PLATFORM_BOT_TOKEN` and
 `TELEGRAM_TRANSPORT` (`telegram` default | `log`, which only logs messages
 for local runs; the token is required when `telegram`). The API doesn't

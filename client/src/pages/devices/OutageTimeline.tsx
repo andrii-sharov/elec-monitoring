@@ -48,7 +48,7 @@ export function OutageTimeline({ deviceId }: { deviceId: string }) {
       </output>
     );
   }
-  if (outages.isError) {
+  if (outages.isError && !outages.data) {
     return (
       <div role="alert" className="flex items-center gap-2 text-danger">
         <span>{errorMessage(t, outages.error)}</span>

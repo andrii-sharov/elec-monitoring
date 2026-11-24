@@ -1,8 +1,8 @@
-import { QueryClient } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
+import { createQueryClient } from './api/queryClient.ts';
 import { AppProviders } from './app/providers.tsx';
 import { routes } from './app/router.tsx';
 import { installZodErrors } from './forms/zodErrors.ts';
@@ -25,7 +25,7 @@ if (!root) throw new Error('Missing #root element');
 
 createRoot(root).render(
   <StrictMode>
-    <AppProviders i18n={i18n} queryClient={new QueryClient()}>
+    <AppProviders i18n={i18n} queryClient={createQueryClient()}>
       <RouterProvider router={createBrowserRouter(routes)} />
     </AppProviders>
   </StrictMode>,

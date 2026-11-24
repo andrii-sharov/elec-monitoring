@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiUrl } from '@/lib/config';
+import { rememberLanguage } from '@/lib/i18n';
 import { safeNext } from '@/lib/safeNext';
 import { createApiClient, type ApiClient } from './client.ts';
 import { getMe, logout } from './endpoints.ts';
@@ -122,6 +123,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     enabled: status === 'authenticated',
     staleTime: Infinity,
   });
+
+  const { i18n } = useTranslation();
+  const accountLanguage = me?.language;
+  useEffect(() => {
+    if (!accountLanguage || accountLanguage === i18n.resolvedLanguage) return;
+    rememberLanguage(accountLanguage);
+    void i18n.changeLanguage(accountLanguage);
+  }, [accountLanguage, i18n]);
 
   const value = useMemo<SessionValue>(
     () => ({
