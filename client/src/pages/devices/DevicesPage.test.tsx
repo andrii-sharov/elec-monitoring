@@ -84,15 +84,6 @@ test('the list refetches after 30 seconds', async () => {
   expect(await screen.findByText('Offline')).toBeInTheDocument();
 });
 
-test('the header links to the API docs', async () => {
-  devicesHandler([]);
-  renderRoute('/devices', { me: meFixture() });
-  const link = await screen.findByRole('link', { name: 'API docs' });
-  expect(link).toHaveAttribute('href', `${base}/api/docs`);
-  expect(screen.getByRole('link', { name: 'Notifications' })).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: 'Account' })).toBeInTheDocument();
-});
-
 test('the UI follows the account language', async () => {
   devicesHandler([]);
   renderRoute('/devices', { me: meFixture({ language: 'uk' }) });

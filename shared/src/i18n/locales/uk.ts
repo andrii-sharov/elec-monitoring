@@ -199,6 +199,8 @@ export const uk: Dictionary = {
       home: 'На головну',
     },
     nav: {
+      menu: 'Меню акаунта',
+      signOut: 'Вийти',
       devices: 'Пристрої',
       notifications: 'Сповіщення',
       account: 'Акаунт',

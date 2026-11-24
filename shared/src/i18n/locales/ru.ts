@@ -203,6 +203,8 @@ export const ru: Dictionary = {
       home: 'На главную',
     },
     nav: {
+      menu: 'Меню аккаунта',
+      signOut: 'Выйти',
       devices: 'Устройства',
       notifications: 'Уведомления',
       account: 'Аккаунт',

@@ -195,6 +195,8 @@ export const en = {
       home: 'Go to the home page',
     },
     nav: {
+      menu: 'Account menu',
+      signOut: 'Sign out',
       devices: 'Devices',
       notifications: 'Notifications',
       account: 'Account',

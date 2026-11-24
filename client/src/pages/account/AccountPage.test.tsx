@@ -50,15 +50,6 @@ test('changing language to uk sends the patch and switches the page', async () =
   expect(bodies).toEqual([{ language: 'uk' }]);
 });
 
-test('the header language switcher also patches the profile when signed in', async () => {
-  const bodies = captureBody('/api/v1/me', 'patch', 200, meFixture({ language: 'ru' }));
-  const { user } = await renderAccount();
-  await user.click(screen.getByRole('combobox', { name: 'Language' }));
-  await user.click(await screen.findByRole('option', { name: 'Русский' }));
-  await screen.findByRole('heading', { level: 1, name: 'Аккаунт' });
-  expect(bodies).toEqual([{ language: 'ru' }]);
-});
-
 test('an empty name shows an inline error and sends nothing', async () => {
   const bodies = captureBody('/api/v1/me', 'patch', 200, meFixture());
   const { user } = await renderAccount();

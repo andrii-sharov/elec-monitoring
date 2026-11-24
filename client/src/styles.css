@@ -114,3 +114,13 @@
     @apply font-sans;
   }
 }
+
+.app-header {
+  view-transition-name: app-header;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--app-motion-duration);
+  animation-timing-function: var(--app-motion-ease);
+}
