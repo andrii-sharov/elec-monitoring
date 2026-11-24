@@ -244,6 +244,12 @@ export const ru: Dictionary = {
       open: 'Открыть устройство',
     },
     device: {
+      duration: {
+        online: 'Свет есть уже {{duration}}',
+        offline: 'Нет связи уже {{duration}}',
+        pending: 'Ждём первой связи',
+        updating: 'Обновляется',
+      },
       notFoundTitle: 'Устройство не найдено',
       notFoundBody: 'Такого устройства нет или у вас нет доступа к нему.',
       backToList: 'К устройствам',

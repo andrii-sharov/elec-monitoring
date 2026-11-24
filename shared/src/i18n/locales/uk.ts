@@ -241,6 +241,12 @@ export const uk: Dictionary = {
       open: 'Відкрити пристрій',
     },
     device: {
+      duration: {
+        online: 'Світло є вже {{duration}}',
+        offline: 'Немає зв’язку вже {{duration}}',
+        pending: 'Чекаємо на перший зв’язок',
+        updating: 'Оновлюється',
+      },
       notFoundTitle: 'Пристрій не знайдено',
       notFoundBody: 'Такого пристрою немає або у вас немає доступу до нього.',
       backToList: 'До пристроїв',

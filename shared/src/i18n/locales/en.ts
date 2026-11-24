@@ -236,6 +236,12 @@ export const en = {
       open: 'Open device',
     },
     device: {
+      duration: {
+        online: 'Power on for {{duration}}',
+        offline: 'No contact for {{duration}}',
+        pending: 'Waiting for the first check-in',
+        updating: 'Updating',
+      },
       notFoundTitle: 'Device not found',
       notFoundBody: 'This device does not exist or you have no access to it.',
       backToList: 'Back to devices',

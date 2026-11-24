@@ -124,3 +124,37 @@
   animation-duration: var(--app-motion-duration);
   animation-timing-function: var(--app-motion-ease);
 }
+
+@keyframes app-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+@keyframes app-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+[data-motion='enter'] {
+  animation: app-rise calc(var(--app-motion-duration) * 2) var(--app-motion-ease) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root,
+  [data-app-style] {
+    --app-motion-duration: 0ms;
+  }
+  [data-motion],
+  [data-motion] * {
+    animation: none !important;
+    transition: none !important;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
