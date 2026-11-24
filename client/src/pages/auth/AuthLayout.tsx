@@ -1,3 +1,4 @@
+import { Zap } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
@@ -15,6 +16,12 @@ export function AuthLayout({ title, description, children, footer }: AuthLayoutP
       <div className="absolute top-4 right-4">
         <LanguageSwitcher />
       </div>
+      <span className="flex items-center gap-2 font-heading text-lg font-semibold">
+        <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <Zap aria-hidden="true" className="size-5" />
+        </span>
+        Elec
+      </span>
       <Card className="w-full max-w-sm">
         <CardHeader>
           <h1 className="font-heading text-xl font-semibold">{title}</h1>

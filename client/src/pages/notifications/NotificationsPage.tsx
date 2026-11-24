@@ -1,3 +1,4 @@
+import { BellRing, RotateCw } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { deleteChannel } from '@/api/endpoints';
@@ -31,7 +32,11 @@ export function NotificationsPage() {
     <div className="flex flex-col gap-6">
       <h1 className="font-heading text-2xl font-semibold">{t('app.notifications.title')}</h1>
       <section aria-labelledby="channels-title" className="flex flex-col gap-3">
-        <h2 id="channels-title" className="font-heading text-lg font-medium">
+        <h2
+          id="channels-title"
+          className="flex items-center gap-2 font-heading text-lg font-medium"
+        >
+          <BellRing aria-hidden="true" className="size-4" />
           {t('app.notifications.list')}
         </h2>
         <FormAlert message={remove.error ? errorMessage(t, remove.error) : null} />
@@ -43,6 +48,7 @@ export function NotificationsPage() {
           <div role="alert" className="flex items-center gap-2 text-danger">
             <span>{errorMessage(t, channels.error)}</span>
             <Button variant="outline" size="sm" onClick={() => void channels.refetch()}>
+              <RotateCw aria-hidden="true" />
               {t('app.common.retry')}
             </Button>
           </div>

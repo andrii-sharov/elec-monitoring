@@ -1,3 +1,4 @@
+import { MailWarning } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -18,7 +19,10 @@ export function VerifyBanner() {
   if (!me || me.email_verified) return null;
   return (
     <Alert className="flex flex-wrap items-center justify-between gap-2">
-      <AlertDescription>{t('app.verify.banner')}</AlertDescription>
+      <AlertDescription className="flex items-center gap-2">
+        <MailWarning aria-hidden="true" className="size-4 flex-none" />
+        {t('app.verify.banner')}
+      </AlertDescription>
       <Button size="sm" onClick={() => resend.mutate()} disabled={resend.isPending}>
         {t('app.verify.resend')}
       </Button>

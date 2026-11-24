@@ -1,3 +1,4 @@
+import { Send } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -88,6 +89,7 @@ export function TelegramConnect() {
         disabled={!verified || !channels.data || create.isPending}
         onClick={() => create.mutate(channels.data?.items.map((item) => item.id) ?? [])}
       >
+        <Send aria-hidden="true" />
         {t('app.notifications.connect')}
       </Button>
       {verified ? null : (

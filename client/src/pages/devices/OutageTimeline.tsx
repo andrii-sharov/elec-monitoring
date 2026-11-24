@@ -1,5 +1,5 @@
 import type { OutageItem } from '@elec/shared/api';
-import { PlugZap, Zap } from 'lucide-react';
+import { PlugZap, RotateCw, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useOutages } from '@/api/queries';
 import { Button } from '@/components/ui/button';
@@ -58,6 +58,7 @@ export function OutageTimeline({ deviceId }: { deviceId: string }) {
       <div role="alert" className="flex items-center gap-2 text-danger">
         <span>{errorMessage(t, outages.error)}</span>
         <Button variant="outline" size="sm" onClick={() => void outages.refetch()}>
+          <RotateCw aria-hidden="true" />
           {t('app.common.retry')}
         </Button>
       </div>

@@ -1,3 +1,4 @@
+import { Trash2, TriangleAlert } from 'lucide-react';
 import type { Me } from '@elec/shared/api';
 import { useMutation } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
@@ -64,12 +65,17 @@ export function DeleteAccount({ me }: { me: Me }) {
 
   return (
     <section aria-labelledby="delete-title" className="flex max-w-xl flex-col gap-3">
-      <h2 id="delete-title" className="font-heading text-lg font-medium text-danger">
+      <h2
+        id="delete-title"
+        className="flex items-center gap-2 font-heading text-lg font-medium text-danger"
+      >
+        <TriangleAlert aria-hidden="true" className="size-4" />
         {t('app.account.deleteTitle')}
       </h2>
       <p className="text-sm text-muted-foreground">{t('app.account.deleteBody')}</p>
       <Dialog open={open} onOpenChange={changeOpen}>
         <DialogTrigger render={<Button variant="destructive" className="self-start" />}>
+          <Trash2 aria-hidden="true" />
           {t('app.account.deleteTitle')}
         </DialogTrigger>
         <DialogContent>

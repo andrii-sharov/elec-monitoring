@@ -121,6 +121,8 @@ test('the copy button copies the code without spaces', async () => {
   await user.click(screen.getByRole('button', { name: 'Copy' }));
   expect(await navigator.clipboard.readText()).toBe('K7Q2M9XD');
   expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument();
+  await act(() => vi.advanceTimersByTimeAsync(1500));
+  expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
 });
 
 test('an expired code hides the code, stops polling, and a new code resumes it', async () => {

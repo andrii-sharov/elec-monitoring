@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { Check, Copy } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useFormatters } from '@/lib/format';
@@ -11,6 +12,11 @@ export function PairingCode({ code, expiresAt, onRenew }: PairingCodeProps) {
   const format = useFormatters();
   const secondsLeft = useSecondsLeft(expiresAt);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  useEffect(() => {
+    if (copiedCode === null) return;
+    const id = setTimeout(() => setCopiedCode(null), 1500);
+    return () => clearTimeout(id);
+  }, [copiedCode]);
 
   if (secondsLeft === 0) {
     return (
@@ -39,6 +45,7 @@ export function PairingCode({ code, expiresAt, onRenew }: PairingCodeProps) {
         {t('app.addDevice.expiresIn', { time: format.duration(secondsLeft) })}
       </p>
       <Button variant="outline" size="sm" onClick={() => void copy()}>
+        {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
         {copied ? t('app.addDevice.copied') : t('app.addDevice.copy')}
       </Button>
     </div>

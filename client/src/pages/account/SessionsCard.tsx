@@ -1,3 +1,4 @@
+import { MonitorSmartphone } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { logoutAll } from '@/api/endpoints';
@@ -16,7 +17,8 @@ export function SessionsCard() {
 
   return (
     <section aria-labelledby="sessions-title" className="flex max-w-xl flex-col gap-3">
-      <h2 id="sessions-title" className="font-heading text-lg font-medium">
+      <h2 id="sessions-title" className="flex items-center gap-2 font-heading text-lg font-medium">
+        <MonitorSmartphone aria-hidden="true" className="size-4" />
         {t('app.account.sessions')}
       </h2>
       <FormAlert message={everywhere.error ? errorMessage(t, everywhere.error) : null} />

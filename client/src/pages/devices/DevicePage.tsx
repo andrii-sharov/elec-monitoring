@@ -1,3 +1,4 @@
+import { RotateCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import { useDevice } from '@/api/queries';
@@ -41,6 +42,7 @@ export function DevicePage() {
       <div role="alert" className="flex items-center gap-2 text-danger">
         <span>{errorMessage(t, device.error)}</span>
         <Button variant="outline" size="sm" onClick={() => void device.refetch()}>
+          <RotateCw aria-hidden="true" />
           {t('app.common.retry')}
         </Button>
       </div>

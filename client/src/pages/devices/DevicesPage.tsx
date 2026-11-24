@@ -1,3 +1,4 @@
+import { PlugZap, Plus, RotateCw } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
@@ -20,6 +21,7 @@ export function DevicesPage() {
 
   const addButton = (
     <Button disabled={!verified} onClick={() => void navigate('/devices/new')}>
+      <Plus aria-hidden="true" />
       {t('app.devices.add')}
     </Button>
   );
@@ -42,12 +44,16 @@ export function DevicesPage() {
         <div role="alert" className="flex items-center gap-2 text-danger">
           <span>{errorMessage(t, devices.error)}</span>
           <Button variant="outline" size="sm" onClick={() => void devices.refetch()}>
+            <RotateCw aria-hidden="true" />
             {t('app.common.retry')}
           </Button>
         </div>
       ) : devices.data.items.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
+            <span className="flex size-16 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+              <PlugZap aria-hidden="true" className="size-8" />
+            </span>
             <h2 className="font-heading text-lg font-medium">{t('app.devices.emptyTitle')}</h2>
             <p className="text-muted-foreground">{t('app.devices.emptyBody')}</p>
             {addButton}

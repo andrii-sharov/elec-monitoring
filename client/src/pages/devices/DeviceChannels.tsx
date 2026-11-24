@@ -1,3 +1,4 @@
+import { BellRing } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -32,7 +33,8 @@ export function DeviceChannels({ deviceId }: { deviceId: string }) {
   });
 
   const heading = (
-    <h2 id="channels-title" className="font-heading text-lg font-medium">
+    <h2 id="channels-title" className="flex items-center gap-2 font-heading text-lg font-medium">
+      <BellRing aria-hidden="true" className="size-4" />
       {t('app.channel.title')}
     </h2>
   );

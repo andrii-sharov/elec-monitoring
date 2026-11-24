@@ -1,3 +1,4 @@
+import { RefreshCcw, Trash2, TriangleAlert } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -55,7 +56,11 @@ export function DeviceDangerZone({ deviceId }: { deviceId: string }) {
 
   return (
     <section aria-labelledby="danger-title" className="flex flex-col gap-3">
-      <h2 id="danger-title" className="font-heading text-lg font-medium text-danger">
+      <h2
+        id="danger-title"
+        className="flex items-center gap-2 font-heading text-lg font-medium text-danger"
+      >
+        <TriangleAlert aria-hidden="true" className="size-4" />
         {t('app.danger.title')}
       </h2>
       <FormAlert message={failure ? errorMessage(t, failure) : null} />
@@ -64,7 +69,12 @@ export function DeviceDangerZone({ deviceId }: { deviceId: string }) {
           {t('app.danger.repair')}
         </Button>
         <ConfirmDialog
-          trigger={<Button variant="outline">{t('app.danger.rotate')}</Button>}
+          trigger={
+            <Button variant="outline">
+              <RefreshCcw aria-hidden="true" />
+              {t('app.danger.rotate')}
+            </Button>
+          }
           title={t('app.danger.rotate')}
           body={t('app.danger.rotateBody')}
           confirmLabel={t('app.danger.rotate')}
@@ -72,7 +82,12 @@ export function DeviceDangerZone({ deviceId }: { deviceId: string }) {
           onConfirm={() => rotate.mutate()}
         />
         <ConfirmDialog
-          trigger={<Button variant="destructive">{t('app.danger.delete')}</Button>}
+          trigger={
+            <Button variant="destructive">
+              <Trash2 aria-hidden="true" />
+              {t('app.danger.delete')}
+            </Button>
+          }
           title={t('app.danger.deleteTitle')}
           body={t('app.danger.deleteBody')}
           confirmLabel={t('app.danger.delete')}

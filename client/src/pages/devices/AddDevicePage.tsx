@@ -1,3 +1,4 @@
+import { KeyRound, Radio, Tag } from 'lucide-react';
 import { createDeviceBodySchema } from '@elec/shared/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -68,6 +69,7 @@ function NameStep({ onCreated }: { onCreated: (pairing: Pairing) => void }) {
         {...register('name')}
       />
       <Button type="submit" disabled={mutation.isPending}>
+        <Tag aria-hidden="true" />
         {t('app.addDevice.submit')}
       </Button>
     </form>
@@ -129,7 +131,10 @@ function PairingStep({ initial }: { initial: Pairing }) {
     <div className="flex flex-col gap-4">
       <Card>
         <CardHeader>
-          <CardTitle>{t('app.addDevice.codeTitle')}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <KeyRound aria-hidden="true" className="size-4" />
+            {t('app.addDevice.codeTitle')}
+          </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <FormAlert message={renew.error ? errorMessage(t, renew.error) : null} />
@@ -144,7 +149,10 @@ function PairingStep({ initial }: { initial: Pairing }) {
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>{t('app.addDevice.stepsTitle')}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Radio aria-hidden="true" className="size-4" />
+            {t('app.addDevice.stepsTitle')}
+          </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <ol className="flex list-decimal flex-col gap-1 pl-5 text-sm">
