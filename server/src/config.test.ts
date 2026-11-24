@@ -251,3 +251,8 @@ test('the firmware release script needs only the database and the store', () => 
     catchError(() => loadFirmwareReleaseConfig({ DATABASE_URL: 'postgres://u:p@h:5432/db' })).keys,
   ).toEqual(['SUPABASE_SECRET_KEY', 'SUPABASE_URL']);
 });
+
+test('SUPABASE_URL keeps only the origin', () => {
+  const config = loadConfig({ ...validEnv, SUPABASE_URL: 'https://proj.supabase.co/rest/v1/' });
+  expect(config.firmware).toMatchObject({ url: 'https://proj.supabase.co' });
+});

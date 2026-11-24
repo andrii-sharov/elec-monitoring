@@ -50,7 +50,10 @@ export function supabaseStore(
     async get(path) {
       const res = await fetchFn(`${base}/${checkPath(path)}`, { method: 'GET', headers: auth });
       if (res.status === 404 || (await isLegacyNotFound(res))) return null;
-      if (!res.ok || !res.body) throw new Error(`Firmware store get failed: ${res.status}`);
+      if (!res.ok || !res.body) {
+        const detail = (await res.text().catch(() => '')).slice(0, 200);
+        throw new Error(`Firmware store get failed: ${res.status} ${detail}`.trim());
+      }
       return { body: res.body, size: Number(res.headers.get('content-length') ?? 0) };
     },
     async put(path, bytes) {
@@ -59,7 +62,10 @@ export function supabaseStore(
         headers: { ...auth, 'content-type': 'application/octet-stream', 'x-upsert': 'true' },
         body: new Uint8Array(bytes),
       });
-      if (!res.ok) throw new Error(`Firmware store put failed: ${res.status}`);
+      if (!res.ok) {
+        const detail = (await res.text().catch(() => '')).slice(0, 200);
+        throw new Error(`Firmware store put failed: ${res.status} ${detail}`.trim());
+      }
     },
   };
 }

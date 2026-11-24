@@ -68,11 +68,13 @@ describe('supabaseStore', () => {
     expect(calls[0]!.init.body).toEqual(new Uint8Array([9]));
   });
 
-  test('put throws when the upload fails', async () => {
-    const { fetchFn } = fakeFetch(() => new Response('denied', { status: 403 }));
+  test('put throws with the status and Supabase message when the upload fails', async () => {
+    const { fetchFn } = fakeFetch(() =>
+      Response.json({ statusCode: '404', error: 'Bucket not found' }, { status: 404 }),
+    );
     await expect(
       supabaseStore(config, fetchFn).put('2.0.0/app.bin', new Uint8Array([9])),
-    ).rejects.toThrow(/403/);
+    ).rejects.toThrow(/404.*Bucket not found/);
   });
 
   test('rejects unsafe paths without calling fetch', async () => {

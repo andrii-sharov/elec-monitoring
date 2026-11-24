@@ -18,7 +18,10 @@ const databaseEnvSchema = z.object({ DATABASE_URL: postgresUrl });
 
 const firmwareEnvShape = {
   FIRMWARE_STORE: z.enum(['supabase', 'fs']).default('supabase'),
-  SUPABASE_URL: z.url({ protocol: /^https?$/ }).optional(),
+  SUPABASE_URL: z
+    .url({ protocol: /^https?$/ })
+    .transform((value) => new URL(value).origin)
+    .optional(),
   SUPABASE_SECRET_KEY: z.string().min(1).optional(),
   FIRMWARE_BUCKET: z
     .string()
