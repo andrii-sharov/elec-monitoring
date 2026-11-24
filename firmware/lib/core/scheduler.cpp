@@ -9,6 +9,15 @@ constexpr uint64_t kUnauthorizedMs = 300000;
 constexpr uint32_t kMaxRetryAfterS = 600;
 }  // namespace
 
+CheckInOutcome outcomeForStatus(int httpStatus) {
+  if (httpStatus <= 0) return CheckInOutcome::NetworkError;
+  if (httpStatus >= 200 && httpStatus < 300) return CheckInOutcome::Accepted;
+  if (httpStatus == 401) return CheckInOutcome::Unauthorized;
+  if (httpStatus == 429) return CheckInOutcome::RateLimited;
+  if (httpStatus >= 400 && httpStatus < 500) return CheckInOutcome::BadRequest;
+  return CheckInOutcome::ServerError;
+}
+
 CheckInScheduler::CheckInScheduler(uint32_t pingIntervalS, Random& random)
     : pingIntervalS_(pingIntervalS), backoff_(kBootBaseMs, kBootCapMs, random) {}
 

@@ -8,6 +8,8 @@
 
 enum class CheckInOutcome { Accepted, RateLimited, Unauthorized, BadRequest, ServerError, NetworkError };
 
+CheckInOutcome outcomeForStatus(int httpStatus);
+
 struct Due {
   CheckInType type;
   bool retry;
@@ -24,6 +26,7 @@ class CheckInScheduler {
   bool bootAcknowledged() const { return bootAcknowledged_; }
   bool unauthorized() const { return unauthorized_; }
   bool lastFailed() const { return lastFailed_; }
+  uint64_t nextAtMs() const { return nextAtMs_; }
 
  private:
   uint64_t intervalMs() const;

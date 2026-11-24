@@ -101,7 +101,7 @@ void test_wifi_failure_reasons() {
     SetupStatus status;
   } cases[] = {{201, SetupStatus::WifiNotFound},  {202, SetupStatus::WifiAuthFailed},
                {15, SetupStatus::WifiAuthFailed}, {204, SetupStatus::WifiAuthFailed},
-               {2, SetupStatus::WifiFailed},      {8, SetupStatus::WifiFailed}};
+               {2, SetupStatus::WifiFailed},      {205, SetupStatus::WifiFailed}};
   for (const Case& c : cases) {
     SetupFlow flow(false);
     flow.submit(form(), 0);
@@ -204,6 +204,75 @@ void test_status_names() {
   TEST_ASSERT_EQUAL_STRING("DONE", setupStatusName(SetupStatus::Done));
 }
 
+void test_setup_required() {
+  TEST_ASSERT_TRUE(setupRequired(false, false));
+  TEST_ASSERT_TRUE(setupRequired(true, false));
+  TEST_ASSERT_TRUE(setupRequired(false, true));
+  TEST_ASSERT_FALSE(setupRequired(true, true));
+}
+
+void test_first_boot_setup_never_exits() {
+  SetupFlow flow(false);
+  TEST_ASSERT_FALSE(flow.shouldExit(100000 * kS));
+}
+
+void test_button_setup_exits_after_ten_idle_minutes() {
+  SetupFlow flow(true);
+  flow.enableIdleExit(5 * kS);
+  TEST_ASSERT_FALSE(flow.shouldExit(605 * kS - 1));
+  TEST_ASSERT_TRUE(flow.shouldExit(605 * kS));
+}
+
+void test_submission_restarts_idle_timer() {
+  SetupFlow flow(true);
+  flow.enableIdleExit(0);
+  flow.submit(form(), 500 * kS);
+  flow.onWifiFailed(202);
+  TEST_ASSERT_FALSE(flow.shouldExit(1099 * kS));
+  TEST_ASSERT_TRUE(flow.shouldExit(1100 * kS));
+}
+
+void test_no_idle_exit_while_busy_or_done() {
+  SetupFlow flow(false);
+  flow.enableIdleExit(0);
+  flow.submit(form(), 0);
+  TEST_ASSERT_FALSE(flow.shouldExit(700 * kS));
+  flow.onWifiConnected();
+  TEST_ASSERT_FALSE(flow.shouldExit(700 * kS));
+  flow.onClaimResult(200, claimed());
+  TEST_ASSERT_FALSE(flow.shouldExit(700 * kS));
+}
+
+void test_own_disconnect_is_not_a_failure() {
+  SetupFlow flow(false);
+  flow.submit(form(), 0);
+  flow.onWifiFailed(8);
+  assertStatus(SetupStatus::Connecting, flow);
+}
+
+void test_language_from_query_wins() {
+  TEST_ASSERT_EQUAL_size_t(2, pickLanguage("ru", "en-US,en;q=0.9"));
+  TEST_ASSERT_EQUAL_size_t(1, pickLanguage("en", ""));
+  TEST_ASSERT_EQUAL_size_t(1, pickLanguage("de", "en"));
+}
+
+void test_language_from_accept_language() {
+  TEST_ASSERT_EQUAL_size_t(1, pickLanguage("", "en-US,en;q=0.9,uk;q=0.8"));
+  TEST_ASSERT_EQUAL_size_t(2, pickLanguage("", "de-DE,ru;q=0.7,uk;q=0.5"));
+  TEST_ASSERT_EQUAL_size_t(0, pickLanguage("", "uk-UA"));
+  TEST_ASSERT_EQUAL_size_t(2, pickLanguage("", "RU"));
+  TEST_ASSERT_EQUAL_size_t(0, pickLanguage("", "de, fr"));
+  TEST_ASSERT_EQUAL_size_t(0, pickLanguage("", ""));
+  TEST_ASSERT_EQUAL_size_t(0, pickLanguage("", "enx,rus"));
+}
+
+void test_setup_error_names() {
+  TEST_ASSERT_EQUAL_STRING("SSID_REQUIRED", setupErrorName(SetupError::SsidRequired));
+  TEST_ASSERT_EQUAL_STRING("PASSWORD_TOO_LONG", setupErrorName(SetupError::PasswordTooLong));
+  TEST_ASSERT_EQUAL_STRING("CODE_FORMAT", setupErrorName(SetupError::CodeFormat));
+  TEST_ASSERT_EQUAL_STRING("CODE_REQUIRED", setupErrorName(SetupError::CodeRequired));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_normalizes_pairing_code);
@@ -225,5 +294,14 @@ int main() {
   RUN_TEST(test_done_is_final);
   RUN_TEST(test_late_events_are_ignored);
   RUN_TEST(test_status_names);
+  RUN_TEST(test_own_disconnect_is_not_a_failure);
+  RUN_TEST(test_language_from_query_wins);
+  RUN_TEST(test_language_from_accept_language);
+  RUN_TEST(test_setup_error_names);
+  RUN_TEST(test_setup_required);
+  RUN_TEST(test_first_boot_setup_never_exits);
+  RUN_TEST(test_button_setup_exits_after_ten_idle_minutes);
+  RUN_TEST(test_submission_restarts_idle_timer);
+  RUN_TEST(test_no_idle_exit_while_busy_or_done);
   return UNITY_END();
 }

@@ -248,6 +248,29 @@ void test_never_more_than_six_requests_a_minute() {
   }
 }
 
+void test_outcome_for_status() {
+  struct Case {
+    int status;
+    CheckInOutcome outcome;
+  } cases[] = {{204, CheckInOutcome::Accepted},     {200, CheckInOutcome::Accepted},
+               {429, CheckInOutcome::RateLimited},  {401, CheckInOutcome::Unauthorized},
+               {400, CheckInOutcome::BadRequest},   {404, CheckInOutcome::BadRequest},
+               {500, CheckInOutcome::ServerError},  {503, CheckInOutcome::ServerError},
+               {-1, CheckInOutcome::NetworkError},  {-11, CheckInOutcome::NetworkError},
+               {0, CheckInOutcome::NetworkError},   {302, CheckInOutcome::ServerError}};
+  for (const Case& c : cases) {
+    TEST_ASSERT_EQUAL_INT(static_cast<int>(c.outcome), static_cast<int>(outcomeForStatus(c.status)));
+  }
+}
+
+void test_next_at_reports_the_wait() {
+  FixedRandom random(kMaxJitter);
+  CheckInScheduler s(30, random);
+  s.onLinkReady(0);
+  s.onResult(CheckInType::Boot, CheckInOutcome::NetworkError, std::nullopt, 1 * kS);
+  TEST_ASSERT_EQUAL_UINT64(3 * kS, s.nextAtMs());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_nothing_due_before_link_ready);
@@ -269,5 +292,7 @@ int main() {
   RUN_TEST(test_accepted_after_boot_backoff_resets_it);
   RUN_TEST(test_large_now_does_not_wrap);
   RUN_TEST(test_never_more_than_six_requests_a_minute);
+  RUN_TEST(test_outcome_for_status);
+  RUN_TEST(test_next_at_reports_the_wait);
   return UNITY_END();
 }
