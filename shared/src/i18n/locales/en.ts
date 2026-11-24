@@ -350,6 +350,11 @@ export const en = {
       save: 'Save channels',
       saved: 'Channels saved',
     },
+    powerStrip: {
+      title: 'Last 7 days',
+      summary: 'Last 7 days: outages {{outages}}, power blips {{blips}}',
+      kind: { on: 'Power on', outage: 'Outage', blip: 'Power blip', unknown: 'No data' },
+    },
     outage: {
       type: { OUTAGE: 'Outage', POWER_BLIP: 'Power blip' },
       cause: { POWER: 'Power outage', NETWORK: 'Network outage', UNKNOWN: 'Unknown cause' },

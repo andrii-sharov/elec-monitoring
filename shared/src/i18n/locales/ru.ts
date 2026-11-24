@@ -358,6 +358,16 @@ export const ru: Dictionary = {
       save: 'Сохранить каналы',
       saved: 'Каналы сохранены',
     },
+    powerStrip: {
+      title: 'Последние 7 дней',
+      summary: 'Последние 7 дней: отключений {{outages}}, коротких сбоев {{blips}}',
+      kind: {
+        on: 'Свет есть',
+        outage: 'Отключение',
+        blip: 'Короткий сбой питания',
+        unknown: 'Нет данных',
+      },
+    },
     outage: {
       type: { OUTAGE: 'Отключение', POWER_BLIP: 'Короткий сбой питания' },
       cause: {

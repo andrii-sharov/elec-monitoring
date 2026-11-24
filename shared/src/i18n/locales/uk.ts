@@ -355,6 +355,16 @@ export const uk: Dictionary = {
       save: 'Зберегти канали',
       saved: 'Канали збережено',
     },
+    powerStrip: {
+      title: 'Останні 7 днів',
+      summary: 'Останні 7 днів: відключень {{outages}}, коротких збоїв {{blips}}',
+      kind: {
+        on: 'Світло є',
+        outage: 'Відключення',
+        blip: 'Короткий збій живлення',
+        unknown: 'Немає даних',
+      },
+    },
     outage: {
       type: { OUTAGE: 'Відключення', POWER_BLIP: 'Короткий збій живлення' },
       cause: {

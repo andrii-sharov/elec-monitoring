@@ -3,10 +3,11 @@ import { QueryClient } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { StrictMode } from 'react';
+import { StrictMode, type ReactNode } from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { AppProviders } from '../src/app/providers.tsx';
 import { routes } from '../src/app/router.tsx';
+import { SessionProvider } from '../src/api/session.tsx';
 import { installZodErrors } from '../src/forms/zodErrors.ts';
 import { apiUrl } from '../src/lib/config.ts';
 import { createClientI18n } from '../src/lib/i18n.ts';
@@ -43,6 +44,23 @@ export function renderRoute(path: string, { me = null }: RenderRouteOptions = {}
         <RouterProvider router={router} />
       </AppProviders>
     </StrictMode>,
+  );
+  return { user, router, queryClient };
+}
+
+export function renderInApp(node: ReactNode, { me = null }: RenderRouteOptions = {}) {
+  presetSession(me);
+  const user: UserEvent = userEvent.setup();
+  const i18n = createClientI18n('en');
+  const router = createMemoryRouter(
+    [{ path: '*', element: <SessionProvider>{node}</SessionProvider> }],
+    { initialEntries: ['/'] },
+  );
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <AppProviders i18n={i18n} queryClient={queryClient}>
+      <RouterProvider router={router} />
+    </AppProviders>,
   );
   return { user, router, queryClient };
 }

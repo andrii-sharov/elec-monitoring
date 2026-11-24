@@ -16,7 +16,7 @@ export type Formatters = {
   since(iso: string, now?: Date): string;
 };
 
-function browserTimezone(): string {
+export function browserTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
