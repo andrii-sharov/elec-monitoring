@@ -16,7 +16,9 @@ test('choosing Sonar applies it to the page and remembers it in this browser', a
   expect(within(styles).getByRole('radio', { name: 'Sonar' })).toBeChecked();
   expect(document.documentElement.dataset.appStyle).toBe('sonar');
   expect(localStorage.getItem('em.appStyle')).toBe('sonar');
-  expect(screen.getByText('Saved in this browser')).toBeInTheDocument();
+  expect(
+    screen.getByText('How the app looks and moves: theme and style. Saved only in this browser.'),
+  ).toBeInTheDocument();
 });
 
 test('arrow keys move the style selection', async () => {

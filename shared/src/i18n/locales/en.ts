@@ -110,7 +110,7 @@ export const en = {
     },
     appearance: {
       title: 'Appearance',
-      hint: 'Saved in this browser',
+      hint: 'How the app looks and moves: theme and style. Saved only in this browser.',
       style: 'App style',
     },
     appStyle: {

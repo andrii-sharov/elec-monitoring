@@ -124,7 +124,7 @@
 
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: var(--app-motion-duration);
+  animation-duration: min(var(--app-motion-duration), 250ms);
   animation-timing-function: var(--app-motion-ease);
 }
 

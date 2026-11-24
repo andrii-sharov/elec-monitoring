@@ -4,7 +4,7 @@
   --radius: 1rem;
   --app-surface-ring: transparent;
   --app-surface-shadow: 0 10px 30px -12px color-mix(in oklab, var(--primary) 18%, transparent);
-  --app-motion-duration: 600ms;
+  --app-motion-duration: 450ms;
   --app-motion-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --app-backdrop: linear-gradient(
     to bottom,
