@@ -1,6 +1,7 @@
 import type { Express } from 'express';
 import type { Config } from '../src/config.ts';
 import type { Db } from '../src/db/client.ts';
+import { memoryStore } from '../src/firmware/store.ts';
 import { createApp, type AppDeps } from '../src/http/app.ts';
 import {
   FakeClock,
@@ -20,6 +21,7 @@ export const testConfig: Config = {
   email: { transport: 'log', from: 'Electricity Monitor <noreply@app.test>' },
   trustProxyHops: 0,
   telegram: { botUsername: 'TestBot', webhookSecret: 's'.repeat(32) },
+  firmware: { store: 'fs', dir: '/nonexistent' },
 };
 
 export function testApp(
@@ -36,6 +38,7 @@ export function testApp(
       google: new FakeGoogleClient(),
       rateLimiter: allowAllLimiter,
       notifications: new RecordingNotificationQueue(),
+      firmware: memoryStore(),
       ...deps,
     },
     routes,

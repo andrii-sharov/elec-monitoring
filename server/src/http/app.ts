@@ -5,6 +5,7 @@ import type { Config } from '../config.ts';
 import type { Db } from '../db/client.ts';
 import type { GoogleClient } from '../auth/google.ts';
 import type { EmailSender } from '../email/sender.ts';
+import type { FirmwareStore } from '../firmware/store.ts';
 import type { Logger } from '../logger.ts';
 import type { NotificationQueue } from '../notifications/queue.ts';
 import type { RateLimiter } from '../rateLimit/limiter.ts';
@@ -33,6 +34,7 @@ export type AppDeps = {
   google: GoogleClient;
   rateLimiter: RateLimiter;
   notifications: NotificationQueue;
+  firmware: FirmwareStore;
 };
 
 export function apiDocument(): OpenApiDocument {

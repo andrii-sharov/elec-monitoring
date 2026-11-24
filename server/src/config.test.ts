@@ -24,6 +24,8 @@ const validEnv: NodeJS.ProcessEnv = {
   EMAIL_FROM: 'Electricity Monitor <noreply@example.com>',
   TELEGRAM_PLATFORM_BOT_USERNAME: 'ElecBot',
   TELEGRAM_WEBHOOK_SECRET: 'w'.repeat(32),
+  SUPABASE_URL: 'https://proj.supabase.co',
+  SUPABASE_SECRET_KEY: 'sb_secret_x',
 };
 
 test('loads valid env', () => {
@@ -44,7 +46,42 @@ test('loads valid env', () => {
     },
     trustProxyHops: 0,
     telegram: { botUsername: 'ElecBot', webhookSecret: 'w'.repeat(32) },
+    firmware: {
+      store: 'supabase',
+      url: 'https://proj.supabase.co',
+      secretKey: 'sb_secret_x',
+      bucket: 'firmware',
+    },
   });
+});
+
+test('the supabase firmware store needs its URL and secret key', () => {
+  const err = catchError(() =>
+    loadConfig({ ...validEnv, SUPABASE_URL: undefined, SUPABASE_SECRET_KEY: undefined }),
+  );
+  expect(err.keys).toEqual(['SUPABASE_SECRET_KEY', 'SUPABASE_URL']);
+});
+
+test('FIRMWARE_BUCKET overrides the bucket', () => {
+  const config = loadConfig({ ...validEnv, FIRMWARE_BUCKET: 'fw-test' });
+  expect(config.firmware).toMatchObject({ store: 'supabase', bucket: 'fw-test' });
+});
+
+test('the fs firmware store needs FIRMWARE_DIR and no Supabase keys', () => {
+  const env = { ...validEnv, SUPABASE_URL: undefined, SUPABASE_SECRET_KEY: undefined };
+  expect(catchError(() => loadConfig({ ...env, FIRMWARE_STORE: 'fs' })).keys).toEqual([
+    'FIRMWARE_DIR',
+  ]);
+  expect(loadConfig({ ...env, FIRMWARE_STORE: 'fs', FIRMWARE_DIR: '/tmp/fw' }).firmware).toEqual({
+    store: 'fs',
+    dir: '/tmp/fw',
+  });
+});
+
+test('rejects an unknown FIRMWARE_STORE', () => {
+  expect(catchError(() => loadConfig({ ...validEnv, FIRMWARE_STORE: 's3' })).keys).toEqual([
+    'FIRMWARE_STORE',
+  ]);
 });
 
 test('PORT defaults to 3000, EMAIL_TRANSPORT to resend, TRUST_PROXY_HOPS to 0', () => {

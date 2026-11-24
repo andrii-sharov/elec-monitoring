@@ -3,6 +3,7 @@ import { loadConfigOrExit } from './config.ts';
 import { createDb } from './db/client.ts';
 import { createGoogleClient } from './auth/google.ts';
 import { createEmailSender } from './email/sender.ts';
+import { createFirmwareStore } from './firmware/store.ts';
 import { createApp } from './http/app.ts';
 import { listen } from './http/listen.ts';
 import { createNotificationQueue } from './notifications/queue.ts';
@@ -19,6 +20,7 @@ const app = createApp({
   google: createGoogleClient(config),
   rateLimiter: createPgRateLimiter(db, systemClock),
   notifications: createNotificationQueue(systemClock),
+  firmware: createFirmwareStore(config.firmware),
 });
 
 async function shutdown(exitCode: number): Promise<never> {

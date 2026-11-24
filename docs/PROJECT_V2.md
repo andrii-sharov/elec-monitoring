@@ -864,6 +864,11 @@ API_URL=https://api.<domain>
 TRUST_PROXY_HOPS=0                 # 1 when Caddy is the only proxy
 PORT=3000
 HOST=127.0.0.1                     # optional; unset listens on all interfaces
+FIRMWARE_STORE=supabase            # API; supabase (default) | fs
+SUPABASE_URL=https://<ref>.supabase.co  # required when FIRMWARE_STORE=supabase
+SUPABASE_SECRET_KEY=...            # required when FIRMWARE_STORE=supabase
+FIRMWARE_BUCKET=firmware           # private Storage bucket (default firmware)
+FIRMWARE_DIR=...                   # required when FIRMWARE_STORE=fs
 ```
 
 Client build variable, set in Vercel and not in the server env file:
@@ -880,7 +885,10 @@ need the bot token.
 The API validates these with Zod at startup and exits on a missing or
 invalid value. App URLs must be origins: `https`, or `http` for
 `localhost` and `127.0.0.1`; a trailing slash is removed. The worker and
-`db:migrate` need only `DATABASE_URL`. Each milestone adds its keys when
+`db:migrate` need only `DATABASE_URL`. The API reads firmware images
+through the Supabase Storage REST API with the secret key, so there is no
+SDK dependency. `FIRMWARE_STORE=fs` serves them from a local folder for
+local runs. Each milestone adds its keys when
 its code first reads them.
 
 ## 13. Repo layout
