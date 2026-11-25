@@ -69,6 +69,7 @@ only sends emails.
 - Emails are sent after the response, so response time doesn't reveal
   whether an account exists. A lost email is recovered with resend or
   forgot password.
+- Verifying the email also accepts pending device invites for it (§6).
 - Every bad email-link token answers `410 expired`, whether it is unknown,
   used, expired or for another purpose.
 - Passwords hashed with **argon2id**.
@@ -482,8 +483,22 @@ power blip.
     notification channels to the device; can't change settings, re-pair
     or delete.
 - The owner can remove a viewer at any time. A viewer can leave.
-- Invite valid 7 days. If the person has no account, they sign up
-  first, then the invite is applied.
+- Invite valid 7 days. Inviting the same email again sends a new link and
+  the earlier one stops working. At most 10 viewers and pending invites
+  per device.
+- If the person has no account, they sign up first, then the invite is
+  applied: when an account's email **becomes** verified (the verification
+  link, a password reset of an unverified account, or Google sign-in),
+  every pending, unexpired invite for that email is accepted in the same
+  step. Signing in to an already verified account applies nothing; those
+  users press Accept on the invite page.
+- Accepting needs an account with the invited email. The invite link
+  proves the inbox, so accepting also marks the email verified, as a
+  password reset does.
+- Channels follow membership. Joining a device attaches all of the
+  viewer's channels to it, and the viewer can untick them per device.
+  Leaving or being removed detaches the viewer's channels from that
+  device.
 
 ## 7. Notifications
 

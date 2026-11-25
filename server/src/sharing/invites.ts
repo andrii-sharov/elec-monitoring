@@ -1,3 +1,4 @@
+import type { DeviceRole } from '@elec/shared';
 import type { Invite } from '@elec/shared/api';
 import { and, count, eq, gt, isNull, ne, sql } from 'drizzle-orm';
 import type { Clock } from '../clock.ts';
@@ -5,6 +6,7 @@ import type { Executor, Tx } from '../db/client.ts';
 import { appUser, device, deviceInvite, deviceViewer } from '../db/schema/index.ts';
 import { HttpError } from '../http/errors.ts';
 import { randomToken, sha256 } from '../lib/crypto.ts';
+import { joinAsViewer } from './members.ts';
 
 export type InviteRow = typeof deviceInvite.$inferSelect;
 
@@ -97,4 +99,82 @@ export async function findInviteByToken(db: Executor, token: string): Promise<In
 
 export function isExpired(invite: InviteRow, now: Date): boolean {
   return invite.expiresAt.getTime() <= now.getTime();
+}
+
+const gone = () => new HttpError(410, 'expired', 'The invite is invalid or has expired');
+
+type Invitee = { id: string; email: string };
+
+async function isViewer(tx: Tx, deviceId: string, userId: string): Promise<boolean> {
+  const [row] = await tx
+    .select({ userId: deviceViewer.userId })
+    .from(deviceViewer)
+    .where(and(eq(deviceViewer.deviceId, deviceId), eq(deviceViewer.userId, userId)));
+  return Boolean(row);
+}
+
+async function markEmailVerified(tx: Tx, userId: string, now: Date): Promise<void> {
+  await tx
+    .update(appUser)
+    .set({
+      emailVerifiedAt: sql`coalesce(${appUser.emailVerifiedAt}, ${now.toISOString()}::timestamptz)`,
+    })
+    .where(eq(appUser.id, userId));
+}
+
+export async function acceptInvite(
+  tx: Tx,
+  clock: Clock,
+  token: string,
+  user: Invitee,
+): Promise<{ deviceId: string; role: DeviceRole }> {
+  const now = clock.now();
+  const [row] = await tx
+    .select({ invite: deviceInvite, ownerId: device.ownerId })
+    .from(deviceInvite)
+    .innerJoin(device, eq(device.id, deviceInvite.deviceId))
+    .where(eq(deviceInvite.tokenHash, sha256(token)))
+    .for('update', { of: deviceInvite });
+  if (!row || isExpired(row.invite, now)) throw gone();
+  const { invite } = row;
+  if (invite.email !== user.email.toLowerCase()) {
+    throw new HttpError(403, 'forbidden', 'This invite is for another email address');
+  }
+  const deviceId = invite.deviceId;
+  if (row.ownerId === user.id) {
+    if (!invite.acceptedAt) {
+      await tx.update(deviceInvite).set({ acceptedAt: now }).where(eq(deviceInvite.id, invite.id));
+    }
+    return { deviceId, role: 'OWNER' };
+  }
+  if (invite.acceptedAt) {
+    if (await isViewer(tx, deviceId, user.id)) return { deviceId, role: 'VIEWER' };
+    throw gone();
+  }
+  await tx.update(deviceInvite).set({ acceptedAt: now }).where(eq(deviceInvite.id, invite.id));
+  await joinAsViewer(tx, deviceId, user.id);
+  await markEmailVerified(tx, user.id, now);
+  return { deviceId, role: 'VIEWER' };
+}
+
+export async function applyPendingInvites(tx: Tx, clock: Clock, user: Invitee): Promise<string[]> {
+  const now = clock.now();
+  const pending = await tx
+    .select({ id: deviceInvite.id, deviceId: deviceInvite.deviceId })
+    .from(deviceInvite)
+    .innerJoin(device, eq(device.id, deviceInvite.deviceId))
+    .where(
+      and(
+        eq(deviceInvite.email, user.email.toLowerCase()),
+        isNull(deviceInvite.acceptedAt),
+        gt(deviceInvite.expiresAt, now),
+        ne(device.ownerId, user.id),
+      ),
+    )
+    .for('update', { of: deviceInvite });
+  for (const invite of pending) {
+    await tx.update(deviceInvite).set({ acceptedAt: now }).where(eq(deviceInvite.id, invite.id));
+    await joinAsViewer(tx, invite.deviceId, user.id);
+  }
+  return pending.map((invite) => invite.deviceId);
 }

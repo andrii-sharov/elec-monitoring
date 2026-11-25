@@ -8,6 +8,7 @@ import { appUser } from '../../db/schema/index.ts';
 import { sendInBackground } from '../../email/sender.ts';
 import { renderEmail, type EmailKind } from '../../email/templates.ts';
 import { createI18n } from '../../i18n.ts';
+import { applyPendingInvites } from '../../sharing/invites.ts';
 import { AUTH_PER_IP, EMAIL_SEND } from '../../rateLimit/limiter.ts';
 import type { AppDeps } from '../app.ts';
 import { HttpError, errorResponse } from '../errors.ts';
@@ -111,6 +112,8 @@ export function signupRouter(deps: AppDeps): Router {
       const verified = await db.transaction(async (tx) => {
         const userId = await consumeOneTimeToken(tx, clock, token, 'VERIFY_EMAIL');
         if (!userId) return false;
+        const [before] = await tx.select().from(appUser).where(eq(appUser.id, userId));
+        if (before && !before.emailVerifiedAt) await applyPendingInvites(tx, clock, before);
         await tx
           .update(appUser)
           .set({

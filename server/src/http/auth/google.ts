@@ -8,6 +8,7 @@ import { signOAuthState, verifyOAuthState, type GoogleIdentity } from '../../aut
 import { createSession, findActiveSession, revokeUserSessions } from '../../auth/sessions.ts';
 import { appUser } from '../../db/schema/index.ts';
 import { AUTH_PER_IP } from '../../rateLimit/limiter.ts';
+import { applyPendingInvites } from '../../sharing/invites.ts';
 import type { AppDeps } from '../app.ts';
 import {
   clearOAuthCookie,
@@ -96,7 +97,10 @@ export function googleRouter(deps: AppDeps): Router {
             )
             .where(eq(appUser.id, byEmail.id))
             .returning();
-          if (unverified) await revokeUserSessions(tx, clock, byEmail.id);
+          if (unverified) {
+            await revokeUserSessions(tx, clock, byEmail.id);
+            await applyPendingInvites(tx, clock, byEmail);
+          }
         } else {
           [user] = await tx
             .insert(appUser)
@@ -107,6 +111,7 @@ export function googleRouter(deps: AppDeps): Router {
               name: identity.name ?? identity.email.split('@')[0] ?? identity.email,
             })
             .returning();
+          await applyPendingInvites(tx, clock, user!);
         }
       }
       const created = await createSession(tx, clock, user!.id);

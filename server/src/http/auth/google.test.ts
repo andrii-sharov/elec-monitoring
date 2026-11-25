@@ -5,7 +5,9 @@ import { testApp, testConfig } from '../../../test/app.ts';
 import { createUser, signIn } from '../../../test/auth.ts';
 import { createTestDb, type TestDb } from '../../../test/db.ts';
 import { FakeClock, FakeGoogleClient } from '../../../test/fakes.ts';
-import { appUser, session } from '../../db/schema/index.ts';
+import { appUser, deviceViewer, session } from '../../db/schema/index.ts';
+import { createDevice } from '../../../test/devices.ts';
+import { seedInvite } from '../../../test/sharing.ts';
 
 let t: TestDb;
 let clock: FakeClock;
@@ -252,4 +254,34 @@ test('unlink of the only sign-in method is 409', async () => {
 
 test('unlink needs a JWT', async () => {
   expect((await request(app()).delete('/api/auth/google')).status).toBe(401);
+});
+
+async function pendingInviteForJohn() {
+  const owner = await createUser(t.db, { email: 'owner@example.com', name: 'Owner' });
+  const home = await createDevice(t.db, owner.id, { name: 'Home' });
+  await seedInvite(t.db, { deviceId: home.id, invitedBy: owner.id, email: 'john@example.com' });
+  return home.id;
+}
+
+const viewerRows = () => t.db.select().from(deviceViewer);
+
+test('a new Google account accepts its pending invites', async () => {
+  const deviceId = await pendingInviteForJohn();
+  await runLogin();
+  const [john] = await t.db.select().from(appUser).where(eq(appUser.email, 'john@example.com'));
+  expect(await viewerRows()).toEqual([expect.objectContaining({ deviceId, userId: john!.id })]);
+});
+
+test('Google verifying an unverified account accepts its pending invites', async () => {
+  const john = await createUser(t.db, { emailVerifiedAt: null });
+  const deviceId = await pendingInviteForJohn();
+  await runLogin();
+  expect(await viewerRows()).toEqual([expect.objectContaining({ deviceId, userId: john.id })]);
+});
+
+test('Google sign-in to a verified account leaves pending invites alone', async () => {
+  await createUser(t.db);
+  await pendingInviteForJohn();
+  await runLogin();
+  expect(await viewerRows()).toEqual([]);
 });

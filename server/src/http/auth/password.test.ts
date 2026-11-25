@@ -6,7 +6,9 @@ import { testApp, testConfig } from '../../../test/app.ts';
 import { TEST_PASSWORD, createUser, signIn } from '../../../test/auth.ts';
 import { createTestDb, type TestDb } from '../../../test/db.ts';
 import { FakeClock, FakeEmailSender, linkFrom } from '../../../test/fakes.ts';
-import { appUser } from '../../db/schema/index.ts';
+import { appUser, deviceViewer } from '../../db/schema/index.ts';
+import { createDevice } from '../../../test/devices.ts';
+import { seedInvite } from '../../../test/sharing.ts';
 
 const NEW_PASSWORD = 'brand new pass 2';
 let t: TestDb;
@@ -185,4 +187,29 @@ test('change-password needs a JWT', async () => {
     .post('/api/auth/change-password')
     .send({ current_password: 'a', new_password: NEW_PASSWORD });
   expect(res.status).toBe(401);
+});
+
+async function pendingInviteFor(address: string) {
+  const owner = await createUser(t.db, { email: 'owner@example.com', name: 'Owner' });
+  const home = await createDevice(t.db, owner.id, { name: 'Home' });
+  await seedInvite(t.db, { deviceId: home.id, invitedBy: owner.id, email: address });
+  return home.id;
+}
+
+test('reset of an unverified account accepts its pending invites', async () => {
+  const user = await createUser(t.db, { emailVerifiedAt: null });
+  const deviceId = await pendingInviteFor('john@example.com');
+  const token = await requestReset();
+  await request(app()).post('/api/auth/reset-password').send({ token, password: NEW_PASSWORD });
+  expect(await t.db.select().from(deviceViewer)).toEqual([
+    expect.objectContaining({ deviceId, userId: user.id }),
+  ]);
+});
+
+test('reset of a verified account leaves its pending invites alone', async () => {
+  await createUser(t.db);
+  await pendingInviteFor('john@example.com');
+  const token = await requestReset();
+  await request(app()).post('/api/auth/reset-password').send({ token, password: NEW_PASSWORD });
+  expect(await t.db.select().from(deviceViewer)).toEqual([]);
 });

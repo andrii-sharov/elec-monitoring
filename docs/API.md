@@ -667,8 +667,16 @@ newest first:
   unknown, revoked or expired token → `410 expired`. An accepted invite
   still previews (with `accepted: true`) until it expires. Limit: 10 per
   minute per IP.
-- `accept` → `200` with the device. Valid 7 days (`410` after). The
-  account email must match the invite email (else `403`).
+- `POST /invites/:token/accept` → `200` with the device (`role: VIEWER`).
+  The email need not be verified: accepting marks it verified. Joining
+  attaches all of the caller's channels to the device.
+  - Unknown, revoked or expired (7 days) → `410 expired`.
+  - The account email differs from the invite email → `403 forbidden`.
+  - Already accepted: `200` with the device if the caller is still a
+    viewer (so a second tab or a return after sign-up works), else `410`.
+  - When an account's email becomes verified (verification link, reset
+    of an unverified account, Google sign-in), its pending, unexpired
+    invites are accepted the same way, without calling this endpoint.
 - The owner cannot be removed with `DELETE /members`.
 
 ### Notification channels

@@ -19,6 +19,7 @@ import { sendInBackground } from '../../email/sender.ts';
 import { renderEmail } from '../../email/templates.ts';
 import { createI18n } from '../../i18n.ts';
 import { AUTH_PER_IP, EMAIL_SEND, REAUTH_PER_USER } from '../../rateLimit/limiter.ts';
+import { applyPendingInvites } from '../../sharing/invites.ts';
 import type { AppDeps } from '../app.ts';
 import { HttpError, errorResponse } from '../errors.ts';
 import { rateLimit } from '../rateLimit.ts';
@@ -106,6 +107,8 @@ export function passwordRouter(deps: AppDeps): Router {
       const reset = await db.transaction(async (tx) => {
         const userId = await consumeOneTimeToken(tx, clock, token, 'RESET_PASSWORD');
         if (!userId) return false;
+        const [before] = await tx.select().from(appUser).where(eq(appUser.id, userId));
+        if (before && !before.emailVerifiedAt) await applyPendingInvites(tx, clock, before);
         await tx
           .update(appUser)
           .set({

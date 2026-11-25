@@ -1,6 +1,7 @@
 import {
   createInviteBodySchema,
   deviceParamsSchema,
+  deviceSchema,
   inviteParamsSchema,
   invitePreviewSchema,
   inviteSchema,
@@ -18,7 +19,14 @@ import { sendInBackground } from '../../email/sender.ts';
 import { renderInviteEmail } from '../../email/templates.ts';
 import { createI18n } from '../../i18n.ts';
 import { AUTH_PER_IP, INVITE_PER_USER } from '../../rateLimit/limiter.ts';
-import { createInvite, findInviteByToken, isExpired, toInvite } from '../../sharing/invites.ts';
+import { findDeviceView } from '../../devices/queries.ts';
+import {
+  acceptInvite,
+  createInvite,
+  findInviteByToken,
+  isExpired,
+  toInvite,
+} from '../../sharing/invites.ts';
 import type { AppDeps } from '../app.ts';
 import { getAuth, requireUser, requireVerifiedEmail } from '../auth/middleware.ts';
 import {
@@ -28,6 +36,7 @@ import {
   ownerOnly,
   unauthorized,
 } from '../devices/devices.ts';
+import { toDevice } from '../devices/views.ts';
 import { HttpError, errorResponse } from '../errors.ts';
 import { rateLimit } from '../rateLimit.ts';
 
@@ -89,6 +98,21 @@ export const sharingPaths: ZodOpenApiPathsObject = {
         '200': { description: 'The invite', content: json(invitePreviewSchema) },
         '410': expired,
         '429': errorResponse('Too many requests'),
+      },
+    },
+  },
+  '/api/v1/invites/{token}/accept': {
+    post: {
+      summary: 'Accept an invite',
+      description:
+        "JWT only. The account email must match the invite. Joins the device as a viewer, attaches all of the caller's channels and marks the email verified. Accepting again returns the device.",
+      security: bearer,
+      requestParams: { path: inviteTokenParamsSchema },
+      responses: {
+        '200': { description: 'The shared device', content: json(deviceSchema) },
+        '401': unauthorized,
+        '403': errorResponse('`forbidden`: the invite is for another email address'),
+        '410': expired,
       },
     },
   },
@@ -176,6 +200,15 @@ export function sharingRouter(deps: AppDeps): Router {
       });
     },
   );
+
+  router.post('/api/v1/invites/:token/accept', auth, async (req, res) => {
+    const { token } = inviteTokenParamsSchema.parse(req.params);
+    const { user } = getAuth(res);
+    const joined = await db.transaction((tx) => acceptInvite(tx, clock, token, user));
+    const view = await findDeviceView(db, joined.deviceId, joined.role);
+    if (!view) throw new HttpError(410, 'expired', 'The invite is invalid or has expired');
+    res.json(toDevice(view));
+  });
 
   return router;
 }

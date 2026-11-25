@@ -2865,6 +2865,74 @@
         }
       }
     },
+    "/api/v1/invites/{token}/accept": {
+      "post": {
+        "summary": "Accept an invite",
+        "description": "JWT only. The account email must match the invite. Joins the device as a viewer, attaches all of the caller's channels and marks the email verified. Accepting again returns the device.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Sharing"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The shared device",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Device"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: the invite is for another email address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "`expired`: unknown, revoked or expired invite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/firmware/manifest.json": {
       "get": {
         "summary": "ESP Web Tools manifest",
