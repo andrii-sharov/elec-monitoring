@@ -46,16 +46,20 @@ const firmwareReleaseEnvSchema = databaseEnvSchema
   .extend(firmwareEnvShape)
   .superRefine(requireFirmwareKeys);
 
-const workerEnvSchema = databaseEnvSchema
-  .extend({
-    TELEGRAM_TRANSPORT: z.enum(['telegram', 'log']).default('telegram'),
-    TELEGRAM_PLATFORM_BOT_TOKEN: z.string().min(1).optional(),
-  })
-  .superRefine((env, ctx) => {
-    if (env.TELEGRAM_TRANSPORT === 'telegram' && !env.TELEGRAM_PLATFORM_BOT_TOKEN) {
-      ctx.addIssue({ code: 'custom', path: ['TELEGRAM_PLATFORM_BOT_TOKEN'], message: 'Required' });
-    }
-  });
+const telegramEnvShape = {
+  TELEGRAM_TRANSPORT: z.enum(['telegram', 'log']).default('telegram'),
+  TELEGRAM_PLATFORM_BOT_TOKEN: z.string().min(1).optional(),
+};
+
+type TelegramEnv = z.output<z.ZodObject<typeof telegramEnvShape>>;
+
+function requireBotToken(env: TelegramEnv, ctx: z.RefinementCtx): void {
+  if (env.TELEGRAM_TRANSPORT === 'telegram' && !env.TELEGRAM_PLATFORM_BOT_TOKEN) {
+    ctx.addIssue({ code: 'custom', path: ['TELEGRAM_PLATFORM_BOT_TOKEN'], message: 'Required' });
+  }
+}
+
+const workerEnvSchema = databaseEnvSchema.extend(telegramEnvShape).superRefine(requireBotToken);
 
 const envSchema = databaseEnvSchema
   .extend({
@@ -76,10 +80,12 @@ const envSchema = databaseEnvSchema
       .transform((value) => value.replace(/^@/, ''))
       .pipe(z.string().regex(/^[A-Za-z0-9_]{5,32}$/)),
     TELEGRAM_WEBHOOK_SECRET: z.string().regex(/^[A-Za-z0-9_-]{32,256}$/),
+    ...telegramEnvShape,
     ...firmwareEnvShape,
   })
   .superRefine((env, ctx) => {
     requireFirmwareKeys(env, ctx);
+    requireBotToken(env, ctx);
     if (env.EMAIL_TRANSPORT === 'resend' && !env.RESEND_API_KEY) {
       ctx.addIssue({
         code: 'custom',
@@ -99,6 +105,10 @@ export type FirmwareStoreConfig =
   | { store: 'supabase'; url: string; secretKey: string; bucket: string }
   | { store: 'fs'; dir: string };
 
+export type TelegramTransportConfig =
+  | { transport: 'telegram'; botToken: string }
+  | { transport: 'log' };
+
 export type Config = {
   databaseUrl: string;
   port: number;
@@ -108,7 +118,7 @@ export type Config = {
   google: { clientId: string; clientSecret: string };
   email: EmailConfig;
   trustProxyHops: number;
-  telegram: { botUsername: string; webhookSecret: string };
+  telegram: { botUsername: string; webhookSecret: string } & TelegramTransportConfig;
   firmware: FirmwareStoreConfig;
 };
 
@@ -116,10 +126,7 @@ export type DatabaseConfig = { databaseUrl: string };
 
 export type FirmwareReleaseConfig = { databaseUrl: string; firmware: FirmwareStoreConfig };
 
-export type WorkerConfig = {
-  databaseUrl: string;
-  telegram: { transport: 'telegram'; botToken: string } | { transport: 'log' };
-};
+export type WorkerConfig = { databaseUrl: string; telegram: TelegramTransportConfig };
 
 export class ConfigError extends Error {
   readonly keys: string[];
@@ -154,6 +161,11 @@ function toFirmwareConfig(env: FirmwareEnv): FirmwareStoreConfig {
   };
 }
 
+function toTelegramTransport(env: TelegramEnv): TelegramTransportConfig {
+  if (env.TELEGRAM_TRANSPORT === 'log') return { transport: 'log' };
+  return { transport: 'telegram', botToken: env.TELEGRAM_PLATFORM_BOT_TOKEN ?? '' };
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv): Config {
   const result = envSchema.safeParse(env);
   if (!result.success) throw new ConfigError(failedKeys(result.error));
@@ -173,6 +185,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
     telegram: {
       botUsername: data.TELEGRAM_PLATFORM_BOT_USERNAME,
       webhookSecret: data.TELEGRAM_WEBHOOK_SECRET,
+      ...toTelegramTransport(data),
     },
     firmware: toFirmwareConfig(data),
   };
@@ -194,13 +207,7 @@ export function loadWorkerConfig(env: NodeJS.ProcessEnv): WorkerConfig {
   const result = workerEnvSchema.safeParse(env);
   if (!result.success) throw new ConfigError(failedKeys(result.error));
   const data = result.data;
-  return {
-    databaseUrl: data.DATABASE_URL,
-    telegram:
-      data.TELEGRAM_TRANSPORT === 'log'
-        ? { transport: 'log' }
-        : { transport: 'telegram', botToken: data.TELEGRAM_PLATFORM_BOT_TOKEN ?? '' },
-  };
+  return { databaseUrl: data.DATABASE_URL, telegram: toTelegramTransport(data) };
 }
 
 function exitOnConfigError<T>(load: () => T): T {

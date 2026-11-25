@@ -30,6 +30,7 @@ const validEnv: NodeJS.ProcessEnv = {
   EMAIL_FROM: 'Electricity Monitor <noreply@example.com>',
   TELEGRAM_PLATFORM_BOT_USERNAME: 'ElecBot',
   TELEGRAM_WEBHOOK_SECRET: 'w'.repeat(32),
+  TELEGRAM_PLATFORM_BOT_TOKEN: '123:abc',
   SUPABASE_URL: 'https://proj.supabase.co',
   SUPABASE_SECRET_KEY: 'sb_secret_x',
 };
@@ -51,7 +52,12 @@ test('loads valid env', () => {
       from: 'Electricity Monitor <noreply@example.com>',
     },
     trustProxyHops: 0,
-    telegram: { botUsername: 'ElecBot', webhookSecret: 'w'.repeat(32) },
+    telegram: {
+      botUsername: 'ElecBot',
+      webhookSecret: 'w'.repeat(32),
+      transport: 'telegram',
+      botToken: '123:abc',
+    },
     firmware: {
       store: 'supabase',
       url: 'https://proj.supabase.co',
@@ -163,6 +169,16 @@ test('RESEND_API_KEY is required only for the resend transport', () => {
     RESEND_API_KEY: undefined,
   });
   expect(config.email).toEqual({ transport: 'log', from: validEnv.EMAIL_FROM });
+});
+
+test('the API needs a bot token only for the telegram transport', () => {
+  const env = { ...validEnv, TELEGRAM_PLATFORM_BOT_TOKEN: undefined };
+  expect(catchError(() => loadConfig({ ...env, TELEGRAM_TRANSPORT: 'telegram' })).keys).toEqual([
+    'TELEGRAM_PLATFORM_BOT_TOKEN',
+  ]);
+  expect(loadConfig({ ...env, TELEGRAM_TRANSPORT: 'log' }).telegram).toMatchObject({
+    transport: 'log',
+  });
 });
 
 test('HOST is optional and passed through', () => {

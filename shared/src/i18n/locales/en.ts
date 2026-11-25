@@ -38,6 +38,13 @@ export const en = {
     },
   },
   telegram: {
+    auth: {
+      resetLink: 'Reset your Electricity Monitor password: {{link}}\nThe link is valid for 1 hour.',
+      signupAttempt:
+        'Someone tried to create an Electricity Monitor account with your number. You already have one. Log in: {{link}}\nIf you forgot your password, use “Forgot password” on the login page.',
+      invite:
+        '{{inviter}} shared {{device}} with you in Electricity Monitor. Open the invite: {{link}}\nThe invite is valid for 7 days.',
+    },
     offline: {
       title: '🔴 {{name}} — device stopped checking in',
       body: 'Last signal: {{time}}',

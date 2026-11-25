@@ -42,6 +42,13 @@ export const ru: Dictionary = {
     },
   },
   telegram: {
+    auth: {
+      resetLink: 'Сбросьте пароль Electricity Monitor: {{link}}\nСсылка действует 1 час.',
+      signupAttempt:
+        'Кто-то попытался создать аккаунт Electricity Monitor с вашим номером. У вас он уже есть. Войдите: {{link}}\nЕсли вы забыли пароль, воспользуйтесь «Забыли пароль» на странице входа.',
+      invite:
+        '{{inviter}} делится с вами устройством {{device}} в Electricity Monitor. Откройте приглашение: {{link}}\nПриглашение действует 7 дней.',
+    },
     offline: {
       title: '🔴 {{name}} — устройство перестало выходить на связь',
       body: 'Последний сигнал: {{time}}',

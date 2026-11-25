@@ -8,6 +8,7 @@ import type { EmailSender } from '../email/sender.ts';
 import type { FirmwareStore } from '../firmware/store.ts';
 import type { Logger } from '../logger.ts';
 import type { NotificationQueue } from '../notifications/queue.ts';
+import type { TelegramClient } from '../notifications/telegram.ts';
 import type { RateLimiter } from '../rateLimit/limiter.ts';
 import { corsMiddleware } from './cors.ts';
 import { errorHandler, notFound } from './errors.ts';
@@ -37,6 +38,7 @@ export type AppDeps = {
   rateLimiter: RateLimiter;
   notifications: NotificationQueue;
   firmware: FirmwareStore;
+  telegram: TelegramClient;
 };
 
 export function apiDocument(): OpenApiDocument {

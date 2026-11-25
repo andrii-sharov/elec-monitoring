@@ -1,3 +1,4 @@
+import type { TelegramTransportConfig } from '../config.ts';
 import type { Logger } from '../logger.ts';
 
 export type SendResult =
@@ -67,4 +68,13 @@ export function createLogTelegramClient(logger: Logger): TelegramClient {
       return Promise.resolve({ type: 'SENT' });
     },
   };
+}
+
+export function createTelegramTransport(
+  config: TelegramTransportConfig,
+  logger: Logger,
+): TelegramClient {
+  return config.transport === 'log'
+    ? createLogTelegramClient(logger)
+    : createTelegramClient(config.botToken);
 }

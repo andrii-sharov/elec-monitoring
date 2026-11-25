@@ -860,8 +860,11 @@ other request gets `200`, also when the update is malformed or handling it
 fails (the error is logged), so Telegram doesn't retry.
 
 A reply is the webhook response body
-`{ "method": "sendMessage", "chat_id": "…", "text": "…" }`. The API never
-calls Telegram itself. Handles `/start <code>`, `/status`, `/stop` and a
+`{ "method": "sendMessage", "chat_id": "…", "text": "…" }`. Webhook
+replies never call Telegram. The API calls `sendMessage` only for auth
+pushes, sent after the transaction commits: password reset link, "someone
+tried to sign up" notice and phone invite. A failed push is only logged.
+Handles `/start <code>`, `/status`, `/stop` and a
 `my_chat_member` update with status `kicked` or `left` (deletes the chat's
 channels, no reply). `/stats` arrives with statistics; until then it gets
 the help text. `/cmd@OtherBot` is ignored. Replies use the language of the

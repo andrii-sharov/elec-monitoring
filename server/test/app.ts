@@ -7,6 +7,7 @@ import {
   FakeClock,
   FakeEmailSender,
   FakeGoogleClient,
+  FakeTelegramClient,
   RecordingNotificationQueue,
   allowAllLimiter,
   silentLogger,
@@ -20,7 +21,7 @@ export const testConfig: Config = {
   google: { clientId: 'google-client-id', clientSecret: 'google-client-secret' },
   email: { transport: 'log', from: 'Electricity Monitor <noreply@app.test>' },
   trustProxyHops: 0,
-  telegram: { botUsername: 'TestBot', webhookSecret: 's'.repeat(32) },
+  telegram: { botUsername: 'TestBot', webhookSecret: 's'.repeat(32), transport: 'log' },
   firmware: { store: 'fs', dir: '/nonexistent' },
 };
 
@@ -28,10 +29,11 @@ export function testApp(
   overrides: Partial<AppDeps> & { routes?: (app: Express) => void } = {},
 ): Express {
   const { routes, ...deps } = overrides;
+  const clock = deps.clock ?? new FakeClock(new Date('2026-11-21T16:42:00Z'));
   return createApp(
     {
       db: {} as Db,
-      clock: new FakeClock(new Date('2026-11-21T16:42:00Z')),
+      clock,
       logger: silentLogger(),
       config: testConfig,
       email: new FakeEmailSender(),
@@ -39,6 +41,7 @@ export function testApp(
       rateLimiter: allowAllLimiter,
       notifications: new RecordingNotificationQueue(),
       firmware: memoryStore(),
+      telegram: new FakeTelegramClient(clock),
       ...deps,
     },
     routes,

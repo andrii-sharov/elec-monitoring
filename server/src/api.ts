@@ -7,6 +7,7 @@ import { createFirmwareStore } from './firmware/store.ts';
 import { createApp } from './http/app.ts';
 import { listen } from './http/listen.ts';
 import { createNotificationQueue } from './notifications/queue.ts';
+import { createTelegramTransport } from './notifications/telegram.ts';
 import { createPgRateLimiter } from './rateLimit/limiter.ts';
 
 const config = loadConfigOrExit(process.env);
@@ -21,6 +22,7 @@ const app = createApp({
   rateLimiter: createPgRateLimiter(db, systemClock),
   notifications: createNotificationQueue(systemClock),
   firmware: createFirmwareStore(config.firmware),
+  telegram: createTelegramTransport(config.telegram, console),
 });
 
 async function shutdown(exitCode: number): Promise<never> {

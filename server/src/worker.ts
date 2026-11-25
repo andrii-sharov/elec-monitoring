@@ -7,7 +7,7 @@ import { checkOffline, queueDueOffAlerts } from './monitoring/offline.ts';
 import { runDeliveryLoop } from './notifications/deliveryLoop.ts';
 import { createPacer } from './notifications/pacer.ts';
 import { createNotificationQueue } from './notifications/queue.ts';
-import { createLogTelegramClient, createTelegramClient } from './notifications/telegram.ts';
+import { createTelegramTransport } from './notifications/telegram.ts';
 import { cleanupRateLimits } from './rateLimit/cleanup.ts';
 import { dailyRunner, runCleanup } from './worker/cleanup.ts';
 import { beat } from './worker/heartbeat.ts';
@@ -28,10 +28,7 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
   process.once(signal, () => controller.abort());
 }
 
-const telegram =
-  config.telegram.transport === 'log'
-    ? createLogTelegramClient(logger)
-    : createTelegramClient(config.telegram.botToken);
+const telegram = createTelegramTransport(config.telegram, logger);
 const notifications = createNotificationQueue(systemClock);
 const monitorDeps = { db, clock: systemClock, logger, notifications };
 const dailyCleanup = dailyRunner(systemClock, async () => {

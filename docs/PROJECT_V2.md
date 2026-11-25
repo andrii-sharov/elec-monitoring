@@ -919,10 +919,10 @@ GOOGLE_CLIENT_SECRET=...
 EMAIL_TRANSPORT=resend             # resend (default) | log
 RESEND_API_KEY=...                 # required when EMAIL_TRANSPORT=resend
 EMAIL_FROM=...
-TELEGRAM_PLATFORM_BOT_TOKEN=...    # worker only
+TELEGRAM_PLATFORM_BOT_TOKEN=...    # API and worker
 TELEGRAM_PLATFORM_BOT_USERNAME=... # API, without @
 TELEGRAM_WEBHOOK_SECRET=...        # API, 32-256 chars of A-Z a-z 0-9 _ -
-TELEGRAM_TRANSPORT=telegram        # worker; telegram (default) | log
+TELEGRAM_TRANSPORT=telegram        # API and worker; telegram (default) | log
 CLIENT_URL=https://<domain>        # origin only, no path
 ADMIN_URL=https://admin.<domain>
 API_URL=https://api.<domain>
@@ -942,10 +942,9 @@ Client build variable, set in Vercel and not in the server env file:
 VITE_API_URL=https://staging-api.<domain>   # client build variable, origin only
 ```
 
-The worker reads `DATABASE_URL`, `TELEGRAM_PLATFORM_BOT_TOKEN` and
+The API and the worker both read `TELEGRAM_PLATFORM_BOT_TOKEN` and
 `TELEGRAM_TRANSPORT` (`telegram` default | `log`, which only logs messages
-for local runs; the token is required when `telegram`). The API doesn't
-need the bot token.
+for local runs; the token is required when `telegram`).
 
 The API validates these with Zod at startup and exits on a missing or
 invalid value. App URLs must be origins: `https`, or `http` for
