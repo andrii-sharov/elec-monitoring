@@ -4,6 +4,7 @@ import { useSession } from '@/api/session';
 import { AppearanceCard } from './AppearanceCard';
 import { ChangePasswordForm } from './ChangePasswordForm';
 import { DeleteAccount } from './DeleteAccount';
+import { Identifiers } from './Identifiers';
 import { ProfileForm } from './ProfileForm';
 import { SessionsCard } from './SessionsCard';
 import { SignInMethods } from './SignInMethods';
@@ -19,6 +20,7 @@ export function AccountPage() {
         <>
           <ProfileForm key={me.id} me={me} />
           <AppearanceCard />
+          <Identifiers me={me} />
           <SignInMethods me={me} />
           {me.has_password ? <ChangePasswordForm /> : null}
           <SessionsCard />

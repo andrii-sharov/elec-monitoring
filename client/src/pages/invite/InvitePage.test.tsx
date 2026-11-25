@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
-import { expect, test, vi } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { deviceFixture, invitePreviewFixture, meFixture } from '../../../test/fixtures.ts';
 import { renderRoute } from '../../../test/render.tsx';
 import { server } from '../../../test/server.ts';
@@ -131,4 +131,61 @@ test('accepting refreshes the profile, so the verify banner goes away', async ()
   await vi.waitFor(() =>
     expect(screen.queryByText(/Confirm your email address/)).not.toBeInTheDocument(),
   );
+});
+
+describe('phone invites', () => {
+  const phone = '+380501234567';
+  const phonePreview = () => servePreview(200, { email: null, phone });
+  const phoneMe = (phone_verified: boolean) =>
+    meFixture({ email: null, email_verified: false, phone, phone_verified });
+
+  test('signed out, it links to the phone sign-up and log in', async () => {
+    phonePreview();
+    renderRoute('/invite?token=t1');
+    expect(await screen.findByRole('link', { name: 'Create account' })).toHaveAttribute(
+      'href',
+      '/signup?phone=%2B380501234567&invite=1',
+    );
+    expect(screen.getByRole('link', { name: 'Log in' })).toHaveAttribute(
+      'href',
+      '/login?phone=%2B380501234567&next=%2Finvite%3Ftoken%3Dt1',
+    );
+    expect(screen.getByText(`This invite is for ${phone}.`)).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Continue with Google' })).not.toBeInTheDocument();
+  });
+
+  test('the same unverified phone is asked to confirm in Telegram', async () => {
+    const body = vi.fn<(value: unknown) => void>();
+    const telegramUrl = 'https://t.me/TestBot?start=p_abc';
+    phonePreview();
+    server.use(
+      http.post(`${base}/api/auth/phone`, async ({ request }) => {
+        body(await request.json());
+        return HttpResponse.json({ telegram_url: telegramUrl });
+      }),
+    );
+    const { user } = renderRoute('/invite?token=t1', { me: phoneMe(false) });
+    await user.click(await screen.findByRole('button', { name: 'Confirm in Telegram' }));
+    expect(await screen.findByRole('link', { name: 'Open Telegram' })).toHaveAttribute(
+      'href',
+      telegramUrl,
+    );
+    expect(body).toHaveBeenCalledWith({ phone });
+    expect(screen.queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
+  });
+
+  test('the same verified phone can accept', async () => {
+    phonePreview();
+    serveAccept();
+    renderRoute('/invite?token=t1', { me: phoneMe(true) });
+    expect(await screen.findByRole('button', { name: 'Accept' })).toBeVisible();
+  });
+
+  test('another account is told which number was invited', async () => {
+    phonePreview();
+    renderRoute('/invite?token=t1', { me: meFixture({ email: 'pete@example.com' }) });
+    expect(
+      await screen.findByText(`This invite is for ${phone}. You're signed in as pete@example.com.`),
+    ).toBeVisible();
+  });
 });

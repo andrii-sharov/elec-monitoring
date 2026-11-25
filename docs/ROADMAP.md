@@ -337,7 +337,7 @@ A §1, §3, §4 Sharing and Account, §6 · D §3, §4 `device_invite`, §11.
 - [x] Sign up, log in, reset and add an identifier with a phone
 - [x] Share devices by phone
 - [x] Client: sign up, log in and reset with a phone
-- [ ] Client: account and sharing with a phone
+- [x] Client: account and sharing with a phone
 
 **Done when:** tests cover one number typed in different formats, sign-up
 with another person's number, a forwarded contact or a code opened in a

@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
-import { acceptInvite } from '@/api/endpoints';
+import { acceptInvite, addPhone } from '@/api/endpoints';
 import { isApiError } from '@/api/errors';
 import { queryKeys, useInvitePreview } from '@/api/queries';
 import { useSession } from '@/api/session';
@@ -12,6 +12,7 @@ import { errorMessage } from '@/forms/errorMessage';
 import { FormAlert } from '@/forms/FormAlert';
 import { AuthLayout } from '../auth/AuthLayout';
 import { GoogleButton } from '../auth/GoogleButton';
+import { TelegramConfirm } from '../auth/TelegramConfirm';
 
 export function InvitePage() {
   const { t } = useTranslation();
@@ -46,8 +47,15 @@ export function InvitePage() {
     return <SignedOut invite={invite} next={here} />;
   }
 
-  if (me.email?.toLowerCase() !== invite.email || isApiError(accept.error, 'forbidden')) {
-    return <WrongAccount invite={invite} current={me.email ?? ''} />;
+  const matches = invite.phone
+    ? me.phone === invite.phone
+    : me.email?.toLowerCase() === invite.email;
+  if (!matches || isApiError(accept.error, 'forbidden')) {
+    return <WrongAccount invite={invite} current={me.email ?? me.phone ?? ''} />;
+  }
+
+  if (invite.phone && !me.phone_verified) {
+    return <ConfirmPhone invite={invite} phone={invite.phone} />;
   }
 
   return (
@@ -82,22 +90,53 @@ function useAcceptInvite(token: string | null) {
 
 function SignedOut({ invite, next }: { invite: InvitePreview; next: string }) {
   const { t } = useTranslation();
-  const email = invite.email ?? '';
-  const signup = new URLSearchParams({ email, invite: '1' });
-  const login = new URLSearchParams({ email, next });
+  const identifier: Record<string, string> = invite.phone
+    ? { phone: invite.phone }
+    : { email: invite.email ?? '' };
+  const signup = new URLSearchParams({ ...identifier, invite: '1' });
+  const login = new URLSearchParams({ ...identifier, next });
   return (
     <AuthLayout
       title={t('app.invite.title', { inviter: invite.inviter_name, device: invite.device_name })}
       description={t('app.invite.body')}
     >
-      <p className="text-sm text-muted-foreground">{t('app.invite.forEmail', { email })}</p>
+      <p className="text-sm text-muted-foreground">
+        {invite.phone
+          ? t('app.invite.phoneFor', { phone: invite.phone })
+          : t('app.invite.forEmail', { email: invite.email })}
+      </p>
       <Link to={`/signup?${signup.toString()}`} className={buttonVariants()}>
         {t('app.invite.createAccount')}
       </Link>
       <Link to={`/login?${login.toString()}`} className={buttonVariants({ variant: 'outline' })}>
         {t('app.invite.login')}
       </Link>
-      <GoogleButton next={next} />
+      {invite.phone ? null : <GoogleButton next={next} />}
+    </AuthLayout>
+  );
+}
+
+function ConfirmPhone({ invite, phone }: { invite: InvitePreview; phone: string }) {
+  const { t } = useTranslation();
+  const { api } = useSession();
+  const confirm = useMutation({ mutationFn: () => addPhone(api, phone) });
+  return (
+    <AuthLayout
+      title={t('app.invite.title', { inviter: invite.inviter_name, device: invite.device_name })}
+      description={t('app.invite.body')}
+    >
+      <FormAlert message={confirm.error ? errorMessage(t, confirm.error) : null} />
+      {confirm.data ? (
+        <TelegramConfirm
+          url={confirm.data.telegram_url}
+          title={t('app.auth.phone.confirmTitle')}
+          hint={t('app.auth.phone.confirmHint')}
+        />
+      ) : (
+        <Button onClick={() => confirm.mutate()} disabled={confirm.isPending}>
+          {t('app.invite.phoneConfirm')}
+        </Button>
+      )}
     </AuthLayout>
   );
 }
@@ -108,7 +147,11 @@ function WrongAccount({ invite, current }: { invite: InvitePreview; current: str
   return (
     <AuthLayout
       title={t('app.invite.wrongAccountTitle')}
-      description={t('app.invite.wrongAccountBody', { email: invite.email, current })}
+      description={
+        invite.phone
+          ? t('app.invite.phoneWrongAccountBody', { phone: invite.phone, current })
+          : t('app.invite.wrongAccountBody', { email: invite.email, current })
+      }
     >
       <Button variant="outline" onClick={() => void signOut()}>
         {t('app.invite.signOut')}

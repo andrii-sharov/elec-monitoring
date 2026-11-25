@@ -100,7 +100,7 @@ test('inviting sends the email, clears the field and refetches', async () => {
   );
   const { user } = renderRoute(`/devices/${id}`, { me: johnny });
   const section = await membersSection();
-  const field = await section.findByLabelText('Email');
+  const field = await section.findByLabelText('Email or phone');
   await user.type(field, 'pete@example.com');
   await user.click(section.getByRole('button', { name: 'Send invite' }));
   await vi.waitFor(() => expect(body).toHaveBeenCalledWith({ email: 'pete@example.com' }));
@@ -126,7 +126,7 @@ test('an existing member shows on the email field', async () => {
   );
   const { user } = renderRoute(`/devices/${id}`, { me: johnny });
   const section = await membersSection();
-  await user.type(await section.findByLabelText('Email'), 'mary@example.com');
+  await user.type(await section.findByLabelText('Email or phone'), 'mary@example.com');
   await user.click(section.getByRole('button', { name: 'Send invite' }));
   expect(await section.findByText('Already a member of this device')).toBeVisible();
 });
@@ -142,7 +142,7 @@ test('an invalid email is caught before sending', async () => {
   );
   const { user } = renderRoute(`/devices/${id}`, { me: johnny });
   const section = await membersSection();
-  await user.type(await section.findByLabelText('Email'), 'not-an-email');
+  await user.type(await section.findByLabelText('Email or phone'), 'mary@');
   await user.click(section.getByRole('button', { name: 'Send invite' }));
   expect(await section.findByText('Enter a valid email address')).toBeVisible();
   expect(body).not.toHaveBeenCalled();
@@ -201,7 +201,7 @@ test('a viewer sees the list, no invite tools, and can leave', async () => {
   const section = await membersSection();
   expect(await section.findByText('Johnny')).toBeVisible();
   expect(section.queryByText('johnny@example.com')).not.toBeInTheDocument();
-  expect(section.queryByLabelText('Email')).not.toBeInTheDocument();
+  expect(section.queryByLabelText('Email or phone')).not.toBeInTheDocument();
   expect(section.queryByRole('button', { name: /^Remove/ })).not.toBeInTheDocument();
   expect(invitesSeen).not.toHaveBeenCalled();
 
@@ -224,8 +224,57 @@ test('the invite form works from the keyboard', async () => {
   );
   const { user } = renderRoute(`/devices/${id}`, { me: johnny });
   const section = await membersSection();
-  const field = await section.findByLabelText('Email');
+  const field = await section.findByLabelText('Email or phone');
   field.focus();
   await user.keyboard('pete@example.com{Enter}');
   await vi.waitFor(() => expect(body).toHaveBeenCalledWith({ email: 'pete@example.com' }));
+});
+
+test('a phone invite shows a link to copy', async () => {
+  const url = 'https://app.test/invite?token=abc';
+  const phone = '+380501234567';
+  const body = vi.fn<(value: unknown) => void>();
+  serve();
+  server.use(
+    http.post(`${base}/api/v1/devices/${id}/invites`, async ({ request }) => {
+      body(await request.json());
+      return HttpResponse.json(inviteFixture({ email: null, phone, url }), { status: 201 });
+    }),
+  );
+  const { user } = renderRoute(`/devices/${id}`, { me: johnny });
+  const copy = vi.spyOn(navigator.clipboard, 'writeText');
+  const section = await membersSection();
+  await user.type(await section.findByLabelText('Email or phone'), phone);
+  await user.click(section.getByRole('button', { name: 'Send invite' }));
+  expect(await section.findByLabelText('Invite link')).toHaveValue(url);
+  expect(body).toHaveBeenCalledWith({ phone });
+  await user.click(section.getByRole('button', { name: 'Copy' }));
+  expect(copy).toHaveBeenCalledWith(url);
+  expect(await screen.findByText('Link copied')).toBeVisible();
+});
+
+test('an email invite shows no link', async () => {
+  serve();
+  server.use(
+    http.post(`${base}/api/v1/devices/${id}/invites`, () =>
+      HttpResponse.json(inviteFixture({ email: 'pete@example.com' }), { status: 201 }),
+    ),
+  );
+  const { user } = renderRoute(`/devices/${id}`, { me: johnny });
+  const section = await membersSection();
+  await user.type(await section.findByLabelText('Email or phone'), 'pete@example.com');
+  await user.click(section.getByRole('button', { name: 'Send invite' }));
+  await screen.findAllByText('Invite sent to pete@example.com');
+  expect(section.queryByLabelText('Invite link')).not.toBeInTheDocument();
+});
+
+test('members and pending invites show a phone when there is no email', async () => {
+  serve({
+    members: [owner, { ...mary, email: null, phone: '+380501234567' }],
+    invites: [inviteFixture({ email: null, phone: '+380509999999' })],
+  });
+  renderRoute(`/devices/${id}`, { me: johnny });
+  const section = await membersSection();
+  expect(await section.findByText('+380501234567')).toBeVisible();
+  expect(await section.findByText('+380509999999')).toBeVisible();
 });

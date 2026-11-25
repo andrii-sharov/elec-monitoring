@@ -261,6 +261,7 @@ export const en = {
       password_mismatch: 'Passwords do not match',
       already_member: 'Already a member of this device',
       invalid_phone: 'Enter a valid phone number',
+      already_in_use: 'This number is used by another account',
     },
     google: {
       errors: {
@@ -387,6 +388,18 @@ export const en = {
       deleteBody: 'Its outage history and links to notification channels are removed for good.',
     },
     account: {
+      identifiers: {
+        title: 'Email and phone',
+        email: 'Email',
+        phone: 'Phone',
+        notAdded: 'Not added',
+        confirmed: 'Confirmed',
+        notConfirmed: 'Not confirmed',
+        addEmail: 'Add email',
+        addPhone: 'Add phone',
+        submit: 'Continue',
+        checkInbox: 'Check your inbox for the confirmation link.',
+      },
       title: 'Account',
       profile: 'Profile',
       name: 'Name',
@@ -481,6 +494,13 @@ export const en = {
       UPDATING: 'Updating',
     },
     members: {
+      phoneInviteCreated: 'Invite created for {{phone}}',
+      phoneInviteHint:
+        'Send this link to the person. If their number is already confirmed here, the bot sends it too.',
+      phoneInviteLink: 'Invite link',
+      phoneInviteCopy: 'Copy',
+      phoneInviteCopied: 'Link copied',
+      phoneInviteCopyFailed: "Couldn't copy. Select the link and copy it.",
       title: 'Members',
       owner: 'Owner',
       viewer: 'Viewer',
@@ -495,7 +515,7 @@ export const en = {
       leaveBody: 'You will stop seeing this device and getting its alerts.',
       leaveConfirm: 'Leave',
       left: 'You left {{device}}',
-      inviteTitle: 'Invite by email',
+      inviteTitle: 'Invite by email or phone',
       inviteHint: 'They will see the device and can get its alerts. They can’t change it.',
       inviteSubmit: 'Send invite',
       invited: 'Invite sent to {{email}}',
@@ -509,6 +529,9 @@ export const en = {
       revoked: 'Invite revoked',
     },
     invite: {
+      phoneFor: 'This invite is for {{phone}}.',
+      phoneWrongAccountBody: "This invite is for {{phone}}. You're signed in as {{current}}.",
+      phoneConfirm: 'Confirm in Telegram',
       loading: 'Opening the invite…',
       title: '{{inviter}} invited you to {{device}}',
       body: 'You will see its status and outages and can get its alerts in your own channels.',

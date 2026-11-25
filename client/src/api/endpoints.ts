@@ -50,6 +50,10 @@ export function signup(api: ApiClient, body: Body<typeof signupBodySchema>) {
   return requestIdentifier(api, '/api/auth/signup', body);
 }
 
+export function addEmail(api: ApiClient, email: string) {
+  return api.request('/api/auth/email', { method: 'POST', body: { email } });
+}
+
 export function addPhone(api: ApiClient, phone: string) {
   return api.request('/api/auth/phone', {
     method: 'POST',

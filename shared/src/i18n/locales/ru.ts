@@ -272,6 +272,7 @@ export const ru: Dictionary = {
       password_mismatch: 'Пароли не совпадают',
       already_member: 'У этого человека уже есть доступ к устройству',
       invalid_phone: 'Введите действительный номер телефона',
+      already_in_use: 'Этот номер использует другой аккаунт',
     },
     google: {
       errors: {
@@ -400,6 +401,18 @@ export const ru: Dictionary = {
       deleteBody: 'Его история отключений и связи с каналами уведомлений будут удалены навсегда.',
     },
     account: {
+      identifiers: {
+        title: 'Email и телефон',
+        email: 'Email',
+        phone: 'Телефон',
+        notAdded: 'Не добавлено',
+        confirmed: 'Подтверждено',
+        notConfirmed: 'Не подтверждено',
+        addEmail: 'Добавить email',
+        addPhone: 'Добавить телефон',
+        submit: 'Продолжить',
+        checkInbox: 'Проверьте почту: мы отправили ссылку для подтверждения.',
+      },
       title: 'Аккаунт',
       profile: 'Профиль',
       name: 'Имя',
@@ -503,6 +516,13 @@ export const ru: Dictionary = {
       UPDATING: 'Обновляется',
     },
     members: {
+      phoneInviteCreated: 'Приглашение для {{phone}} создано',
+      phoneInviteHint:
+        'Отправьте эту ссылку человеку. Если его номер уже подтверждён здесь, бот тоже отправит её.',
+      phoneInviteLink: 'Ссылка на приглашение',
+      phoneInviteCopy: 'Копировать',
+      phoneInviteCopied: 'Ссылка скопирована',
+      phoneInviteCopyFailed: 'Не удалось скопировать. Выделите ссылку и скопируйте её.',
       title: 'Участники',
       owner: 'Владелец',
       viewer: 'Наблюдатель',
@@ -517,7 +537,7 @@ export const ru: Dictionary = {
       leaveBody: 'Вы больше не будете видеть это устройство и получать его уведомления.',
       leaveConfirm: 'Покинуть',
       left: 'Вы покинули {{device}}',
-      inviteTitle: 'Пригласить по почте',
+      inviteTitle: 'Пригласить по email или телефону',
       inviteHint:
         'Человек будет видеть устройство и сможет получать уведомления, но не сможет его менять.',
       inviteSubmit: 'Отправить приглашение',
@@ -532,6 +552,9 @@ export const ru: Dictionary = {
       revoked: 'Приглашение отменено',
     },
     invite: {
+      phoneFor: 'Это приглашение для {{phone}}.',
+      phoneWrongAccountBody: 'Это приглашение для {{phone}}. Вы вошли как {{current}}.',
+      phoneConfirm: 'Подтвердить в Telegram',
       loading: 'Открываем приглашение…',
       title: '{{inviter}} приглашает вас к {{device}}',
       body: 'Вы будете видеть его состояние и отключения и сможете получать уведомления в свои каналы.',

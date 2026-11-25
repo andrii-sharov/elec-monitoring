@@ -1,7 +1,8 @@
-import { emailSchema, type Device, type Invite, type Member } from '@elec/shared/api';
+import type { Device, Invite, Member } from '@elec/shared/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Users } from 'lucide-react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
@@ -14,13 +15,15 @@ import { useSession } from '@/api/session';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage } from '@/forms/errorMessage';
 import { FormAlert } from '@/forms/FormAlert';
-import { TextField } from '@/forms/TextField';
 import { applyServerErrors } from '@/forms/zodErrors';
 import { useFormatters } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
+import { identifierErrors, identifierValueSchema, toIdentifier } from '../auth/identifier';
+import { IdentifierField } from '../auth/IdentifierField';
 
 export const MAX_MEMBERS = 10;
 
@@ -30,6 +33,8 @@ export function DeviceMembers({ device }: { device: Device }) {
   const members = useMembers(device.id);
   const invites = useInvites(device.id, { enabled: isOwner });
   const now = useNow(60_000);
+  const [link, setLink] = useState<string | null>(null);
+  const showLink = (invite: Invite) => setLink(invite.url ?? null);
 
   const heading = (
     <h2 id="members-title" className="flex items-center gap-2 font-heading text-lg font-medium">
@@ -61,9 +66,15 @@ export function DeviceMembers({ device }: { device: Device }) {
         <MemberList device={device} members={members.data.items} />
         {isOwner ? (
           <>
-            <InviteForm deviceId={device.id} full={used >= MAX_MEMBERS} />
+            <InviteForm deviceId={device.id} full={used >= MAX_MEMBERS} onInvited={showLink} />
+            {link ? <InviteLink url={link} /> : null}
             {pending.length > 0 ? (
-              <PendingInvites deviceId={device.id} invites={pending} now={now} />
+              <PendingInvites
+                deviceId={device.id}
+                invites={pending}
+                now={now}
+                onInvited={showLink}
+              />
             ) : null}
           </>
         ) : (
@@ -95,9 +106,13 @@ function MemberList({ device, members }: { device: Device; members: Member[] }) 
           <Badge variant="secondary">
             {member.role === 'OWNER' ? t('app.members.owner') : t('app.members.viewer')}
           </Badge>
-          {member.email ? (
-            <span className="text-sm text-muted-foreground">{member.email}</span>
-          ) : null}
+          {[member.email, member.phone].map((value) =>
+            value ? (
+              <span key={value} className="text-sm text-muted-foreground">
+                {value}
+              </span>
+            ) : null,
+          )}
           {device.role === 'OWNER' && member.role === 'VIEWER' ? (
             <span className="ms-auto">
               <RemoveMember deviceId={device.id} member={member} />
@@ -137,14 +152,33 @@ function RemoveMember({ deviceId, member }: { deviceId: string; member: Member }
   );
 }
 
-const inviteFormSchema = z.strictObject({ email: emailSchema });
+const inviteFormSchema = z.object({ identifier: identifierValueSchema });
 type InviteInput = z.input<typeof inviteFormSchema>;
 type InviteOutput = z.output<typeof inviteFormSchema>;
 
-function InviteForm({ deviceId, full }: { deviceId: string; full: boolean }) {
+function useInvitedToast() {
+  const { t } = useTranslation();
+  return (invite: Invite) =>
+    toast.success(
+      invite.phone
+        ? t('app.members.phoneInviteCreated', { phone: invite.phone })
+        : t('app.members.invited', { email: invite.email }),
+    );
+}
+
+function InviteForm({
+  deviceId,
+  full,
+  onInvited,
+}: {
+  deviceId: string;
+  full: boolean;
+  onInvited: (invite: Invite) => void;
+}) {
   const { t } = useTranslation();
   const { api } = useSession();
   const queryClient = useQueryClient();
+  const announce = useInvitedToast();
   const {
     register,
     handleSubmit,
@@ -153,21 +187,25 @@ function InviteForm({ deviceId, full }: { deviceId: string; full: boolean }) {
     formState: { errors },
   } = useForm<InviteInput, unknown, InviteOutput>({
     resolver: zodResolver(inviteFormSchema),
-    defaultValues: { email: '' },
+    defaultValues: { identifier: '' },
   });
   const send = useMutation({
-    mutationFn: (body: InviteOutput) => createInvite(api, deviceId, body),
+    mutationFn: ({ identifier }: InviteOutput) =>
+      createInvite(api, deviceId, toIdentifier(identifier)),
     onSuccess: (invite) => {
-      reset({ email: '' });
-      toast.success(t('app.members.invited', { email: invite.email }));
+      reset({ identifier: '' });
+      announce(invite);
+      onInvited(invite);
       return queryClient.invalidateQueries({ queryKey: queryKeys.invites(deviceId) });
     },
     onError: (error) => {
-      if (isApiError(error)) applyServerErrors(error, setError, ['email'], t);
+      if (isApiError(error)) {
+        applyServerErrors(identifierErrors(error), setError, ['identifier'], t);
+      }
     },
   });
   const formError =
-    send.error && !(isApiError(send.error) && send.error.details.some((d) => d.path === 'email'))
+    send.error && !(isApiError(send.error) && identifierErrors(send.error).details.length > 0)
       ? errorMessage(t, send.error)
       : null;
 
@@ -182,13 +220,11 @@ function InviteForm({ deviceId, full }: { deviceId: string; full: boolean }) {
         {full ? t('app.members.limit') : t('app.members.inviteHint')}
       </p>
       <FormAlert message={formError} />
-      <TextField
-        label={t('app.auth.email')}
-        type="email"
+      <IdentifierField
         autoComplete="off"
         disabled={full}
-        error={errors.email}
-        {...register('email')}
+        error={errors.identifier}
+        {...register('identifier')}
       />
       <Button type="submit" className="self-start" disabled={full || send.isPending}>
         {t('app.members.inviteSubmit')}
@@ -197,24 +233,56 @@ function InviteForm({ deviceId, full }: { deviceId: string; full: boolean }) {
   );
 }
 
+function InviteLink({ url }: { url: string }) {
+  const { t } = useTranslation();
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success(t('app.members.phoneInviteCopied'));
+    } catch {
+      toast.error(t('app.members.phoneInviteCopyFailed'));
+    }
+  };
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-sm text-muted-foreground">{t('app.members.phoneInviteHint')}</p>
+      <div className="flex gap-2">
+        <Input
+          readOnly
+          value={url}
+          aria-label={t('app.members.phoneInviteLink')}
+          onFocus={(event) => event.target.select()}
+        />
+        <Button type="button" variant="outline" onClick={() => void copy()}>
+          {t('app.members.phoneInviteCopy')}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function PendingInvites({
   deviceId,
   invites,
   now,
+  onInvited,
 }: {
   deviceId: string;
   invites: Invite[];
   now: number;
+  onInvited: (invite: Invite) => void;
 }) {
+  const announce = useInvitedToast();
   const { t } = useTranslation();
   const { api } = useSession();
   const queryClient = useQueryClient();
   const format = useFormatters();
   const refetch = () => queryClient.invalidateQueries({ queryKey: queryKeys.invites(deviceId) });
   const resend = useMutation({
-    mutationFn: (email: string) => createInvite(api, deviceId, { email }),
+    mutationFn: (identifier: string) => createInvite(api, deviceId, toIdentifier(identifier)),
     onSuccess: (invite) => {
-      toast.success(t('app.members.invited', { email: invite.email }));
+      announce(invite);
+      onInvited(invite);
       return refetch();
     },
     onError: (error) => toast.error(errorMessage(t, error)),
@@ -236,7 +304,7 @@ function PendingInvites({
           const expired = new Date(invite.expires_at).getTime() <= now;
           return (
             <li key={invite.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3">
-              <span>{invite.email}</span>
+              <span>{invite.email ?? invite.phone}</span>
               {expired ? (
                 <Badge variant="outline">{t('app.members.expired')}</Badge>
               ) : (
@@ -249,7 +317,7 @@ function PendingInvites({
                   variant="outline"
                   size="sm"
                   disabled={resend.isPending}
-                  onClick={() => resend.mutate(invite.email ?? '')}
+                  onClick={() => resend.mutate(invite.email ?? invite.phone ?? '')}
                 >
                   {t('app.members.resend')}
                 </Button>

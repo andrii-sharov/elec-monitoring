@@ -266,6 +266,7 @@ export const uk: Dictionary = {
       password_mismatch: 'Паролі не збігаються',
       already_member: 'Ця людина вже має доступ до пристрою',
       invalid_phone: 'Введіть дійсний номер телефону',
+      already_in_use: 'Цей номер використовує інший обліковий запис',
     },
     google: {
       errors: {
@@ -396,6 +397,18 @@ export const uk: Dictionary = {
       deleteBody: 'Його історію відключень і зв’язки з каналами сповіщень буде видалено назавжди.',
     },
     account: {
+      identifiers: {
+        title: 'Email і телефон',
+        email: 'Email',
+        phone: 'Телефон',
+        notAdded: 'Не додано',
+        confirmed: 'Підтверджено',
+        notConfirmed: 'Не підтверджено',
+        addEmail: 'Додати email',
+        addPhone: 'Додати телефон',
+        submit: 'Продовжити',
+        checkInbox: 'Перевірте пошту: ми надіслали посилання для підтвердження.',
+      },
       title: 'Обліковий запис',
       profile: 'Профіль',
       name: 'Імʼя',
@@ -499,6 +512,13 @@ export const uk: Dictionary = {
       UPDATING: 'Оновлюється',
     },
     members: {
+      phoneInviteCreated: 'Запрошення для {{phone}} створено',
+      phoneInviteHint:
+        'Надішліть це посилання людині. Якщо її номер уже підтверджено тут, бот також надішле його.',
+      phoneInviteLink: 'Посилання на запрошення',
+      phoneInviteCopy: 'Копіювати',
+      phoneInviteCopied: 'Посилання скопійовано',
+      phoneInviteCopyFailed: 'Не вдалося скопіювати. Виділіть посилання та скопіюйте його.',
       title: 'Учасники',
       owner: 'Власник',
       viewer: 'Глядач',
@@ -513,7 +533,7 @@ export const uk: Dictionary = {
       leaveBody: 'Ви більше не бачитимете цей пристрій і не отримуватимете його сповіщень.',
       leaveConfirm: 'Вийти',
       left: 'Ви вийшли з {{device}}',
-      inviteTitle: 'Запросити за поштою',
+      inviteTitle: 'Запросити за email або телефоном',
       inviteHint:
         'Людина бачитиме пристрій і зможе отримувати сповіщення, але не змінюватиме його.',
       inviteSubmit: 'Надіслати запрошення',
@@ -528,6 +548,9 @@ export const uk: Dictionary = {
       revoked: 'Запрошення скасовано',
     },
     invite: {
+      phoneFor: 'Це запрошення для {{phone}}.',
+      phoneWrongAccountBody: 'Це запрошення для {{phone}}. Ви увійшли як {{current}}.',
+      phoneConfirm: 'Підтвердити в Telegram',
       loading: 'Відкриваємо запрошення…',
       title: '{{inviter}} запрошує вас до {{device}}',
       body: 'Ви бачитимете його стан і відключення та зможете отримувати сповіщення у свої канали.',
