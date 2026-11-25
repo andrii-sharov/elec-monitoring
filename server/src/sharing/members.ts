@@ -47,13 +47,17 @@ export async function listMembers(
     ...(owner ? [{ ...owner, role: 'OWNER' as const }] : []),
     ...viewers.map((v) => ({ ...v, role: 'VIEWER' as const })),
   ];
-  return rows.map(({ user, joinedAt, role }) => ({
-    user_id: user.id,
-    name: user.name,
-    email: caller.role === 'OWNER' || user.id === caller.id ? user.email : null,
-    role,
-    joined_at: joinedAt.toISOString(),
-  }));
+  return rows.map(({ user, joinedAt, role }) => {
+    const visible = caller.role === 'OWNER' || user.id === caller.id;
+    return {
+      user_id: user.id,
+      name: user.name,
+      email: visible ? user.email : null,
+      phone: visible ? user.phone : null,
+      role,
+      joined_at: joinedAt.toISOString(),
+    };
+  });
 }
 
 export async function removeMember(tx: Tx, deviceId: string, userId: string): Promise<boolean> {

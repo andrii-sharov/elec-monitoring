@@ -640,45 +640,55 @@ newest first:
 | Method | Path                             | Auth      | Role                 | Purpose                |
 | ------ | -------------------------------- | --------- | -------------------- | ---------------------- |
 | GET    | `/devices/:id/members`           | signed in | owner, viewer        | Owner and viewers      |
-| POST   | `/devices/:id/invites`           | signed in | owner                | Invite by email        |
+| POST   | `/devices/:id/invites`           | signed in | owner                | Invite by email, phone |
 | GET    | `/devices/:id/invites`           | signed in | owner                | Pending invites        |
 | DELETE | `/devices/:id/invites/:inviteId` | signed in | owner                | Revoke an invite       |
 | DELETE | `/devices/:id/members/:userId`   | signed in | owner, viewer (self) | Remove viewer or leave |
 | GET    | `/invites/:token`                | none      | public               | Invite preview         |
 | POST   | `/invites/:token/accept`         | signed in | invitee              | Accept invite          |
 
-- `POST /devices/:id/invites` `{ "email": "…" }` (trimmed, lowercased)
-  → `201` with the invite object. The account needs a verified email or phone.
-  Limit: 10 per hour per user. Sends the email in the recipient's
-  language, or `uk` if they have no account, with the link
-  `https://app.<domain>/invite?token=<token>`. The link is valid 7 days.
-  - Inviting an email that already has a pending invite replaces it: a
-    new link and expiry, and the earlier link stops working.
-  - The owner's email or a current viewer's email → `409 conflict` with
-    detail `{ "path": "email", "code": "already_member" }`.
+- `POST /devices/:id/invites` `{ "email": "…" }` or `{ "phone": "…" }`
+  (exactly one) → `201` with the invite object. The account needs a
+  verified email or phone. Limit: 10 per hour per user. The link is
+  `https://app.<domain>/invite?token=<token>`, valid 7 days.
+  - An email invite sends the link by email in the recipient's language,
+    or `uk` if they have no account.
+  - A phone invite adds `url` (the link) to the response, so the owner can
+    copy it. When the number belongs to an account with a bound Telegram
+    user, the bot also sends it there. The response never says whether it
+    did.
+  - Inviting an email or phone that already has a pending invite replaces
+    it: a new link and expiry, and the earlier link stops working.
+  - The owner's or a current viewer's email or phone → `409 conflict` with
+    detail `{ "path": "email" | "phone", "code": "already_member" }`.
   - At most 10 viewers and unexpired pending invites per device (a
     re-invite doesn't count twice). Over the limit → `409 conflict`
     without details.
-- Invite object: `{ "id", "email", "expires_at", "created_at" }`.
-  `GET /devices/:id/invites` → `200 { "items": [...] }`: pending invites,
-  expired ones included, oldest first. `DELETE` → `204`, and the link
-  stops working. An unknown invite or one from another device → `404`.
+- Invite object: `{ "id", "email", "phone", "expires_at", "created_at" }`;
+  one of `email` / `phone` is `null`. `GET /devices/:id/invites` →
+  `200 { "items": [...] }`: pending invites, expired ones included, oldest
+  first, without `url`. `DELETE` → `204`, and the link stops working. An
+  unknown invite or one from another device → `404`.
 - `GET /invites/:token` → `200`
-  `{ "device_name", "inviter_name", "email", "expires_at", "accepted" }`,
+  `{ "device_name", "inviter_name", "email", "phone", "expires_at", "accepted" }`,
   so the page can show "Johnny invited you to Home" before sign-up. An
   unknown, revoked or expired token → `410 expired`. An accepted invite
   still previews (with `accepted: true`) until it expires. Limit: 10 per
   minute per IP.
 - `POST /invites/:token/accept` → `200` with the device (`role: VIEWER`).
-  The email need not be verified: accepting marks it verified. Joining
-  attaches all of the caller's channels to the device.
+  Joining attaches all of the caller's channels to the device.
   - Unknown, revoked or expired (7 days) → `410 expired`.
-  - The account email differs from the invite email → `403 forbidden`.
+  - Email invite: the account email must match, else `403 forbidden`. It
+    need not be verified: accepting marks it verified.
+  - Phone invite: the account phone must match, else `403 forbidden`, and
+    must already be verified, else `403 not_verified`. Accepting never
+    verifies a phone.
   - Already accepted: `200` with the device if the caller is still a
     viewer (so a second tab or a return after sign-up works), else `410`.
   - When an account's email becomes verified (verification link, reset
-    of an unverified account, Google sign-in), its pending, unexpired
-    invites are accepted the same way, without calling this endpoint.
+    of an unverified account, Google sign-in) or its phone does (bot
+    confirmation, reset), its pending, unexpired invites for it are accepted
+    the same way, without calling this endpoint.
 - `GET /devices/:id/members` → `200 { "items": [...] }`, the owner first,
   then viewers by join time:
 
@@ -687,13 +697,15 @@ newest first:
     "user_id": "…",
     "name": "Johnny",
     "email": "johnny@example.com",
+    "phone": null,
     "role": "OWNER",
     "joined_at": "2026-11-21T14:02:00Z"
   }
   ```
 
-  `joined_at` of the owner is the device's creation time. `email` is shown
-  to the owner, and to each member for their own row; otherwise `null`.
+  `joined_at` of the owner is the device's creation time. `email` and
+  `phone` are shown to the owner, and to each member for their own row;
+  otherwise `null`.
 
 - `DELETE /devices/:id/members/:userId` → `204`. The owner removes any
   viewer; a viewer removes only themselves (leave), else `403 forbidden`.

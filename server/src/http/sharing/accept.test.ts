@@ -214,3 +214,51 @@ describe('sign up, then the invite is applied', () => {
     expect(await viewers()).toHaveLength(0);
   });
 });
+
+describe('accepting a phone invite', () => {
+  const PHONE = '+380501234567';
+  const invitePhone = () => seedInvite(t.db, { deviceId, invitedBy: owner.id, phone: PHONE });
+
+  async function phoneRow(id: string) {
+    const [row] = await t.db.select().from(appUser).where(eq(appUser.id, id));
+    return row!.phoneVerifiedAt;
+  }
+
+  test('joins a caller with the same verified phone', async () => {
+    const mary = await createUser(t.db, { phone: PHONE, name: 'Mary' });
+    const { token } = await invitePhone();
+    const res = await accept(token, await bearerFor(mary));
+    expect(res.status).toBe(200);
+    expect(res.body.role).toBe('VIEWER');
+    expect(await viewers()).toHaveLength(1);
+    expect(await phoneRow(mary.id)).toEqual(mary.phoneVerifiedAt);
+  });
+
+  test('refuses the same phone while it is unverified', async () => {
+    const mary = await createUser(t.db, { phone: PHONE, name: 'Mary', phoneVerified: false });
+    const { token } = await invitePhone();
+    const res = await accept(token, await bearerFor(mary));
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('not_verified');
+    expect(await viewers()).toHaveLength(0);
+    expect(await phoneRow(mary.id)).toBeNull();
+  });
+
+  test.each([
+    ['another phone', { phone: '+380509999999' }],
+    ['an email-only account', { email: 'mary@example.com' }],
+  ])('refuses %s', async (_label, overrides) => {
+    const mary = await createUser(t.db, { name: 'Mary', ...overrides });
+    const { token } = await invitePhone();
+    const res = await accept(token, await bearerFor(mary));
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('forbidden');
+    expect(await viewers()).toHaveLength(0);
+  });
+
+  test('an email invite refuses a phone-only account', async () => {
+    const mary = await createUser(t.db, { phone: PHONE, name: 'Mary' });
+    const { token } = await inviteMary();
+    expect((await accept(token, await bearerFor(mary))).status).toBe(403);
+  });
+});

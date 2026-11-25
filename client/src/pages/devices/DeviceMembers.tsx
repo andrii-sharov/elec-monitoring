@@ -1,4 +1,4 @@
-import { createInviteBodySchema, type Device, type Invite, type Member } from '@elec/shared/api';
+import { emailSchema, type Device, type Invite, type Member } from '@elec/shared/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Users } from 'lucide-react';
@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
-import type { z } from 'zod';
+import { z } from 'zod';
 import { createInvite, removeMember, revokeInvite } from '@/api/endpoints';
 import { isApiError } from '@/api/errors';
 import { queryKeys, useInvites, useMembers } from '@/api/queries';
@@ -137,8 +137,9 @@ function RemoveMember({ deviceId, member }: { deviceId: string; member: Member }
   );
 }
 
-type InviteInput = z.input<typeof createInviteBodySchema>;
-type InviteOutput = z.output<typeof createInviteBodySchema>;
+const inviteFormSchema = z.strictObject({ email: emailSchema });
+type InviteInput = z.input<typeof inviteFormSchema>;
+type InviteOutput = z.output<typeof inviteFormSchema>;
 
 function InviteForm({ deviceId, full }: { deviceId: string; full: boolean }) {
   const { t } = useTranslation();
@@ -151,7 +152,7 @@ function InviteForm({ deviceId, full }: { deviceId: string; full: boolean }) {
     setError,
     formState: { errors },
   } = useForm<InviteInput, unknown, InviteOutput>({
-    resolver: zodResolver(createInviteBodySchema),
+    resolver: zodResolver(inviteFormSchema),
     defaultValues: { email: '' },
   });
   const send = useMutation({

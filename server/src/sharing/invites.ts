@@ -17,31 +17,43 @@ export function toInvite(row: InviteRow): Invite {
   return {
     id: row.id,
     email: row.email,
+    phone: row.phone,
     expires_at: row.expiresAt.toISOString(),
     created_at: row.createdAt.toISOString(),
   };
 }
 
-async function isMember(tx: Tx, deviceId: string, email: string): Promise<boolean> {
+export type InviteTarget = { email: string } | { phone: string };
+
+const userHas = (target: InviteTarget) =>
+  'email' in target
+    ? eq(sql`lower(${appUser.email})`, target.email)
+    : eq(appUser.phone, target.phone);
+
+async function isMember(tx: Tx, deviceId: string, target: InviteTarget): Promise<boolean> {
   const [ownerMatch] = await tx
     .select({ id: device.id })
     .from(device)
     .innerJoin(appUser, eq(appUser.id, device.ownerId))
-    .where(and(eq(device.id, deviceId), eq(sql`lower(${appUser.email})`, email)));
+    .where(and(eq(device.id, deviceId), userHas(target)));
   if (ownerMatch) return true;
   const [viewerMatch] = await tx
     .select({ id: deviceViewer.userId })
     .from(deviceViewer)
     .innerJoin(appUser, eq(appUser.id, deviceViewer.userId))
-    .where(and(eq(deviceViewer.deviceId, deviceId), eq(sql`lower(${appUser.email})`, email)));
+    .where(and(eq(deviceViewer.deviceId, deviceId), userHas(target)));
   return Boolean(viewerMatch);
 }
 
-async function memberSlotsUsed(tx: Tx, deviceId: string, email: string, now: Date) {
+async function memberSlotsUsed(tx: Tx, deviceId: string, target: InviteTarget, now: Date) {
   const [viewers] = await tx
     .select({ n: count() })
     .from(deviceViewer)
     .where(eq(deviceViewer.deviceId, deviceId));
+  const otherTarget =
+    'email' in target
+      ? sql`${deviceInvite.email} is distinct from ${target.email}`
+      : sql`${deviceInvite.phone} is distinct from ${target.phone}`;
   const [invites] = await tx
     .select({ n: count() })
     .from(deviceInvite)
@@ -50,7 +62,7 @@ async function memberSlotsUsed(tx: Tx, deviceId: string, email: string, now: Dat
         eq(deviceInvite.deviceId, deviceId),
         isNull(deviceInvite.acceptedAt),
         gt(deviceInvite.expiresAt, now),
-        ne(deviceInvite.email, email),
+        otherTarget,
       ),
     );
   return (viewers?.n ?? 0) + (invites?.n ?? 0);
@@ -59,15 +71,17 @@ async function memberSlotsUsed(tx: Tx, deviceId: string, email: string, now: Dat
 export async function createInvite(
   tx: Tx,
   clock: Clock,
-  input: { deviceId: string; email: string; invitedBy: string },
+  input: { deviceId: string; invitedBy: string } & InviteTarget,
 ): Promise<{ invite: InviteRow; token: string }> {
   const now = clock.now();
-  if (await isMember(tx, input.deviceId, input.email)) {
+  const target: InviteTarget = 'email' in input ? { email: input.email } : { phone: input.phone };
+  const column = 'email' in target ? 'email' : 'phone';
+  if (await isMember(tx, input.deviceId, target)) {
     throw new HttpError(409, 'conflict', 'Already a member', [
-      { path: 'email', code: 'already_member' },
+      { path: column, code: 'already_member' },
     ]);
   }
-  if ((await memberSlotsUsed(tx, input.deviceId, input.email, now)) >= MAX_MEMBERS) {
+  if ((await memberSlotsUsed(tx, input.deviceId, target, now)) >= MAX_MEMBERS) {
     throw new HttpError(409, 'conflict', 'Member limit reached');
   }
   const token = randomToken();
@@ -79,9 +93,9 @@ export async function createInvite(
   };
   const [invite] = await tx
     .insert(deviceInvite)
-    .values({ deviceId: input.deviceId, email: input.email, ...fields })
+    .values({ deviceId: input.deviceId, ...target, ...fields })
     .onConflictDoUpdate({
-      target: [deviceInvite.deviceId, deviceInvite.email],
+      target: [deviceInvite.deviceId, deviceInvite[column]],
       targetWhere: isNull(deviceInvite.acceptedAt),
       set: fields,
     })
@@ -103,7 +117,7 @@ export function isExpired(invite: InviteRow, now: Date): boolean {
 
 const gone = () => new HttpError(410, 'expired', 'The invite is invalid or has expired');
 
-type Invitee = { id: string; email: string | null };
+type Invitee = Pick<typeof appUser.$inferSelect, 'id' | 'email' | 'phone' | 'phoneVerifiedAt'>;
 
 async function isViewer(tx: Tx, deviceId: string, userId: string): Promise<boolean> {
   const [row] = await tx
@@ -120,6 +134,19 @@ async function markEmailVerified(tx: Tx, userId: string, now: Date): Promise<voi
       emailVerifiedAt: sql`coalesce(${appUser.emailVerifiedAt}, ${now.toISOString()}::timestamptz)`,
     })
     .where(eq(appUser.id, userId));
+}
+
+function assertInvitee(invite: InviteRow, user: Invitee): void {
+  if (invite.phone === null) {
+    if (invite.email === user.email?.toLowerCase()) return;
+    throw new HttpError(403, 'forbidden', 'This invite is for another email address');
+  }
+  if (invite.phone !== user.phone) {
+    throw new HttpError(403, 'forbidden', 'This invite is for another phone number');
+  }
+  if (!user.phoneVerifiedAt) {
+    throw new HttpError(403, 'not_verified', 'Phone number is not verified');
+  }
 }
 
 export async function acceptInvite(
@@ -146,9 +173,7 @@ export async function acceptInvite(
     .where(eq(deviceInvite.tokenHash, tokenHash))
     .for('update');
   if (!owner || !invite || isExpired(invite, now)) throw gone();
-  if (invite.email !== user.email?.toLowerCase()) {
-    throw new HttpError(403, 'forbidden', 'This invite is for another email address');
-  }
+  assertInvitee(invite, user);
   const deviceId = invite.deviceId;
   if (owner.ownerId === user.id) {
     if (!invite.acceptedAt) {
@@ -162,7 +187,7 @@ export async function acceptInvite(
   }
   await tx.update(deviceInvite).set({ acceptedAt: now }).where(eq(deviceInvite.id, invite.id));
   await joinAsViewer(tx, deviceId, user.id);
-  await markEmailVerified(tx, user.id, now);
+  if (invite.email !== null) await markEmailVerified(tx, user.id, now);
   return { deviceId, role: 'VIEWER' };
 }
 

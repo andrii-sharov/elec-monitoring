@@ -2833,7 +2833,7 @@
     "/api/v1/devices/{id}/members": {
       "get": {
         "summary": "List the owner and viewers",
-        "description": "Owner first, then viewers by join time. Emails are shown to the owner, and to each member for their own row.",
+        "description": "Owner first, then viewers by join time. Emails and phones are shown to the owner, and to each member for their own row.",
         "security": [
           {
             "bearerAuth": []
@@ -2983,8 +2983,8 @@
     },
     "/api/v1/devices/{id}/invites": {
       "post": {
-        "summary": "Invite a viewer by email",
-        "description": "Owner only. Emails a link valid for 7 days. Inviting the same email again replaces the earlier link. At most 10 viewers and pending invites per device.",
+        "summary": "Invite a viewer by email or phone",
+        "description": "Owner only. The link is valid for 7 days. An email invite is emailed; a phone invite returns `url` and is also sent by the Telegram bot when that number has an account that confirmed it. Inviting the same email or phone again replaces the earlier link. At most 10 viewers and pending invites per device.",
         "security": [
           {
             "bearerAuth": []
@@ -3009,16 +3009,33 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "email": {
-                    "type": "string"
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "email"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "phone": {
+                        "type": "string",
+                        "maxLength": 32
+                      }
+                    },
+                    "required": [
+                      "phone"
+                    ],
+                    "additionalProperties": false
                   }
-                },
-                "required": [
-                  "email"
-                ],
-                "additionalProperties": false
+                ]
               }
             }
           }
@@ -3302,7 +3319,7 @@
     "/api/v1/invites/{token}/accept": {
       "post": {
         "summary": "Accept an invite",
-        "description": "The account email must match the invite. Joins the device as a viewer, attaches all of the caller's channels and marks the email verified. Accepting again returns the device.",
+        "description": "The account email or phone must match the invite. Joins the device as a viewer and attaches all of the caller's channels. An email invite marks the email verified; a phone invite needs an already verified phone. Accepting again returns the device.",
         "security": [
           {
             "bearerAuth": []
@@ -3345,7 +3362,7 @@
             }
           },
           "403": {
-            "description": "`forbidden`: the invite is for another email address",
+            "description": "`forbidden`: the invite is for someone else, or `not_verified`",
             "content": {
               "application/json": {
                 "schema": {
@@ -4202,6 +4219,12 @@
               "null"
             ]
           },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "role": {
             "type": "string",
             "enum": [
@@ -4218,6 +4241,7 @@
           "user_id",
           "name",
           "email",
+          "phone",
           "role",
           "joined_at"
         ],
@@ -4237,6 +4261,15 @@
               "null"
             ]
           },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": "string"
+          },
           "expires_at": {
             "type": "string",
             "example": "2026-11-21T16:42:00Z"
@@ -4249,6 +4282,7 @@
         "required": [
           "id",
           "email",
+          "phone",
           "expires_at",
           "created_at"
         ],
@@ -4269,6 +4303,12 @@
               "null"
             ]
           },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "expires_at": {
             "type": "string",
             "example": "2026-11-21T16:42:00Z"
@@ -4281,6 +4321,7 @@
           "device_name",
           "inviter_name",
           "email",
+          "phone",
           "expires_at",
           "accepted"
         ],

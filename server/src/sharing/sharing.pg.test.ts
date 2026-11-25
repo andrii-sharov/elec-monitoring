@@ -6,6 +6,10 @@ import { FakeClock } from '../../test/fakes.ts';
 import { seedInvite } from '../../test/sharing.ts';
 import { HttpError } from '../http/errors.ts';
 import { randomToken, sha256 } from '../lib/crypto.ts';
+import { eq } from 'drizzle-orm';
+import { issueOneTimeToken } from '../auth/oneTimeTokens.ts';
+import { claimPhoneCode, confirmContact } from '../auth/phone.ts';
+import { deviceViewer } from '../db/schema/index.ts';
 import { acceptInvite, applyPendingInvites } from './invites.ts';
 
 function outcome(result: PromiseSettledResult<unknown> | undefined): string | number {
@@ -94,5 +98,30 @@ describe.skipIf(!pgTestUrl)('invite locking on real Postgres', () => {
 
     expect(outcome(results[0])).toBe('ok');
     expect(['ok', 410]).toContain(outcome(results[1]));
+  });
+
+  test('a phone confirmation and an accept of the same invite join once', async () => {
+    const phone = '+380501234567';
+    const owner = await createUser(t.db, { email: 'john-c@example.com' });
+    const mary = await createUser(t.db, { phone });
+    const home = await createDevice(t.db, owner.id);
+    const invite = await seedInvite(t.db, { deviceId: home.id, invitedBy: owner.id, phone });
+    const code = await issueOneTimeToken(t.db, clock, mary.id, 'PHONE_VERIFY', { phone });
+    await claimPhoneCode(t.db, clock, code, 888n);
+
+    const [confirmed, accepted] = await Promise.allSettled([
+      confirmContact(t.db, clock, {
+        telegramUserId: 888n,
+        contactUserId: 888,
+        phone,
+        chat: { id: 888, type: 'private' },
+      }),
+      t.db.transaction((tx) => acceptInvite(tx, clock, invite.token, mary)),
+    ]);
+
+    expect(outcome(confirmed)).toBe('ok');
+    expect(outcome(accepted)).toBe('ok');
+    const rows = await t.db.select().from(deviceViewer).where(eq(deviceViewer.deviceId, home.id));
+    expect(rows).toHaveLength(1);
   });
 });

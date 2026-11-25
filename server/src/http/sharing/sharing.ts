@@ -19,6 +19,7 @@ import { appUser, device, deviceInvite } from '../../db/schema/index.ts';
 import { getAccessibleDevice } from '../../devices/access.ts';
 import { sendInBackground } from '../../email/sender.ts';
 import { renderInviteEmail } from '../../email/templates.ts';
+import { renderTelegramAuth, sendTelegramInBackground } from '../../telegram/pushes.ts';
 import { createI18n } from '../../i18n.ts';
 import { AUTH_PER_IP, INVITE_PER_USER } from '../../rateLimit/limiter.ts';
 import { findDeviceView } from '../../devices/queries.ts';
@@ -51,7 +52,7 @@ export const sharingPaths: ZodOpenApiPathsObject = {
     get: {
       summary: 'List the owner and viewers',
       description:
-        'Owner first, then viewers by join time. Emails are shown to the owner, and to each member for their own row.',
+        'Owner first, then viewers by join time. Emails and phones are shown to the owner, and to each member for their own row.',
       security: bearer,
       requestParams: { path: deviceParamsSchema },
       responses: {
@@ -79,9 +80,9 @@ export const sharingPaths: ZodOpenApiPathsObject = {
   },
   '/api/v1/devices/{id}/invites': {
     post: {
-      summary: 'Invite a viewer by email',
+      summary: 'Invite a viewer by email or phone',
       description:
-        'Owner only. Emails a link valid for 7 days. Inviting the same email again replaces the earlier link. At most 10 viewers and pending invites per device.',
+        'Owner only. The link is valid for 7 days. An email invite is emailed; a phone invite returns `url` and is also sent by the Telegram bot when that number has an account that confirmed it. Inviting the same email or phone again replaces the earlier link. At most 10 viewers and pending invites per device.',
       security: bearer,
       requestParams: { path: deviceParamsSchema },
       requestBody: { content: json(createInviteBodySchema) },
@@ -138,13 +139,13 @@ export const sharingPaths: ZodOpenApiPathsObject = {
     post: {
       summary: 'Accept an invite',
       description:
-        "The account email must match the invite. Joins the device as a viewer, attaches all of the caller's channels and marks the email verified. Accepting again returns the device.",
+        "The account email or phone must match the invite. Joins the device as a viewer and attaches all of the caller's channels. An email invite marks the email verified; a phone invite needs an already verified phone. Accepting again returns the device.",
       security: bearer,
       requestParams: { path: inviteTokenParamsSchema },
       responses: {
         '200': { description: 'The shared device', content: json(deviceSchema) },
         '401': unauthorized,
-        '403': errorResponse('`forbidden`: the invite is for another email address'),
+        '403': errorResponse('`forbidden`: the invite is for someone else, or `not_verified`'),
         '410': expired,
       },
     },
@@ -182,6 +183,35 @@ export function sharingRouter(deps: AppDeps): Router {
     res.status(204).end();
   });
 
+  async function emailInvite(to: string, inviter: string, deviceName: string, link: string) {
+    const [account] = await db
+      .select({ language: appUser.language })
+      .from(appUser)
+      .where(eq(sql`lower(${appUser.email})`, to));
+    const rendered = renderInviteEmail(i18n, {
+      lang: languageSchema.catch('uk').parse(account?.language ?? 'uk'),
+      inviter,
+      device: deviceName,
+      link,
+    });
+    sendInBackground(deps.email, logger, { to, ...rendered });
+  }
+
+  async function pushInvite(phone: string, inviter: string, deviceName: string, link: string) {
+    const [account] = await db
+      .select({ language: appUser.language, telegramUserId: appUser.telegramUserId })
+      .from(appUser)
+      .where(eq(appUser.phone, phone));
+    if (!account || account.telegramUserId === null) return;
+    const text = renderTelegramAuth(i18n, 'invite', {
+      lang: languageSchema.catch('uk').parse(account.language),
+      inviter,
+      device: deviceName,
+      link,
+    });
+    sendTelegramInBackground(deps.telegram, logger, account.telegramUserId, text);
+  }
+
   router.post(
     '/api/v1/devices/:id/invites',
     auth,
@@ -190,25 +220,24 @@ export function sharingRouter(deps: AppDeps): Router {
     async (req, res) => {
       const { user } = getAuth(res);
       const id = deviceIdParam(req);
-      const { email } = createInviteBodySchema.parse(req.body ?? {});
+      const target = createInviteBodySchema.parse(req.body ?? {});
       const { invite, token, deviceName } = await db.transaction(async (tx) => {
         const access = await getAccessibleDevice(tx, user.id, id, 'manage', { lock: true });
-        const created = await createInvite(tx, clock, { deviceId: id, email, invitedBy: user.id });
+        const created = await createInvite(tx, clock, {
+          ...target,
+          deviceId: id,
+          invitedBy: user.id,
+        });
         return { ...created, deviceName: access.device.name };
       });
+      const link = `${config.urls.client}/invite?token=${token}`;
+      if ('phone' in target) {
+        res.status(201).json({ ...toInvite(invite), url: link });
+        await pushInvite(target.phone, user.name, deviceName, link);
+        return;
+      }
       res.status(201).json(toInvite(invite));
-
-      const [account] = await db
-        .select({ language: appUser.language })
-        .from(appUser)
-        .where(eq(sql`lower(${appUser.email})`, email));
-      const rendered = renderInviteEmail(i18n, {
-        lang: languageSchema.catch('uk').parse(account?.language ?? 'uk'),
-        inviter: user.name,
-        device: deviceName,
-        link: `${config.urls.client}/invite?token=${token}`,
-      });
-      sendInBackground(deps.email, logger, { to: email, ...rendered });
+      await emailInvite(target.email, user.name, deviceName, link);
     },
   );
 
@@ -259,6 +288,7 @@ export function sharingRouter(deps: AppDeps): Router {
         device_name: row.deviceName,
         inviter_name: row.inviterName,
         email: invite.email,
+        phone: invite.phone,
         expires_at: invite.expiresAt.toISOString(),
         accepted: invite.acceptedAt !== null,
       });

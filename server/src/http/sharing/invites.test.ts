@@ -1,11 +1,11 @@
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { testApp, testConfig } from '../../../test/app.ts';
 import { createUser, signIn } from '../../../test/auth.ts';
 import { createTestDb, type TestDb } from '../../../test/db.ts';
 import { createDevice } from '../../../test/devices.ts';
-import { FakeClock, FakeEmailSender, linkFrom } from '../../../test/fakes.ts';
+import { FakeClock, FakeEmailSender, FakeTelegramClient, linkFrom } from '../../../test/fakes.ts';
 import { addViewer, seedInvite } from '../../../test/sharing.ts';
 import { appUser, deviceInvite } from '../../db/schema/index.ts';
 import { sha256 } from '../../lib/crypto.ts';
@@ -15,6 +15,7 @@ import type { User } from '../auth/middleware.ts';
 let t: TestDb;
 let clock: FakeClock;
 let email: FakeEmailSender;
+let telegram: FakeTelegramClient;
 
 beforeAll(async () => {
   t = await createTestDb();
@@ -32,13 +33,14 @@ beforeEach(async () => {
   await t.db.delete(appUser);
   clock = new FakeClock(new Date('2026-11-21T16:42:00Z'));
   email = new FakeEmailSender();
+  telegram = new FakeTelegramClient(clock);
   owner = await createUser(t.db, { email: 'john@example.com', name: 'John' });
   ownerAuth = await bearerFor(owner);
   deviceId = (await createDevice(t.db, owner.id, { name: 'Home' })).id;
 });
 
 const app = (rateLimiter?: RateLimiter) =>
-  testApp({ db: t.db, clock, email, ...(rateLimiter ? { rateLimiter } : {}) });
+  testApp({ db: t.db, clock, email, telegram, ...(rateLimiter ? { rateLimiter } : {}) });
 
 async function bearerFor(user: User): Promise<string> {
   const { accessToken } = await signIn({ db: t.db, clock, config: testConfig }, user.id);
@@ -194,6 +196,7 @@ describe('GET /api/v1/devices/:id/invites', () => {
     expect(res.body.items[1]).toEqual({
       id: old.id,
       email: 'old@example.com',
+      phone: null,
       expires_at: '2026-11-20T00:00:00.000Z',
       created_at: '2026-11-21T16:42:00.000Z',
     });
@@ -256,6 +259,7 @@ describe('GET /api/v1/invites/:token', () => {
       device_name: 'Home',
       inviter_name: 'John',
       email: 'mary@example.com',
+      phone: null,
       expires_at: '2026-11-28T16:42:00.000Z',
       accepted: false,
     });
@@ -287,5 +291,84 @@ describe('GET /api/v1/invites/:token', () => {
     const res = await preview(seeded.token);
     expect(res.status).toBe(200);
     expect(res.body.accepted).toBe(true);
+  });
+});
+
+describe('phone invites', () => {
+  const PHONE = '+380501234567';
+  const URL_SHAPE = /^https:\/\/app\.test\/invite\?token=[\w-]{43}$/;
+
+  const mary = (overrides: Parameters<typeof createUser>[1] = {}) =>
+    createUser(t.db, { phone: PHONE, name: 'Mary', language: 'en', ...overrides });
+
+  test('returns the link and sends no email', async () => {
+    const res = await invite({ phone: '050 123 45 67' });
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ phone: PHONE, email: null });
+    expect(res.body.url).toMatch(URL_SHAPE);
+    const [row] = await t.db.select().from(deviceInvite);
+    expect(row?.tokenHash).toEqual(sha256(tokenFrom(res.body.url)));
+    expect(email.sent).toHaveLength(0);
+    expect(telegram.sent).toHaveLength(0);
+  });
+
+  test('pushes the link to a bound account, with the same response keys', async () => {
+    const unbound = await invite({ phone: PHONE });
+    await mary({ telegramUserId: 777n });
+    const bound = await invite({ phone: PHONE });
+    expect(Object.keys(bound.body).toSorted()).toEqual(Object.keys(unbound.body).toSorted());
+    await vi.waitFor(() => expect(telegram.sent).toHaveLength(1));
+    expect(telegram.sent[0]!.chatId).toBe(777n);
+    expect(telegram.sent[0]!.text).toContain('John shared Home with you');
+    expect(telegram.sent[0]!.text).toContain(bound.body.url);
+  });
+
+  test("rejects the owner's or a viewer's phone", async () => {
+    await t.db.update(appUser).set({ phone: '+380509999999' }).where(eq(appUser.id, owner.id));
+    const viewer = await mary();
+    await addViewer(t.db, deviceId, viewer.id);
+    for (const phone of ['+380509999999', PHONE]) {
+      const res = await invite({ phone });
+      expect(res.status).toBe(409);
+      expect(res.body.error.details).toEqual([{ path: 'phone', code: 'already_member' }]);
+    }
+  });
+
+  test('counts phone invites toward the member limit', async () => {
+    for (let i = 0; i < 9; i += 1) {
+      const v = await createUser(t.db, { email: `v${i}@example.com`, name: `V${i}` });
+      await addViewer(t.db, deviceId, v.id);
+    }
+    await seedInvite(t.db, { deviceId, invitedBy: owner.id, phone: PHONE });
+    expect((await invite({ email: 'new@example.com' })).status).toBe(409);
+    expect((await invite({ phone: '+380509999999' })).status).toBe(409);
+    expect((await invite({ phone: PHONE })).status).toBe(201);
+  });
+
+  test('counts email invites when inviting a phone', async () => {
+    for (let i = 0; i < 9; i += 1) {
+      const v = await createUser(t.db, { email: `v${i}@example.com`, name: `V${i}` });
+      await addViewer(t.db, deviceId, v.id);
+    }
+    await seedInvite(t.db, { deviceId, invitedBy: owner.id, email: 'pending@example.com' });
+    expect((await invite({ phone: PHONE })).status).toBe(409);
+  });
+
+  test('a second invite replaces the first link', async () => {
+    const first = await invite({ phone: PHONE });
+    const second = await invite({ phone: '0501234567' });
+    expect(await t.db.select().from(deviceInvite)).toHaveLength(1);
+    expect((await preview(tokenFrom(first.body.url))).status).toBe(410);
+    const res = await preview(tokenFrom(second.body.url));
+    expect(res.body).toMatchObject({ phone: PHONE, email: null, device_name: 'Home' });
+  });
+
+  test('lists phone invites without a link', async () => {
+    await invite({ phone: PHONE });
+    const res = await request(app())
+      .get(`/api/v1/devices/${deviceId}/invites`)
+      .set('Authorization', ownerAuth);
+    expect(res.body.items).toMatchObject([{ phone: PHONE, email: null }]);
+    expect(res.body.items[0]).not.toHaveProperty('url');
   });
 });

@@ -70,6 +70,7 @@ describe('GET /api/v1/devices/:id/members', () => {
         user_id: john.id,
         name: 'John',
         email: 'john@example.com',
+        phone: null,
         role: 'OWNER',
         joined_at: '2026-11-01T10:00:00.000Z',
       },
@@ -77,6 +78,7 @@ describe('GET /api/v1/devices/:id/members', () => {
         user_id: mary.id,
         name: 'Mary',
         email: 'mary@example.com',
+        phone: null,
         role: 'VIEWER',
         joined_at: '2026-11-02T10:00:00.000Z',
       },
@@ -84,6 +86,7 @@ describe('GET /api/v1/devices/:id/members', () => {
         user_id: pete.id,
         name: 'Pete',
         email: 'pete@example.com',
+        phone: null,
         role: 'VIEWER',
         joined_at: '2026-11-03T10:00:00.000Z',
       },
@@ -99,6 +102,19 @@ describe('GET /api/v1/devices/:id/members', () => {
       ['Mary', 'mary@example.com'],
       ['Pete', null],
     ]);
+  });
+
+  test('shows a viewer phone only to the owner and to that viewer', async () => {
+    const olena = await createUser(t.db, { phone: '+380501234567', name: 'Olena' });
+    await t.db
+      .insert(deviceViewer)
+      .values({ deviceId, userId: olena.id, createdAt: new Date('2026-11-04T10:00:00Z') });
+    const { accessToken } = await signIn({ db: t.db, clock, config: testConfig }, olena.id);
+    const phoneSeenBy = async (as: string) => (await members(as)).body.items.at(-1).phone;
+
+    expect(await phoneSeenBy(auth.john)).toBe('+380501234567');
+    expect(await phoneSeenBy(`Bearer ${accessToken}`)).toBe('+380501234567');
+    expect(await phoneSeenBy(auth.mary)).toBeNull();
   });
 
   test('a stranger gets 404', async () => {

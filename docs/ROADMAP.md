@@ -335,7 +335,7 @@ A §1, §3, §4 Sharing and Account, §6 · D §3, §4 `device_invite`, §11.
 - [x] Telegram pushes from the API
 - [x] Confirm a phone in the bot
 - [x] Sign up, log in, reset and add an identifier with a phone
-- [ ] Share devices by phone
+- [x] Share devices by phone
 - [ ] Client: sign up, log in and reset with a phone
 - [ ] Client: account and sharing with a phone
 

@@ -1,12 +1,13 @@
 import { z } from 'zod';
 import { deviceRoles } from '../enums.ts';
-import { emailSchema, isoDate } from './common.ts';
+import { identifierSchema, isoDate } from './common.ts';
 
 export const memberSchema = z
   .object({
     user_id: z.uuid(),
     name: z.string(),
     email: z.string().nullable(),
+    phone: z.string().nullable(),
     role: z.enum(deviceRoles),
     joined_at: isoDate,
   })
@@ -18,6 +19,8 @@ export const inviteSchema = z
   .object({
     id: z.uuid(),
     email: z.string().nullable(),
+    phone: z.string().nullable(),
+    url: z.string().optional(),
     expires_at: isoDate,
     created_at: isoDate,
   })
@@ -25,13 +28,14 @@ export const inviteSchema = z
 
 export const invitesSchema = z.object({ items: z.array(inviteSchema) });
 
-export const createInviteBodySchema = z.strictObject({ email: emailSchema });
+export const createInviteBodySchema = identifierSchema;
 
 export const invitePreviewSchema = z
   .object({
     device_name: z.string(),
     inviter_name: z.string(),
     email: z.string().nullable(),
+    phone: z.string().nullable(),
     expires_at: isoDate,
     accepted: z.boolean(),
   })

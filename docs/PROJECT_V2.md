@@ -495,25 +495,28 @@ power blip.
 
 ## 6. Sharing a device
 
-- The owner invites a person by email (Resend sends the invite link).
+- The owner invites a person by email or phone. An email invite is sent by
+  Resend. A phone invite shows the owner a link to pass on, and the bot also
+  sends it when that number has an account that confirmed it.
 - Roles:
   - **Owner** — full control, one per device.
   - **Viewer** — sees status, outages and stats; connects **their own**
     notification channels to the device; can't change settings, re-pair
     or delete.
 - The owner can remove a viewer at any time. A viewer can leave.
-- Invite valid 7 days. Inviting the same email again sends a new link and
-  the earlier one stops working. At most 10 viewers and pending invites
-  per device.
+- Invite valid 7 days. Inviting the same email or phone again sends a new
+  link and the earlier one stops working. At most 10 viewers and pending
+  invites per device.
 - If the person has no account, they sign up first, then the invite is
-  applied: when an account's email **becomes** verified (the verification
-  link, a password reset of an unverified account, or Google sign-in),
-  every pending, unexpired invite for that email is accepted in the same
-  step. Signing in to an already verified account applies nothing; those
-  users press Accept on the invite page.
-- Accepting needs an account with the invited email. The invite link
-  proves the inbox, so accepting also marks the email verified, as a
-  password reset does.
+  applied: when an account's email or phone **becomes** verified (the
+  verification link, the bot confirmation, a password reset of an unverified
+  account, or Google sign-in), every pending, unexpired invite for it is
+  accepted in the same step. Signing in to an already verified account
+  applies nothing; those users press Accept on the invite page.
+- Accepting needs an account with the invited email or phone. An email
+  invite link proves the inbox, so accepting also marks the email verified,
+  as a password reset does. A phone invite link proves nothing about the
+  number: the phone must already be verified.
 - Channels follow membership. Joining a device attaches all of the
   viewer's channels to it, and the viewer can untick them per device.
   Leaving or being removed detaches the viewer's channels from that
