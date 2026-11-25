@@ -17,6 +17,7 @@ export const LOGIN_PER_EMAIL: RateRule = { limit: 10, windowS: 900 };
 export const EMAIL_SEND: RateRule = { limit: 3, windowS: 3600 };
 export const REAUTH_PER_USER: RateRule = { limit: 10, windowS: 900 };
 export const TELEGRAM_LINK_PER_USER: RateRule = { limit: 10, windowS: 900 };
+export const INVITE_PER_USER: RateRule = { limit: 10, windowS: 3600 };
 export const DEVICE_CHECKIN: RateRule = { limit: 6, windowS: 60 };
 export const FIRMWARE_DOWNLOAD_PER_IP: RateRule = { limit: 20, windowS: 60 };
 

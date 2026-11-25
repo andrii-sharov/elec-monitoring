@@ -6,7 +6,7 @@ import { createUser, signIn } from '../../../test/auth.ts';
 import { createTestDb, type TestDb } from '../../../test/db.ts';
 import { createDevice, pairDevice } from '../../../test/devices.ts';
 import { FakeClock } from '../../../test/fakes.ts';
-import { addViewer } from '../../../test/sharing.ts';
+import { addViewer, seedInvite } from '../../../test/sharing.ts';
 import { appUser, device } from '../../db/schema/index.ts';
 import type { User } from '../auth/middleware.ts';
 
@@ -22,7 +22,7 @@ afterAll(async () => {
 });
 
 type Role = 'owner' | 'viewer' | 'stranger';
-type Ctx = { deviceId: string; users: Record<Role, User> };
+type Ctx = { deviceId: string; users: Record<Role, User>; inviteId?: string };
 type Fixture = Ctx & { auth: Record<Role, string> };
 
 let f: Fixture;
@@ -104,6 +104,31 @@ const matrix: Record<string, Row> = {
     path: (c) => `/api/v1/devices/${c.deviceId}/channels`,
     body: () => ({ channel_ids: [] }),
     expect: { owner: 200, viewer: 200, stranger: 404 },
+  },
+  'POST invites': {
+    method: 'post',
+    path: (c) => `/api/v1/devices/${c.deviceId}/invites`,
+    body: () => ({ email: 'anna@example.com' }),
+    expect: { owner: 201, viewer: 403, stranger: 404 },
+  },
+  'GET invites': {
+    method: 'get',
+    path: (c) => `/api/v1/devices/${c.deviceId}/invites`,
+    expect: { owner: 200, viewer: 403, stranger: 404 },
+  },
+  'DELETE invite': {
+    method: 'delete',
+    path: (c) => `/api/v1/devices/${c.deviceId}/invites/${c.inviteId}`,
+    setup: async (c) => ({
+      inviteId: (
+        await seedInvite(t.db, {
+          deviceId: c.deviceId,
+          invitedBy: c.users.owner.id,
+          email: 'anna@example.com',
+        })
+      ).id,
+    }),
+    expect: { owner: 204, viewer: 403, stranger: 404 },
   },
 };
 

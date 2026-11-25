@@ -98,6 +98,7 @@ Validation errors add `details`:
 | Log in                          | 10 / 15 min per email |
 | Sign up, forgot password        | 3 / h per email       |
 | Resend verification             | 3 / h per user        |
+| Device invites                  | 10 / h per user       |
 | Change password, delete account | 10 / 15 min per user  |
 
 Responses include `Retry-After` on `429`; CORS exposes it to the app origins.
@@ -634,21 +635,38 @@ newest first:
 
 ### Sharing
 
-| Method | Path                                            | Scope | Role                 | Purpose                |
-| ------ | ----------------------------------------------- | ----- | -------------------- | ---------------------- |
-| GET    | `/devices/:id/members`                          | read  | owner, viewer        | Owner and viewers      |
-| POST   | `/devices/:id/invites`                          | JWT   | owner                | Invite by email        |
-| GET    | `/devices/:id/invites` **(proposed)**           | JWT   | owner                | Pending invites        |
-| DELETE | `/devices/:id/invites/:inviteId` **(proposed)** | JWT   | owner                | Revoke an invite       |
-| DELETE | `/devices/:id/members/:userId`                  | write | owner, viewer (self) | Remove viewer or leave |
-| GET    | `/invites/:token` **(proposed)**                | none  | public               | Invite preview         |
-| POST   | `/invites/:token/accept`                        | JWT   | invitee              | Accept invite          |
+| Method | Path                             | Scope | Role                 | Purpose                |
+| ------ | -------------------------------- | ----- | -------------------- | ---------------------- |
+| GET    | `/devices/:id/members`           | read  | owner, viewer        | Owner and viewers      |
+| POST   | `/devices/:id/invites`           | JWT   | owner                | Invite by email        |
+| GET    | `/devices/:id/invites`           | JWT   | owner                | Pending invites        |
+| DELETE | `/devices/:id/invites/:inviteId` | JWT   | owner                | Revoke an invite       |
+| DELETE | `/devices/:id/members/:userId`   | write | owner, viewer (self) | Remove viewer or leave |
+| GET    | `/invites/:token`                | none  | public               | Invite preview         |
+| POST   | `/invites/:token/accept`         | JWT   | invitee              | Accept invite          |
 
-- `POST /devices/:id/invites` `{ "email": "…" }` → `201`. Sends the email
-  in the recipient's language, or `uk` if they have no account. Already a
-  member → `409`.
-- `GET /invites/:token` returns device name, inviter name and expiry, so
-  the page can show "Johnny invited you to Home" before sign-up.
+- `POST /devices/:id/invites` `{ "email": "…" }` (trimmed, lowercased)
+  → `201` with the invite object. The account needs a verified email.
+  Limit: 10 per hour per user. Sends the email in the recipient's
+  language, or `uk` if they have no account, with the link
+  `https://app.<domain>/invite?token=<token>`. The link is valid 7 days.
+  - Inviting an email that already has a pending invite replaces it: a
+    new link and expiry, and the earlier link stops working.
+  - The owner's email or a current viewer's email → `409 conflict` with
+    detail `{ "path": "email", "code": "already_member" }`.
+  - At most 10 viewers and unexpired pending invites per device (a
+    re-invite doesn't count twice). Over the limit → `409 conflict`
+    without details.
+- Invite object: `{ "id", "email", "expires_at", "created_at" }`.
+  `GET /devices/:id/invites` → `200 { "items": [...] }`: pending invites,
+  expired ones included, oldest first. `DELETE` → `204`, and the link
+  stops working. An unknown invite or one from another device → `404`.
+- `GET /invites/:token` → `200`
+  `{ "device_name", "inviter_name", "email", "expires_at", "accepted" }`,
+  so the page can show "Johnny invited you to Home" before sign-up. An
+  unknown, revoked or expired token → `410 expired`. An accepted invite
+  still previews (with `accepted: true`) until it expires. Limit: 10 per
+  minute per IP.
 - `accept` → `200` with the device. Valid 7 days (`410` after). The
   account email must match the invite email (else `403`).
 - The owner cannot be removed with `DELETE /members`.
@@ -857,9 +875,8 @@ their own API token. Admin endpoints are not included.
 Each operation belongs to exactly one tag, so Swagger UI shows grouped
 sections, in this order: `Health`, `Auth`, `Account`, `Devices`,
 `Device` (firmware endpoints, `deviceToken` security), `Outages`,
-`Notifications`. Later milestones add `Firmware`, `Sharing` and
-`API tokens` as
-their endpoints ship. A tag is declared only once it has operations.
+`Notifications`, `Sharing`, `Firmware`. A later milestone adds
+`API tokens` as its endpoints ship. A tag is declared only once it has operations.
 
 ## 8. Outgoing webhooks
 
@@ -886,7 +903,7 @@ in PROJECT_V2.md §3–§12. Section numbers below refer to PROJECT_V2.md.
 | §9 Admin app                                                         | No admin endpoints at all                                                       | §5 here                                                                                                 |
 | §12 CI checks "API health endpoint"                                  | `/health` not listed in v2                                                      | §7 here                                                                                                 |
 | Swagger UI                                                           | No paths                                                                        | `/api/v1/openapi.json`, `/api/docs`                                                                     |
-| §6 Invites                                                           | Owner can't see or revoke pending invites. Invitee can't see what the invite is | `GET` / `DELETE /devices/:id/invites`, `GET /invites/:token`                                            |
+| §6 Invites                                                           | Owner can't see or revoke pending invites. Invitee can't see what the invite is | ✅ `GET` / `DELETE /devices/:id/invites`, `GET /invites/:token` (M6)                                    |
 | §7 Webhook secret                                                    | No rotation if leaked                                                           | `POST /channels/:id/rotate-secret`                                                                      |
 | `PUT /devices/:id/channels`                                          | No matching `GET`                                                               | `GET /devices/:id/channels`                                                                             |
 | §5 Wi-Fi diagnostics stored                                          | No way to read them                                                             | ✅ `GET /devices/:id/diagnostics` (owner, M2)                                                           |

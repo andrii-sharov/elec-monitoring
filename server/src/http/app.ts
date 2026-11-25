@@ -23,6 +23,7 @@ import { pingPaths, pingRouter } from './device/ping.ts';
 import { devicesPaths, devicesRouter } from './devices/devices.ts';
 import { firmwarePaths, firmwareRouter } from './firmware/firmware.ts';
 import { historyPaths, historyRouter } from './devices/history.ts';
+import { sharingPaths, sharingRouter } from './sharing/sharing.ts';
 import { telegramWebhookRouter } from './telegram/webhook.ts';
 import { buildOpenApiDocument, docsRouter, type OpenApiDocument } from './openapi.ts';
 
@@ -64,6 +65,11 @@ export function apiDocument(): OpenApiDocument {
       paths: [channelsPaths],
     },
     {
+      tag: 'Sharing',
+      description: 'Device members and invites',
+      paths: [sharingPaths],
+    },
+    {
       tag: 'Firmware',
       description: 'Firmware images for flashing from the browser',
       paths: [firmwarePaths],
@@ -90,6 +96,7 @@ export function createApp(deps: AppDeps, extraRoutes?: (app: Express) => void): 
   app.use(pingRouter(deps));
   app.use(historyRouter(deps));
   app.use(channelsRouter(deps));
+  app.use(sharingRouter(deps));
   app.use(firmwareRouter(deps));
   app.use(telegramWebhookRouter(deps));
   extraRoutes?.(app);
