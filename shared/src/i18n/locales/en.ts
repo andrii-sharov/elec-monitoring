@@ -39,6 +39,13 @@ export const en = {
   },
   telegram: {
     auth: {
+      askContact: 'To confirm your number, tap “Share my phone number” below.',
+      contactButton: 'Share my phone number',
+      privateOnly: 'Open this link in a private chat with the bot.',
+      mismatch:
+        "This link doesn't match your number or has expired. Go back to the site and try again.",
+      numberInUse: 'This number is already used by another account.',
+      confirmed: 'Your number is confirmed. Alerts for your devices will come to this chat.',
       resetLink: 'Reset your Electricity Monitor password: {{link}}\nThe link is valid for 1 hour.',
       signupAttempt:
         'Someone tried to create an Electricity Monitor account with your number. You already have one. Log in: {{link}}\nIf you forgot your password, use “Forgot password” on the login page.',

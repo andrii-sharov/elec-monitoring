@@ -99,7 +99,7 @@ export function googleRouter(deps: AppDeps): Router {
             .returning();
           if (unverified) {
             await revokeUserSessions(tx, clock, byEmail.id);
-            await applyPendingInvites(tx, clock, byEmail);
+            await applyPendingInvites(tx, clock, byEmail.id, { email: identity.email });
           }
         } else {
           [user] = await tx
@@ -111,7 +111,7 @@ export function googleRouter(deps: AppDeps): Router {
               name: identity.name ?? identity.email.split('@')[0] ?? identity.email,
             })
             .returning();
-          await applyPendingInvites(tx, clock, user!);
+          await applyPendingInvites(tx, clock, user!.id, { email: identity.email });
         }
       }
       const created = await createSession(tx, clock, user!.id);

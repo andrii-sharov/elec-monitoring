@@ -872,6 +872,23 @@ user who linked the chat (the oldest link for a shared group), or the
 sender's Telegram language when it is `uk`, `en` or `ru`, else `uk`.
 Allowed updates: `message`, `my_chat_member`.
 
+Phone confirmation:
+
+- `/start p_<code>` in a private chat records the sender on a live phone
+  code and asks for the contact. The reply adds
+  `"reply_markup": { "keyboard": [[{ "text": "…", "request_contact": true }]], … }`
+  and is the same for valid, unknown, used and expired codes. In a group
+  the bot asks to open the link in a private chat.
+- A `contact` message is accepted only in a private chat, when
+  `contact.user_id` equals `message.from.id` and the number matches a code
+  that sender opened. A verification code verifies the phone, binds the
+  Telegram user to the account, accepts pending phone invites and connects
+  the chat to every device the user owns or views. A recovery code binds the
+  Telegram user and replies with a password reset link. A number that
+  another account holds is refused. Any other contact gets a "doesn't
+  match" reply. These replies remove the keyboard
+  (`"reply_markup": { "remove_keyboard": true }`).
+
 ## 7. Health and docs
 
 | Method | Path                   | Purpose                                                                                                                                                   |

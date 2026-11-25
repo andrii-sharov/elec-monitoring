@@ -523,6 +523,9 @@ from a group also unlinks it. Linking creates a channel named after the
 group title or the person's Telegram name. Linking a chat that is already
 linked changes nothing.
 
+Confirming a phone number in the bot (§3) also links that private chat the
+same way: one channel, attached to every device the user owns or views.
+
 ### Telegram — user's own bot (advanced)
 
 - User creates a bot with `@BotFather`, pastes the bot token and

@@ -26,8 +26,13 @@ export const telegramUpdateSchema = z.object({
   message: z
     .object({
       chat: chatSchema,
-      from: z.object({ language_code: z.string().optional() }).optional(),
+      from: z
+        .object({ id: z.number().int().optional(), language_code: z.string().optional() })
+        .optional(),
       text: z.string().optional(),
+      contact: z
+        .object({ phone_number: z.string(), user_id: z.number().int().optional() })
+        .optional(),
     })
     .optional(),
   my_chat_member: z
@@ -36,3 +41,4 @@ export const telegramUpdateSchema = z.object({
 });
 
 export type TelegramUpdate = z.infer<typeof telegramUpdateSchema>;
+export type Chat = z.infer<typeof chatSchema>;

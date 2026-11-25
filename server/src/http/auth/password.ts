@@ -105,10 +105,13 @@ export function passwordRouter(deps: AppDeps): Router {
       const { token, password } = resetBodySchema.parse(req.body);
       const passwordHash = await hashPassword(password);
       const reset = await db.transaction(async (tx) => {
-        const userId = await consumeOneTimeToken(tx, clock, token, 'RESET_PASSWORD');
-        if (!userId) return false;
+        const consumed = await consumeOneTimeToken(tx, clock, token, 'RESET_PASSWORD');
+        if (!consumed) return false;
+        const { userId } = consumed;
         const [before] = await tx.select().from(appUser).where(eq(appUser.id, userId));
-        if (before && !before.emailVerifiedAt) await applyPendingInvites(tx, clock, before);
+        if (before?.email && !before.emailVerifiedAt) {
+          await applyPendingInvites(tx, clock, userId, { email: before.email });
+        }
         await tx
           .update(appUser)
           .set({

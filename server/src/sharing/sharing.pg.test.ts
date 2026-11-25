@@ -86,7 +86,8 @@ describe.skipIf(!pgTestUrl)('invite locking on real Postgres', () => {
     });
 
     const results = await raceWithResend(
-      () => t.db.transaction((tx) => applyPendingInvites(tx, clock, mary)),
+      () =>
+        t.db.transaction((tx) => applyPendingInvites(tx, clock, mary.id, { email: mary.email! })),
       home.id,
       invite.id,
     );

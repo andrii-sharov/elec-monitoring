@@ -34,7 +34,13 @@ afterAll(async () => {
 beforeEach(async () => {
   await t.db.delete(appUser);
   clock = new FakeClock(new Date('2026-11-21T16:42:00Z'));
-  deps = { db: t.db, clock, i18n: createI18n(), botUsername: 'TestBot' };
+  deps = {
+    db: t.db,
+    clock,
+    i18n: createI18n(),
+    botUsername: 'TestBot',
+    clientUrl: 'https://app.test',
+  };
 });
 
 function message(

@@ -25,10 +25,24 @@ export function telegramWebhookRouter(deps: AppDeps): Router {
     try {
       const parsed = telegramUpdateSchema.safeParse(req.body);
       const reply = parsed.success
-        ? await handleUpdate({ db: deps.db, clock: deps.clock, i18n, botUsername }, parsed.data)
+        ? await handleUpdate(
+            {
+              db: deps.db,
+              clock: deps.clock,
+              i18n,
+              botUsername,
+              clientUrl: deps.config.urls.client,
+            },
+            parsed.data,
+          )
         : null;
       if (reply) {
-        res.json({ method: 'sendMessage', chat_id: String(reply.chatId), text: reply.text });
+        res.json({
+          method: 'sendMessage',
+          chat_id: String(reply.chatId),
+          text: reply.text,
+          reply_markup: reply.replyMarkup,
+        });
         return;
       }
     } catch (err) {

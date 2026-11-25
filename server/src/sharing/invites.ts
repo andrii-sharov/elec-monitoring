@@ -166,16 +166,21 @@ export async function acceptInvite(
   return { deviceId, role: 'VIEWER' };
 }
 
-export async function applyPendingInvites(tx: Tx, clock: Clock, user: Invitee): Promise<string[]> {
+export async function applyPendingInvites(
+  tx: Tx,
+  clock: Clock,
+  userId: string,
+  identifier: { email: string } | { phone: string },
+): Promise<string[]> {
   const now = clock.now();
-  const email = user.email?.toLowerCase();
-  if (!email) return [];
   const pendingFor = () =>
     and(
-      eq(deviceInvite.email, email),
+      'email' in identifier
+        ? eq(deviceInvite.email, identifier.email.toLowerCase())
+        : eq(deviceInvite.phone, identifier.phone),
       isNull(deviceInvite.acceptedAt),
       gt(deviceInvite.expiresAt, now),
-      ne(device.ownerId, user.id),
+      ne(device.ownerId, userId),
     );
   const candidates = await tx
     .select({ deviceId: deviceInvite.deviceId })
@@ -197,7 +202,7 @@ export async function applyPendingInvites(tx: Tx, clock: Clock, user: Invitee): 
     .for('update', { of: deviceInvite });
   for (const invite of pending) {
     await tx.update(deviceInvite).set({ acceptedAt: now }).where(eq(deviceInvite.id, invite.id));
-    await joinAsViewer(tx, invite.deviceId, user.id);
+    await joinAsViewer(tx, invite.deviceId, userId);
   }
   return pending.map((invite) => invite.deviceId);
 }

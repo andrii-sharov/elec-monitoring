@@ -4,12 +4,19 @@ import type { Executor } from '../db/client.ts';
 import { oneTimeToken } from '../db/schema/index.ts';
 import { randomToken, sha256 } from '../lib/crypto.ts';
 
-export type OneTimePurpose = 'VERIFY_EMAIL' | 'RESET_PASSWORD' | 'TELEGRAM_LINK';
+export type OneTimePurpose =
+  | 'VERIFY_EMAIL'
+  | 'RESET_PASSWORD'
+  | 'TELEGRAM_LINK'
+  | 'PHONE_VERIFY'
+  | 'PHONE_RECOVER';
 
 export const ONE_TIME_TTL_S: Record<OneTimePurpose, number> = {
   VERIFY_EMAIL: 86_400,
   RESET_PASSWORD: 3_600,
   TELEGRAM_LINK: 900,
+  PHONE_VERIFY: 86_400,
+  PHONE_RECOVER: 3_600,
 };
 
 export async function issueOneTimeToken(
@@ -17,6 +24,7 @@ export async function issueOneTimeToken(
   clock: Clock,
   userId: string,
   purpose: OneTimePurpose,
+  opts: { phone?: string } = {},
 ): Promise<string> {
   const token = randomToken();
   const now = clock.now();
@@ -24,6 +32,7 @@ export async function issueOneTimeToken(
     tokenHash: sha256(token),
     userId,
     purpose,
+    phone: opts.phone,
     expiresAt: new Date(now.getTime() + ONE_TIME_TTL_S[purpose] * 1000),
     createdAt: now,
   });
@@ -35,7 +44,7 @@ export async function consumeOneTimeToken(
   clock: Clock,
   token: string,
   purpose: OneTimePurpose,
-): Promise<string | null> {
+): Promise<{ userId: string; phone: string | null } | null> {
   const now = clock.now();
   const [row] = await db
     .update(oneTimeToken)
@@ -48,8 +57,8 @@ export async function consumeOneTimeToken(
         gt(oneTimeToken.expiresAt, now),
       ),
     )
-    .returning({ userId: oneTimeToken.userId });
-  return row?.userId ?? null;
+    .returning({ userId: oneTimeToken.userId, phone: oneTimeToken.phone });
+  return row ?? null;
 }
 
 export async function expireOneTimeTokens(

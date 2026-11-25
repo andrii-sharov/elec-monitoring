@@ -333,7 +333,7 @@ A §1, §3, §4 Sharing and Account, §6 · D §3, §4 `device_invite`, §11.
 - [x] Phone numbers in E.164 and the identity columns
 - [x] "Verified" means a verified email or phone
 - [x] Telegram pushes from the API
-- [ ] Confirm a phone in the bot
+- [x] Confirm a phone in the bot
 - [ ] Sign up, log in, reset and add an identifier with a phone
 - [ ] Share devices by phone
 - [ ] Client: sign up, log in and reset with a phone

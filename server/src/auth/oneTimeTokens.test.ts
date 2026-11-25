@@ -28,7 +28,10 @@ beforeEach(async () => {
 
 test('a token works once', async () => {
   const token = await issueOneTimeToken(t.db, clock, userId, 'VERIFY_EMAIL');
-  expect(await consumeOneTimeToken(t.db, clock, token, 'VERIFY_EMAIL')).toBe(userId);
+  expect(await consumeOneTimeToken(t.db, clock, token, 'VERIFY_EMAIL')).toEqual({
+    userId,
+    phone: null,
+  });
   expect(await consumeOneTimeToken(t.db, clock, token, 'VERIFY_EMAIL')).toBeNull();
 });
 
@@ -36,7 +39,10 @@ test('VERIFY_EMAIL lasts 24 hours', async () => {
   const early = await issueOneTimeToken(t.db, clock, userId, 'VERIFY_EMAIL');
   const late = await issueOneTimeToken(t.db, clock, userId, 'VERIFY_EMAIL');
   clock.advance(86_400_000 - 1000);
-  expect(await consumeOneTimeToken(t.db, clock, early, 'VERIFY_EMAIL')).toBe(userId);
+  expect(await consumeOneTimeToken(t.db, clock, early, 'VERIFY_EMAIL')).toEqual({
+    userId,
+    phone: null,
+  });
   clock.advance(1000);
   expect(await consumeOneTimeToken(t.db, clock, late, 'VERIFY_EMAIL')).toBeNull();
 });
@@ -50,7 +56,10 @@ test('RESET_PASSWORD lasts 1 hour', async () => {
 test('a token only works for its own purpose', async () => {
   const token = await issueOneTimeToken(t.db, clock, userId, 'VERIFY_EMAIL');
   expect(await consumeOneTimeToken(t.db, clock, token, 'RESET_PASSWORD')).toBeNull();
-  expect(await consumeOneTimeToken(t.db, clock, token, 'VERIFY_EMAIL')).toBe(userId);
+  expect(await consumeOneTimeToken(t.db, clock, token, 'VERIFY_EMAIL')).toEqual({
+    userId,
+    phone: null,
+  });
 });
 
 test('unknown tokens are rejected', async () => {
@@ -64,5 +73,21 @@ test('expireOneTimeTokens invalidates every unused token of that purpose', async
   await expireOneTimeTokens(t.db, clock, userId, 'RESET_PASSWORD');
   expect(await consumeOneTimeToken(t.db, clock, a, 'RESET_PASSWORD')).toBeNull();
   expect(await consumeOneTimeToken(t.db, clock, b, 'RESET_PASSWORD')).toBeNull();
-  expect(await consumeOneTimeToken(t.db, clock, verify, 'VERIFY_EMAIL')).toBe(userId);
+  expect(await consumeOneTimeToken(t.db, clock, verify, 'VERIFY_EMAIL')).toEqual({
+    userId,
+    phone: null,
+  });
+});
+
+test.each([
+  ['PHONE_VERIFY', 86_400],
+  ['PHONE_RECOVER', 3_600],
+] as const)('%s carries its number for %i seconds', async (purpose, ttl) => {
+  const phone = '+380501234567';
+  const early = await issueOneTimeToken(t.db, clock, userId, purpose, { phone });
+  const late = await issueOneTimeToken(t.db, clock, userId, purpose, { phone });
+  clock.advance(ttl * 1000 - 1000);
+  expect(await consumeOneTimeToken(t.db, clock, early, purpose)).toEqual({ userId, phone });
+  clock.advance(1000);
+  expect(await consumeOneTimeToken(t.db, clock, late, purpose)).toBeNull();
 });

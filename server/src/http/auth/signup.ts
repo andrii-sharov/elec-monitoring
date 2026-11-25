@@ -111,10 +111,13 @@ export function signupRouter(deps: AppDeps): Router {
     async (req, res) => {
       const { token } = tokenBodySchema.parse(req.body);
       const verified = await db.transaction(async (tx) => {
-        const userId = await consumeOneTimeToken(tx, clock, token, 'VERIFY_EMAIL');
-        if (!userId) return false;
+        const consumed = await consumeOneTimeToken(tx, clock, token, 'VERIFY_EMAIL');
+        if (!consumed) return false;
+        const { userId } = consumed;
         const [before] = await tx.select().from(appUser).where(eq(appUser.id, userId));
-        if (before && !before.emailVerifiedAt) await applyPendingInvites(tx, clock, before);
+        if (before?.email && !before.emailVerifiedAt) {
+          await applyPendingInvites(tx, clock, userId, { email: before.email });
+        }
         await tx
           .update(appUser)
           .set({

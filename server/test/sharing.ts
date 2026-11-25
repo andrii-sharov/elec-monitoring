@@ -11,7 +11,8 @@ export async function seedInvite(
   o: {
     deviceId: string;
     invitedBy: string;
-    email: string;
+    email?: string;
+    phone?: string;
     expiresAt?: Date;
     acceptedAt?: Date | null;
   },
@@ -23,6 +24,7 @@ export async function seedInvite(
       deviceId: o.deviceId,
       invitedBy: o.invitedBy,
       email: o.email,
+      phone: o.phone,
       tokenHash: sha256(token),
       expiresAt: o.expiresAt ?? new Date('2026-11-28T16:42:00Z'),
       acceptedAt: o.acceptedAt ?? null,

@@ -1,40 +1,40 @@
 import { formatMoment, languages, type Language } from '@elec/shared';
-import { and, asc, eq } from 'drizzle-orm';
+import { telegramPhone } from '@elec/shared/api';
+import { asc, eq } from 'drizzle-orm';
 import type { i18n } from 'i18next';
 import { consumeOneTimeToken } from '../auth/oneTimeTokens.ts';
+import { PHONE_CODE_PREFIX, claimPhoneCode, confirmContact } from '../auth/phone.ts';
 import type { Clock } from '../clock.ts';
 import type { Db } from '../db/client.ts';
 import { appUser, device, deviceChannel, notificationChannel } from '../db/schema/index.ts';
-import { canReadDevice } from '../devices/access.ts';
 import { parseCommand, type TelegramUpdate } from './commands.ts';
+import { connectPlatformChat, platformChat } from './platformChat.ts';
+import { renderTelegramAuth } from './pushes.ts';
 
-export type BotDeps = { db: Db; clock: Clock; i18n: i18n; botUsername: string };
-export type BotReply = { chatId: bigint; text: string };
+export type BotDeps = {
+  db: Db;
+  clock: Clock;
+  i18n: i18n;
+  botUsername: string;
+  clientUrl: string;
+};
+export type ReplyMarkup =
+  | {
+      keyboard: [[{ text: string; request_contact: true }]];
+      resize_keyboard: true;
+      one_time_keyboard: true;
+    }
+  | { remove_keyboard: true };
+export type BotReply = { chatId: bigint; text: string; replyMarkup?: ReplyMarkup };
 
 type Message = NonNullable<TelegramUpdate['message']>;
-type Chat = Message['chat'];
+type Contact = NonNullable<Message['contact']>;
 
 const DEFAULT_LANGUAGE: Language = 'uk';
-const MAX_NAME = 64;
 
 function languageFromCode(code: string | undefined): Language {
   return languages.find((l) => l === code) ?? DEFAULT_LANGUAGE;
 }
-
-function channelName(chat: Chat): string {
-  const raw =
-    chat.type === 'private'
-      ? [chat.first_name, chat.last_name].filter(Boolean).join(' ') ||
-        (chat.username ? `@${chat.username}` : '')
-      : (chat.title ?? '');
-  return (raw.trim() || 'Telegram').slice(0, MAX_NAME);
-}
-
-const platformChat = (chatId: bigint) =>
-  and(
-    eq(notificationChannel.type, 'TELEGRAM_PLATFORM'),
-    eq(notificationChannel.telegramChatId, chatId),
-  );
 
 async function chatOwner(db: Db, chatId: bigint) {
   const [row] = await db
@@ -65,7 +65,9 @@ export async function handleUpdate(
   }
 
   const message = update.message;
-  if (!message?.text) return null;
+  if (!message) return null;
+  if (message.contact) return shareContact(deps, message, message.contact);
+  if (!message.text) return null;
   const command = parseCommand(message.text, deps.botUsername);
   if (!command) return null;
 
@@ -79,7 +81,10 @@ export async function handleUpdate(
 
   switch (command.name) {
     case 'start':
-      return command.arg ? link(deps, message, command.arg, say) : say('welcome');
+      if (!command.arg) return say('welcome');
+      return command.arg.startsWith(PHONE_CODE_PREFIX)
+        ? openPhoneCode(deps, message, command.arg.slice(PHONE_CODE_PREFIX.length), language)
+        : link(deps, message, command.arg, say);
     case 'status': {
       if (!owner) return say('notLinked');
       const rows = await db
@@ -119,50 +124,82 @@ export async function handleUpdate(
   }
 }
 
+async function openPhoneCode(
+  deps: BotDeps,
+  message: Message,
+  token: string,
+  language: Language,
+): Promise<BotReply> {
+  const chatId = BigInt(message.chat.id);
+  const t = deps.i18n.getFixedT(language);
+  if (message.chat.type !== 'private') return { chatId, text: t('telegram.auth.privateOnly') };
+  if (message.from?.id !== undefined) {
+    await claimPhoneCode(deps.db, deps.clock, token, BigInt(message.from.id));
+  }
+  return {
+    chatId,
+    text: t('telegram.auth.askContact'),
+    replyMarkup: {
+      keyboard: [[{ text: t('telegram.auth.contactButton'), request_contact: true }]],
+      resize_keyboard: true,
+      one_time_keyboard: true,
+    },
+  };
+}
+
+async function shareContact(
+  deps: BotDeps,
+  message: Message,
+  contact: Contact,
+): Promise<BotReply | null> {
+  if (message.chat.type !== 'private' || message.from?.id === undefined) return null;
+  const chatId = BigInt(message.chat.id);
+  const outcome = await confirmContact(deps.db, deps.clock, {
+    telegramUserId: BigInt(message.from.id),
+    contactUserId: contact.user_id,
+    phone: telegramPhone(contact.phone_number),
+    chat: message.chat,
+  });
+
+  let language: Language;
+  if (outcome.kind === 'mismatch') {
+    const owner = await chatOwner(deps.db, chatId);
+    language = owner?.language ?? languageFromCode(message.from.language_code);
+  } else {
+    const [user] = await deps.db
+      .select({ language: appUser.language })
+      .from(appUser)
+      .where(eq(appUser.id, outcome.userId));
+    language = languageFromCode(user?.language);
+  }
+
+  const text =
+    outcome.kind === 'recovered'
+      ? renderTelegramAuth(deps.i18n, 'resetLink', {
+          lang: language,
+          link: `${deps.clientUrl}/reset-password?token=${outcome.resetToken}`,
+        })
+      : deps.i18n.getFixedT(language)(`telegram.auth.${outcome.kind}`);
+  return { chatId, text, replyMarkup: { remove_keyboard: true } };
+}
+
 async function link(
   deps: BotDeps,
   message: Message,
   code: string,
   say: (key: string, vars?: Record<string, string>) => BotReply,
 ): Promise<BotReply> {
-  const chatId = BigInt(message.chat.id);
   const outcome = await deps.db.transaction(async (tx) => {
-    const userId = await consumeOneTimeToken(tx, deps.clock, code, 'TELEGRAM_LINK');
-    if (!userId) return null;
-    const [user] = await tx.select().from(appUser).where(eq(appUser.id, userId));
-    const [existing] = await tx
-      .select({ id: notificationChannel.id })
-      .from(notificationChannel)
-      .where(and(eq(notificationChannel.userId, userId), platformChat(chatId)));
-    if (existing) return { language: user!.language as Language, key: 'alreadyLinked' };
-
-    const [channel] = await tx
-      .insert(notificationChannel)
-      .values({
-        userId,
-        type: 'TELEGRAM_PLATFORM',
-        name: channelName(message.chat),
-        telegramChatId: chatId,
-        createdAt: deps.clock.now(),
-        updatedAt: deps.clock.now(),
-      })
-      .returning({ id: notificationChannel.id });
-    const readable = await tx
-      .select({ id: device.id })
-      .from(device)
-      .where(canReadDevice(userId, device.ownerId, device.id));
-    if (readable.length > 0) {
-      await tx
-        .insert(deviceChannel)
-        .values(readable.map((d) => ({ deviceId: d.id, channelId: channel!.id })))
-        .onConflictDoNothing();
-    }
-    return { language: user!.language as Language, key: 'linked' };
+    const consumed = await consumeOneTimeToken(tx, deps.clock, code, 'TELEGRAM_LINK');
+    if (!consumed) return null;
+    const [user] = await tx.select().from(appUser).where(eq(appUser.id, consumed.userId));
+    const key = await connectPlatformChat(tx, deps.clock, consumed.userId, message.chat);
+    return { language: user!.language as Language, key };
   });
 
   if (!outcome) return say('linkExpired');
   return {
-    chatId,
+    chatId: BigInt(message.chat.id),
     text: deps.i18n.getFixedT(outcome.language)(`telegram.bot.${outcome.key}`),
   };
 }
