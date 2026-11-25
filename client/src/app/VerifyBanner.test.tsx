@@ -44,7 +44,7 @@ test('an unverified user sees the banner and a disabled Add device', async () =>
   for (const button of screen.getAllByRole('button', { name: 'Add device' })) {
     expect(button).toBeDisabled();
   }
-  expect(screen.getByText('Confirm your email to add a device.')).toBeInTheDocument();
+  expect(screen.getByText('Confirm your email or phone to add a device.')).toBeInTheDocument();
 });
 
 test('Resend email posts and shows the toast', async () => {
@@ -73,4 +73,27 @@ test('a 429 shows the wait', async () => {
   const { user } = renderRoute('/devices', { me: meFixture({ email_verified: false }) });
   await user.click(await screen.findByRole('button', { name: 'Resend email' }));
   expect(await screen.findByText('Too many attempts. Try again in 2 min.')).toBeInTheDocument();
+});
+
+test('a phone account confirms its number in Telegram', async () => {
+  const spy = vi.fn<(body: unknown) => void>();
+  const telegramUrl = 'https://t.me/TestBot?start=p_abc';
+  const open = vi.spyOn(window, 'open').mockReturnValue(null);
+  server.use(
+    http.post(`${base}/api/auth/phone`, async ({ request }) => {
+      spy(await request.json());
+      return HttpResponse.json({ telegram_url: telegramUrl });
+    }),
+  );
+  const me = meFixture({ email: null, email_verified: false, phone: '+380501234567' });
+  const { user } = renderRoute('/devices', { me });
+  expect(await screen.findByText('Confirm your number in Telegram')).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Confirm number' }));
+  expect(await screen.findByRole('link', { name: 'Open Telegram' })).toHaveAttribute(
+    'href',
+    telegramUrl,
+  );
+  expect(spy).toHaveBeenCalledWith({ phone: '+380501234567' });
+  expect(open).toHaveBeenCalledWith(telegramUrl, '_blank', 'noopener,noreferrer');
+  open.mockRestore();
 });

@@ -24,6 +24,7 @@ import {
   sessionSchema,
   signupBodySchema,
   telegramLinkSchema,
+  telegramUrlSchema,
   tokenBodySchema,
 } from '@elec/shared/api';
 import type { z } from 'zod';
@@ -37,8 +38,24 @@ export function login(api: ApiClient, body: Body<typeof loginBodySchema>) {
   return api.request('/api/auth/login', { method: 'POST', body, schema: sessionSchema });
 }
 
+function requestIdentifier(api: ApiClient, path: string, body: object) {
+  return api.request(path, {
+    method: 'POST',
+    body,
+    schema: 'phone' in body ? telegramUrlSchema : undefined,
+  });
+}
+
 export function signup(api: ApiClient, body: Body<typeof signupBodySchema>) {
-  return api.request('/api/auth/signup', { method: 'POST', body });
+  return requestIdentifier(api, '/api/auth/signup', body);
+}
+
+export function addPhone(api: ApiClient, phone: string) {
+  return api.request('/api/auth/phone', {
+    method: 'POST',
+    body: { phone },
+    schema: telegramUrlSchema,
+  });
 }
 
 export function verifyEmail(api: ApiClient, body: Body<typeof tokenBodySchema>) {
@@ -50,7 +67,7 @@ export function resendVerification(api: ApiClient) {
 }
 
 export function forgotPassword(api: ApiClient, body: Body<typeof forgotBodySchema>) {
-  return api.request('/api/auth/forgot-password', { method: 'POST', body });
+  return requestIdentifier(api, '/api/auth/forgot-password', body);
 }
 
 export function resetPassword(api: ApiClient, body: Body<typeof resetBodySchema>) {

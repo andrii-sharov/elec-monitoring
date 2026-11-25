@@ -40,7 +40,7 @@ function translateDetail(detail: ApiError['details'][number], t: TFunction): str
 }
 
 export function applyServerErrors(
-  error: ApiError,
+  error: Pick<ApiError, 'details'>,
   setError: (name: never, error: { type: string; message: string }) => void,
   fields: readonly string[],
   t: TFunction,

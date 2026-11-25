@@ -148,7 +148,7 @@ export const uk: Dictionary = {
       conflict: 'Це суперечить наявним даним. Оновіть сторінку й спробуйте ще раз.',
       expired: 'Термін дії посилання або коду минув.',
       rate_limited: 'Забагато спроб. Спробуйте пізніше.',
-      invalid_credentials: 'Неправильна електронна пошта або пароль.',
+      invalid_credentials: 'Неправильний email, телефон або пароль.',
       reauth_required: 'Підтвердьте, що це ви: увійдіть знову.',
       internal: 'Щось пішло не так на нашому боці. Спробуйте пізніше.',
       network: "Немає зв'язку із сервером. Перевірте підключення.",
@@ -219,7 +219,7 @@ export const uk: Dictionary = {
       },
       forgot: {
         title: 'Забули пароль?',
-        description: 'Вкажіть адресу, і ми надішлемо посилання для скидання.',
+        description: 'Введіть email або телефон, і ми надішлемо посилання для скидання.',
         submit: 'Надіслати посилання',
         sentTitle: 'Перевірте пошту',
         sentBody:
@@ -234,6 +234,20 @@ export const uk: Dictionary = {
         expiredBody: 'Це посилання для скидання недійсне або його термін минув.',
         requestNew: 'Запросити нове посилання',
         login: 'Увійти',
+      },
+      phone: {
+        identifier: 'Email або телефон',
+        number: 'Номер телефону',
+        tab: 'Телефон',
+        confirmTitle: 'Підтвердіть у Telegram',
+        confirmHint: 'Відкрийте бота, натисніть Start і поділіться своїм номером.',
+        openTelegram: 'Відкрити Telegram',
+        forgotTitle: 'Перевірте Telegram',
+        forgotHint:
+          'Ми надіслали посилання в Telegram. Не отримали? Відкрийте бота й поділіться своїм номером.',
+        inviteNote: 'Після підтвердження номера спільний пристрій з’явиться у вашому списку.',
+        banner: 'Підтвердьте свій номер у Telegram',
+        bannerAction: 'Підтвердити номер',
       },
       google: {
         title: 'Вхід через Google',
@@ -251,6 +265,7 @@ export const uk: Dictionary = {
       same_time: 'Початок і кінець мають відрізнятися',
       password_mismatch: 'Паролі не збігаються',
       already_member: 'Ця людина вже має доступ до пристрою',
+      invalid_phone: 'Введіть дійсний номер телефону',
     },
     google: {
       errors: {
@@ -278,7 +293,7 @@ export const uk: Dictionary = {
     devices: {
       title: 'Пристрої',
       add: 'Додати пристрій',
-      addNeedsVerified: 'Підтвердіть пошту, щоб додати пристрій.',
+      addNeedsVerified: 'Підтвердьте email або телефон, щоб додати пристрій.',
       emptyTitle: 'Пристроїв ще немає',
       emptyBody: 'Додайте перший пристрій, щоб стежити за електропостачанням.',
       since: 'з {{moment}}',
@@ -427,7 +442,7 @@ export const uk: Dictionary = {
       enabled: 'Увімкнено',
       disabled: 'Вимкнено',
       connect: 'Підключити Telegram',
-      connectNeedsVerified: 'Підтвердьте пошту, щоб підключити Telegram.',
+      connectNeedsVerified: 'Підтвердьте email або телефон, щоб підключити Telegram.',
       openTelegram: 'Відкрити в Telegram',
       addToGroup: 'Додати до групи',
       connectHint: 'Відкрийте бота, натисніть Start, і ця сторінка підхопить новий канал.',

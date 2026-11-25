@@ -15,7 +15,7 @@ test('forgot password always shows the same screen', async () => {
     }),
   );
   const { user } = renderRoute('/forgot-password');
-  await user.type(await screen.findByLabelText('Email'), 'johnny@example.com');
+  await user.type(await screen.findByLabelText('Email or phone'), 'johnny@example.com');
   await user.click(screen.getByRole('button', { name: 'Send reset link' }));
   expect(await screen.findByText(/If an account exists/)).toBeInTheDocument();
   expect(spy).toHaveBeenCalledWith({ email: 'johnny@example.com' });
@@ -69,4 +69,21 @@ test('reset with an expired token links to forgot password', async () => {
     'href',
     '/forgot-password',
   );
+});
+
+test('forgot password with a phone shows the Telegram screen', async () => {
+  const spy = vi.fn<(body: unknown) => void>();
+  const telegramUrl = 'https://t.me/TestBot?start=p_abc';
+  server.use(
+    http.post(`${base}/api/auth/forgot-password`, async ({ request }) => {
+      spy(await request.json());
+      return HttpResponse.json({ telegram_url: telegramUrl });
+    }),
+  );
+  const { user } = renderRoute('/forgot-password');
+  await user.type(await screen.findByLabelText('Email or phone'), '0501234567');
+  await user.click(screen.getByRole('button', { name: 'Send reset link' }));
+  expect(await screen.findByText(/We sent a link to Telegram/)).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Open Telegram' })).toHaveAttribute('href', telegramUrl);
+  expect(spy).toHaveBeenCalledWith({ phone: '0501234567' });
 });

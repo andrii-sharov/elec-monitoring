@@ -99,7 +99,7 @@ test('an unverified email disables connect and shows a hint', async () => {
   server.use(http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items: [] })));
   renderRoute('/notifications', { me: meFixture({ email_verified: false }) });
   expect(await screen.findByRole('button', { name: 'Connect Telegram' })).toBeDisabled();
-  expect(screen.getByText('Confirm your email to connect Telegram.')).toBeInTheDocument();
+  expect(screen.getByText('Confirm your email or phone to connect Telegram.')).toBeInTheDocument();
 });
 
 test('a rate limited link shows the wait', async () => {

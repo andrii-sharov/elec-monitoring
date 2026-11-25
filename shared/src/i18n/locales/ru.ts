@@ -152,7 +152,7 @@ export const ru: Dictionary = {
       conflict: 'Это противоречит существующим данным. Обновите страницу и попробуйте снова.',
       expired: 'Срок действия ссылки или кода истёк.',
       rate_limited: 'Слишком много попыток. Попробуйте позже.',
-      invalid_credentials: 'Неверный адрес электронной почты или пароль.',
+      invalid_credentials: 'Неверный email, телефон или пароль.',
       reauth_required: 'Подтвердите, что это вы: войдите снова.',
       internal: 'Что-то пошло не так на нашей стороне. Попробуйте позже.',
       network: 'Нет связи с сервером. Проверьте подключение.',
@@ -226,7 +226,7 @@ export const ru: Dictionary = {
       },
       forgot: {
         title: 'Забыли пароль?',
-        description: 'Укажите адрес, и мы отправим ссылку для сброса.',
+        description: 'Введите email или телефон, и мы отправим ссылку для сброса.',
         submit: 'Отправить ссылку',
         sentTitle: 'Проверьте почту',
         sentBody: 'Если аккаунт с таким адресом существует, мы отправили ссылку для сброса пароля.',
@@ -240,6 +240,20 @@ export const ru: Dictionary = {
         expiredBody: 'Эта ссылка для сброса недействительна или её срок истёк.',
         requestNew: 'Запросить новую ссылку',
         login: 'Войти',
+      },
+      phone: {
+        identifier: 'Email или телефон',
+        number: 'Номер телефона',
+        tab: 'Телефон',
+        confirmTitle: 'Подтвердите в Telegram',
+        confirmHint: 'Откройте бота, нажмите Start и поделитесь своим номером.',
+        openTelegram: 'Открыть Telegram',
+        forgotTitle: 'Проверьте Telegram',
+        forgotHint:
+          'Мы отправили ссылку в Telegram. Не получили? Откройте бота и поделитесь своим номером.',
+        inviteNote: 'После подтверждения номера общее устройство появится в вашем списке.',
+        banner: 'Подтвердите свой номер в Telegram',
+        bannerAction: 'Подтвердить номер',
       },
       google: {
         title: 'Вход через Google',
@@ -257,6 +271,7 @@ export const ru: Dictionary = {
       same_time: 'Начало и конец должны отличаться',
       password_mismatch: 'Пароли не совпадают',
       already_member: 'У этого человека уже есть доступ к устройству',
+      invalid_phone: 'Введите действительный номер телефона',
     },
     google: {
       errors: {
@@ -283,7 +298,7 @@ export const ru: Dictionary = {
     devices: {
       title: 'Устройства',
       add: 'Добавить устройство',
-      addNeedsVerified: 'Подтвердите почту, чтобы добавить устройство.',
+      addNeedsVerified: 'Подтвердите email или телефон, чтобы добавить устройство.',
       emptyTitle: 'Устройств пока нет',
       emptyBody: 'Добавьте первое устройство, чтобы следить за электроснабжением.',
       since: 'с {{moment}}',
@@ -431,7 +446,7 @@ export const ru: Dictionary = {
       enabled: 'Включён',
       disabled: 'Выключен',
       connect: 'Подключить Telegram',
-      connectNeedsVerified: 'Подтвердите почту, чтобы подключить Telegram.',
+      connectNeedsVerified: 'Подтвердите email или телефон, чтобы подключить Telegram.',
       openTelegram: 'Открыть в Telegram',
       addToGroup: 'Добавить в группу',
       connectHint: 'Откройте бота, нажмите Start, и эта страница подхватит новый канал.',

@@ -1,4 +1,3 @@
-import { emailSchema } from '@elec/shared/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -6,14 +5,18 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { z } from 'zod';
 import { forgotPassword } from '@/api/endpoints';
+import { isApiError } from '@/api/errors';
 import { useSession } from '@/api/session';
 import { Button } from '@/components/ui/button';
 import { errorMessage } from '@/forms/errorMessage';
 import { FormAlert } from '@/forms/FormAlert';
-import { TextField } from '@/forms/TextField';
+import { applyServerErrors } from '@/forms/zodErrors';
 import { AuthLayout } from './AuthLayout';
+import { identifierErrors, identifierValueSchema, toIdentifier } from './identifier';
+import { IdentifierField } from './IdentifierField';
+import { TelegramConfirm } from './TelegramConfirm';
 
-const formSchema = z.object({ email: emailSchema });
+const formSchema = z.object({ identifier: identifierValueSchema });
 type Input = z.input<typeof formSchema>;
 type Output = z.output<typeof formSchema>;
 
@@ -29,12 +32,32 @@ export function ForgotPasswordPage() {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm<Input, unknown, Output>({
     resolver: zodResolver(formSchema),
-    defaultValues: { email: '' },
+    defaultValues: { identifier: '' },
   });
-  const mutation = useMutation({ mutationFn: (body: Output) => forgotPassword(api, body) });
+  const mutation = useMutation({
+    mutationFn: ({ identifier }: Output) => forgotPassword(api, toIdentifier(identifier)),
+    onError: (error) => {
+      if (isApiError(error, 'validation_error')) {
+        applyServerErrors(identifierErrors(error), setError, ['identifier'], t);
+      }
+    },
+  });
+
+  if (mutation.isSuccess && mutation.data) {
+    return (
+      <AuthLayout title={t('app.auth.forgot.title')} footer={backLink(t('app.auth.backToLogin'))}>
+        <TelegramConfirm
+          url={mutation.data.telegram_url}
+          title={t('app.auth.phone.forgotTitle')}
+          hint={t('app.auth.phone.forgotHint')}
+        />
+      </AuthLayout>
+    );
+  }
 
   if (mutation.isSuccess) {
     return (
@@ -59,13 +82,7 @@ export function ForgotPasswordPage() {
         onSubmit={handleSubmit((values) => mutation.mutate(values))}
       >
         <FormAlert message={mutation.error ? errorMessage(t, mutation.error) : null} />
-        <TextField
-          label={t('app.auth.email')}
-          type="email"
-          autoComplete="email"
-          error={errors.email}
-          {...register('email')}
-        />
+        <IdentifierField error={errors.identifier} {...register('identifier')} />
         <Button type="submit" disabled={mutation.isPending}>
           {t('app.auth.forgot.submit')}
         </Button>

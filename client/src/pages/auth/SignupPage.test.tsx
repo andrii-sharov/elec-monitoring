@@ -87,3 +87,59 @@ test('without an invite the check-email screen has no shared-device note', async
   await screen.findByRole('heading', { name: 'Check your email' });
   expect(screen.queryByText(/shared device/)).not.toBeInTheDocument();
 });
+
+const telegramUrl = 'https://t.me/TestBot?start=p_abc';
+
+async function fillPhoneSignup(user: ReturnType<typeof renderRoute>['user'], phone: string) {
+  await user.click(await screen.findByRole('button', { name: 'Phone' }));
+  await user.type(screen.getByLabelText('Name'), 'Johnny');
+  await user.type(screen.getByLabelText('Phone number'), phone);
+  await user.type(screen.getByLabelText('Password'), 'password1');
+  await user.click(screen.getByRole('button', { name: 'Create account' }));
+}
+
+test('phone sign-up sends the number and shows the Telegram link', async () => {
+  const spy = vi.fn<(body: unknown) => void>();
+  server.use(
+    http.post(`${base}/api/auth/signup`, async ({ request }) => {
+      spy(await request.json());
+      return HttpResponse.json({ telegram_url: telegramUrl }, { status: 201 });
+    }),
+  );
+  const { user } = renderRoute('/signup');
+  await fillPhoneSignup(user, '050 123 45 67');
+  expect(await screen.findByText('Confirm in Telegram')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Open Telegram' })).toHaveAttribute('href', telegramUrl);
+  expect(spy).toHaveBeenCalledWith({
+    phone: '050 123 45 67',
+    password: 'password1',
+    name: 'Johnny',
+    language: 'en',
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  });
+});
+
+test('a rejected phone shows the error under the field', async () => {
+  server.use(
+    http.post(`${base}/api/auth/signup`, () =>
+      HttpResponse.json(
+        {
+          error: {
+            code: 'validation_error',
+            message: 'x',
+            details: [{ path: 'phone', code: 'invalid_phone' }],
+          },
+        },
+        { status: 400 },
+      ),
+    ),
+  );
+  const { user } = renderRoute('/signup');
+  await fillPhoneSignup(user, '12');
+  expect(await screen.findByText('Enter a valid phone number')).toBeInTheDocument();
+});
+
+test('a phone invite link opens the phone form prefilled', async () => {
+  renderRoute('/signup?phone=%2B380501234567&invite=1');
+  expect(await screen.findByLabelText('Phone number')).toHaveValue('+380501234567');
+});

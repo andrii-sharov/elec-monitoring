@@ -144,7 +144,7 @@ export const en = {
       conflict: 'This conflicts with existing data. Refresh the page and try again.',
       expired: 'This link or code has expired.',
       rate_limited: 'Too many attempts. Try again later.',
-      invalid_credentials: 'Wrong email or password.',
+      invalid_credentials: 'Wrong email, phone or password.',
       reauth_required: "Confirm it's you by signing in again.",
       internal: 'Something went wrong on our side. Try again later.',
       network: "Can't reach the server. Check your connection.",
@@ -215,7 +215,7 @@ export const en = {
       },
       forgot: {
         title: 'Forgot your password?',
-        description: 'Enter your email and we will send a reset link.',
+        description: 'Enter your email or phone and we will send a reset link.',
         submit: 'Send reset link',
         sentTitle: 'Check your email',
         sentBody: 'If an account exists for that address, we sent a link to reset the password.',
@@ -229,6 +229,20 @@ export const en = {
         expiredBody: 'This reset link is invalid or has expired.',
         requestNew: 'Request a new link',
         login: 'Log in',
+      },
+      phone: {
+        identifier: 'Email or phone',
+        number: 'Phone number',
+        tab: 'Phone',
+        confirmTitle: 'Confirm in Telegram',
+        confirmHint: 'Open the bot, press Start and share your number.',
+        openTelegram: 'Open Telegram',
+        forgotTitle: 'Check Telegram',
+        forgotHint:
+          "We sent a link to Telegram. Didn't get it? Open the bot and share your number.",
+        inviteNote: 'After you confirm your number, the shared device appears in your list.',
+        banner: 'Confirm your number in Telegram',
+        bannerAction: 'Confirm number',
       },
       google: {
         title: 'Google sign-in',
@@ -246,6 +260,7 @@ export const en = {
       same_time: 'Start and end must differ',
       password_mismatch: 'Passwords do not match',
       already_member: 'Already a member of this device',
+      invalid_phone: 'Enter a valid phone number',
     },
     google: {
       errors: {
@@ -272,7 +287,7 @@ export const en = {
     devices: {
       title: 'Devices',
       add: 'Add device',
-      addNeedsVerified: 'Confirm your email to add a device.',
+      addNeedsVerified: 'Confirm your email or phone to add a device.',
       emptyTitle: 'No devices yet',
       emptyBody: 'Add your first device to start monitoring the power.',
       since: 'since {{moment}}',
@@ -418,7 +433,7 @@ export const en = {
       enabled: 'Enabled',
       disabled: 'Disabled',
       connect: 'Connect Telegram',
-      connectNeedsVerified: 'Confirm your email to connect Telegram.',
+      connectNeedsVerified: 'Confirm your email or phone to connect Telegram.',
       openTelegram: 'Open in Telegram',
       addToGroup: 'Add to a group',
       connectHint: 'Open the bot, press Start, and this page picks up the new channel.',
