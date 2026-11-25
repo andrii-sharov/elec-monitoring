@@ -64,7 +64,21 @@ test('cancelling the delete dialog sends nothing', async () => {
   expect(router.state.location.pathname).toBe(`/devices/${id}`);
 });
 
-test('rotate token confirms, sends the request and says so', async () => {
+function pairingCodeHandler() {
+  const created = vi.fn<() => void>();
+  server.use(
+    http.post(`${base}/api/v1/devices/${id}/pairing-code`, () => {
+      created();
+      return HttpResponse.json(
+        { pairing_code: 'K7Q2M9XD', pairing_code_expires_at: '2026-11-21T19:12:00Z' },
+        { status: 201 },
+      );
+    }),
+  );
+  return created;
+}
+
+function rotateHandler() {
   const rotated = vi.fn<() => void>();
   server.use(
     http.post(`${base}/api/v1/devices/${id}/rotate-token`, () => {
@@ -72,27 +86,39 @@ test('rotate token confirms, sends the request and says so', async () => {
       return new HttpResponse(null, { status: 204 });
     }),
   );
+  return rotated;
+}
+
+const rotatedNote = 'Token rotated. The device opens its setup Wi-Fi at its next check-in.';
+
+test('rotate token confirms, rotates and opens re-pair with a new code', async () => {
+  const rotated = rotateHandler();
+  const created = pairingCodeHandler();
   const { user } = await renderOwner();
   await user.click(screen.getByRole('button', { name: 'Rotate token' }));
-  const dialog = screen.getByRole('alertdialog');
-  expect(
-    within(dialog).getByText('The device stops checking in until you pair it again.'),
-  ).toBeInTheDocument();
-  await user.click(within(dialog).getByRole('button', { name: 'Rotate token' }));
-  expect(await screen.findByText('Token rotated. Pair the device again.')).toBeInTheDocument();
+  const confirm = screen.getByRole('alertdialog');
+  expect(within(confirm).getByText(/The old token stops working at once/)).toBeInTheDocument();
+  await user.click(within(confirm).getByRole('button', { name: 'Rotate token' }));
+  const dialog = await screen.findByRole('dialog', { name: 'Pair the device again' });
+  expect(await within(dialog).findByLabelText('Pairing code')).toHaveTextContent('K7Q2 M9XD');
+  expect(within(dialog).getByText(rotatedNote)).toBeInTheDocument();
+  expect(within(dialog).queryByRole('button', { name: 'Rotate token' })).toBeNull();
   expect(rotated).toHaveBeenCalledOnce();
+  expect(created).toHaveBeenCalledOnce();
 });
 
-test('re-pair shows the new code', async () => {
-  server.use(
-    http.post(`${base}/api/v1/devices/${id}/pairing-code`, () =>
-      HttpResponse.json(
-        { pairing_code: 'K7Q2M9XD', pairing_code_expires_at: '2026-11-21T19:12:00Z' },
-        { status: 201 },
-      ),
-    ),
-  );
+test('re-pair shows the new code, the steps and a way to disconnect', async () => {
+  pairingCodeHandler();
+  const rotated = rotateHandler();
   const { user } = await renderOwner();
   await user.click(screen.getByRole('button', { name: 'Re-pair' }));
-  expect(await screen.findByLabelText('Pairing code')).toHaveTextContent('K7Q2 M9XD');
+  const dialog = await screen.findByRole('dialog', { name: 'Pair the device again' });
+  expect(await within(dialog).findByLabelText('Pairing code')).toHaveTextContent('K7Q2 M9XD');
+  expect(within(dialog).getByText(/hold the BOOT button for 5 s/)).toBeInTheDocument();
+  expect(within(dialog).getByText(/ElecMonitor-XXXX/)).toBeInTheDocument();
+
+  await user.click(within(dialog).getByRole('button', { name: 'Rotate token' }));
+  expect(await within(dialog).findByText(rotatedNote)).toBeInTheDocument();
+  expect(rotated).toHaveBeenCalledOnce();
+  expect(within(dialog).getByLabelText('Pairing code')).toHaveTextContent('K7Q2 M9XD');
 });

@@ -475,7 +475,8 @@ codes are invalidated. The current device token keeps working until the
 code is claimed.
 
 `POST /devices/:id/rotate-token` → `204`. The current token stops working
-immediately. The device gets `401` and needs re-pairing with a new code.
+immediately. The device gets `401` at its next check-in, opens its setup
+Wi-Fi and needs re-pairing with a new code.
 
 `DELETE /devices/:id` → `204`. Removes outages, memberships, channel
 links and queued notifications for the device.

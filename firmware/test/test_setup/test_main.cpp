@@ -322,6 +322,26 @@ void test_setup_error_names() {
   TEST_ASSERT_EQUAL_STRING("CODE_REQUIRED", setupErrorName(SetupError::CodeRequired));
 }
 
+void test_setup_modes_per_reason() {
+  SetupMode noConfig = setupModeFor(SetupReason::NoConfig, false);
+  TEST_ASSERT_FALSE(noConfig.keepToken);
+  TEST_ASSERT_FALSE(noConfig.idleExit);
+
+  SetupMode button = setupModeFor(SetupReason::Button, true);
+  TEST_ASSERT_TRUE(button.keepToken);
+  TEST_ASSERT_TRUE(button.idleExit);
+
+  SetupMode rejected = setupModeFor(SetupReason::TokenRejected, true);
+  TEST_ASSERT_FALSE(rejected.keepToken);
+  TEST_ASSERT_TRUE(rejected.idleExit);
+}
+
+void test_setup_reason_names() {
+  TEST_ASSERT_EQUAL_STRING("no config", setupReasonName(SetupReason::NoConfig));
+  TEST_ASSERT_EQUAL_STRING("button", setupReasonName(SetupReason::Button));
+  TEST_ASSERT_EQUAL_STRING("token rejected", setupReasonName(SetupReason::TokenRejected));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_normalizes_pairing_code);
@@ -352,6 +372,8 @@ int main() {
   RUN_TEST(test_language_from_accept_language);
   RUN_TEST(test_setup_error_names);
   RUN_TEST(test_setup_required);
+  RUN_TEST(test_setup_modes_per_reason);
+  RUN_TEST(test_setup_reason_names);
   RUN_TEST(test_first_boot_setup_never_exits);
   RUN_TEST(test_button_setup_exits_after_ten_idle_minutes);
   RUN_TEST(test_submission_restarts_idle_timer);

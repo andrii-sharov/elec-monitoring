@@ -8,19 +8,11 @@ import { deleteDevice, newPairingCode, rotateToken } from '@/api/endpoints';
 import { queryKeys } from '@/api/queries';
 import { useSession } from '@/api/session';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { PairingCode } from '@/components/PairingCode';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { errorMessage } from '@/forms/errorMessage';
 import { FormAlert } from '@/forms/FormAlert';
-
-type Pairing = { code: string; expiresAt: string };
+import type { Pairing } from './DeviceSetup';
+import { RepairDialog } from './RepairDialog';
 
 export function DeviceDangerZone({ deviceId }: { deviceId: string }) {
   const { t } = useTranslation();
@@ -29,6 +21,7 @@ export function DeviceDangerZone({ deviceId }: { deviceId: string }) {
   const navigate = useNavigate();
   const [pairing, setPairing] = useState<Pairing | null>(null);
   const [open, setOpen] = useState(false);
+  const [rotated, setRotated] = useState(false);
 
   const repair = useMutation({
     mutationFn: () => newPairingCode(api, deviceId),
@@ -40,6 +33,7 @@ export function DeviceDangerZone({ deviceId }: { deviceId: string }) {
   const rotate = useMutation({
     mutationFn: () => rotateToken(api, deviceId),
     onSuccess: () => {
+      setRotated(true);
       toast.success(t('app.danger.rotated'));
       void queryClient.invalidateQueries({ queryKey: queryKeys.device(deviceId) });
     },
@@ -52,7 +46,13 @@ export function DeviceDangerZone({ deviceId }: { deviceId: string }) {
       void navigate('/devices');
     },
   });
-  const failure = repair.error ?? rotate.error ?? remove.error;
+  const startRepair = () => {
+    setRotated(false);
+    rotate.reset();
+    repair.mutate();
+  };
+  const rotateAndRepair = () => rotate.mutate(undefined, { onSuccess: () => repair.mutate() });
+  const failure = repair.error ?? (open ? null : rotate.error) ?? remove.error;
 
   return (
     <section aria-labelledby="danger-title" className="flex flex-col gap-3">
@@ -65,7 +65,7 @@ export function DeviceDangerZone({ deviceId }: { deviceId: string }) {
       </h2>
       <FormAlert message={failure ? errorMessage(t, failure) : null} />
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" disabled={repair.isPending} onClick={() => repair.mutate()}>
+        <Button variant="outline" disabled={repair.isPending} onClick={startRepair}>
           {t('app.danger.repair')}
         </Button>
         <ConfirmDialog
@@ -79,7 +79,7 @@ export function DeviceDangerZone({ deviceId }: { deviceId: string }) {
           body={t('app.danger.rotateBody')}
           confirmLabel={t('app.danger.rotate')}
           destructive
-          onConfirm={() => rotate.mutate()}
+          onConfirm={rotateAndRepair}
         />
         <ConfirmDialog
           trigger={
@@ -95,21 +95,16 @@ export function DeviceDangerZone({ deviceId }: { deviceId: string }) {
           onConfirm={() => remove.mutate()}
         />
       </div>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('app.danger.repairTitle')}</DialogTitle>
-            <DialogDescription>{t('app.danger.repairBody')}</DialogDescription>
-          </DialogHeader>
-          {pairing ? (
-            <PairingCode
-              code={pairing.code}
-              expiresAt={pairing.expiresAt}
-              onRenew={() => repair.mutate()}
-            />
-          ) : null}
-        </DialogContent>
-      </Dialog>
+      <RepairDialog
+        open={open}
+        onOpenChange={setOpen}
+        pairing={pairing}
+        onRenew={() => repair.mutate()}
+        rotated={rotated}
+        rotating={rotate.isPending}
+        rotateError={rotate.error}
+        onRotate={() => rotate.mutate()}
+      />
     </section>
   );
 }

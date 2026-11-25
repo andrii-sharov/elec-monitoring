@@ -2,13 +2,16 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { liveTickMs } from '@/components/StateDuration';
 import { useFormatters } from '@/lib/format';
+import { useNow } from '@/lib/useNow';
 import { ClassicStatusMark } from './ClassicStatusMark';
 import type { DeviceSummaryProps } from '../slots';
 
 export function ClassicDeviceSummary({ device }: DeviceSummaryProps) {
   const { t } = useTranslation();
   const format = useFormatters();
+  const at = new Date(useNow(liveTickMs));
   return (
     <Link
       to={`/devices/${device.id}`}
@@ -26,10 +29,10 @@ export function ClassicDeviceSummary({ device }: DeviceSummaryProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-1 text-sm text-muted-foreground">
-          <span>{t('app.devices.since', { moment: format.since(device.state_since) })}</span>
+          <span>{t('app.devices.since', { moment: format.since(device.state_since, at) })}</span>
           <span>
             {device.last_seen_at
-              ? t('app.devices.lastSeen', { moment: format.moment(device.last_seen_at) })
+              ? t('app.devices.lastSeen', { moment: format.since(device.last_seen_at, at) })
               : t('app.devices.never')}
           </span>
         </CardContent>

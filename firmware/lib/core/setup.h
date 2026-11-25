@@ -6,6 +6,16 @@
 #include "settings.h"
 
 bool setupRequired(bool hasWifi, bool hasToken);
+
+enum class SetupReason { NoConfig, Button, TokenRejected };
+
+struct SetupMode {
+  bool keepToken;
+  bool idleExit;
+};
+
+SetupMode setupModeFor(SetupReason reason, bool hasStoredToken);
+const char* setupReasonName(SetupReason reason);
 std::string normalizePairingCode(const std::string& code);
 
 enum class SetupError { None, SsidRequired, PasswordTooLong, CodeFormat, CodeRequired };

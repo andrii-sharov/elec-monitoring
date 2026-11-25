@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { act } from 'react';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
@@ -32,6 +32,7 @@ test('an online device shows badge, since and signal', async () => {
         deviceFixture({
           state: 'ONLINE',
           state_since: '2026-11-21T16:42:00Z',
+          last_seen_at: '2026-11-21T18:41:30Z',
           telemetry: { rssi: -61, uptime_s: 9420, reset_reason: 'POWER_ON' },
         }),
       ),
@@ -43,6 +44,42 @@ test('an online device shows badge, since and signal', async () => {
   expect(screen.getByText(/since 21 Nov 18:42/)).toBeInTheDocument();
   expect(screen.getByText(/-61 dBm/)).toBeInTheDocument();
   expect(screen.getByText(/2 h 37 min/)).toBeInTheDocument();
+});
+
+test('last seen and uptime tick every second while online', async () => {
+  server.use(
+    http.get(`${base}/api/v1/devices/${id}`, () =>
+      HttpResponse.json(
+        deviceFixture({
+          state: 'ONLINE',
+          last_seen_at: '2026-11-21T18:41:50Z',
+          telemetry: { rssi: -61, uptime_s: 100, reset_reason: 'POWER_ON' },
+        }),
+      ),
+    ),
+  );
+  renderRoute(`/devices/${id}`, { me: meFixture() });
+  expect(await screen.findByText('Last seen 21 Nov 20:41 · 10 s')).toBeInTheDocument();
+  expect(screen.getByText('Uptime 1 min 50 s')).toBeInTheDocument();
+  await act(() => vi.advanceTimersByTimeAsync(1000));
+  expect(screen.getByText('Last seen 21 Nov 20:41 · 11 s')).toBeInTheDocument();
+  expect(screen.getByText('Uptime 1 min 51 s')).toBeInTheDocument();
+});
+
+test('an offline device keeps the last reported uptime', async () => {
+  server.use(
+    http.get(`${base}/api/v1/devices/${id}`, () =>
+      HttpResponse.json(
+        deviceFixture({
+          state: 'OFFLINE',
+          last_seen_at: '2026-11-21T18:30:00Z',
+          telemetry: { rssi: -61, uptime_s: 100, reset_reason: 'POWER_ON' },
+        }),
+      ),
+    ),
+  );
+  renderRoute(`/devices/${id}`, { me: meFixture() });
+  expect(await screen.findByText('Uptime 1 min 40 s')).toBeInTheDocument();
 });
 
 test('an offline device shows the open outage start', async () => {
@@ -92,4 +129,52 @@ test('a failed background poll keeps the page and unsaved settings', async () =>
   expect(calls).toBeGreaterThan(1);
   expect(screen.getByRole('heading', { name: /Home/ })).toBeInTheDocument();
   expect(screen.getByLabelText('Name')).toHaveValue('Home edited');
+});
+
+test('has a link back to the devices list', async () => {
+  server.use(http.get(`${base}/api/v1/devices/${id}`, () => HttpResponse.json(deviceFixture())));
+  renderRoute(`/devices/${id}`, { me: meFixture() });
+  expect(await screen.findByRole('link', { name: 'Back to devices' })).toHaveAttribute(
+    'href',
+    '/devices',
+  );
+});
+
+test('a pending device shows setup at the top with a new pairing code', async () => {
+  server.use(
+    http.get(`${base}/api/v1/devices/${id}`, () =>
+      HttpResponse.json(deviceFixture({ state: 'PENDING', last_seen_at: null })),
+    ),
+    http.post(`${base}/api/v1/devices/${id}/pairing-code`, () =>
+      HttpResponse.json(
+        { pairing_code: 'K7Q2M9XD', pairing_code_expires_at: '2026-11-21T19:12:00Z' },
+        { status: 201 },
+      ),
+    ),
+  );
+  const { user } = renderRoute(`/devices/${id}`, { me: meFixture() });
+  const setup = await screen.findByRole('region', { name: 'Finish setting up' });
+  const timeline = screen.getByRole('region', { name: 'Timeline' });
+  expect(setup.compareDocumentPosition(timeline) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(within(setup).getByRole('button', { name: 'Flash firmware' })).toBeInTheDocument();
+  await user.click(within(setup).getByRole('button', { name: 'Get pairing code' }));
+  expect(await within(setup).findByText('K7Q2 M9XD')).toBeInTheDocument();
+});
+
+test('a viewer of a pending device sees no setup', async () => {
+  server.use(
+    http.get(`${base}/api/v1/devices/${id}`, () =>
+      HttpResponse.json(deviceFixture({ state: 'PENDING', role: 'VIEWER', last_seen_at: null })),
+    ),
+  );
+  renderRoute(`/devices/${id}`, { me: meFixture() });
+  await screen.findByRole('region', { name: 'Timeline' });
+  expect(screen.queryByRole('region', { name: 'Finish setting up' })).toBeNull();
+});
+
+test('an online device shows no setup', async () => {
+  server.use(http.get(`${base}/api/v1/devices/${id}`, () => HttpResponse.json(deviceFixture())));
+  renderRoute(`/devices/${id}`, { me: meFixture() });
+  await screen.findByRole('region', { name: 'Timeline' });
+  expect(screen.queryByRole('region', { name: 'Finish setting up' })).toBeNull();
 });

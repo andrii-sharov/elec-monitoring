@@ -1,11 +1,11 @@
-import { PlugZap, Plus, RotateCw } from 'lucide-react';
+import { PlugZap, Plus, RotateCw, Usb } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useDevices } from '@/api/queries';
 import { useSession } from '@/api/session';
 import { useAppStyle } from '@/appStyles/AppStyleProvider';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage } from '@/forms/errorMessage';
@@ -30,7 +30,13 @@ export function DevicesPage() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-heading text-2xl font-semibold">{t('app.devices.title')}</h1>
-        {addButton}
+        <div className="flex flex-wrap gap-2">
+          <Link to="/flash" viewTransition className={buttonVariants({ variant: 'outline' })}>
+            <Usb aria-hidden="true" />
+            {t('app.flash.title')}
+          </Link>
+          {addButton}
+        </div>
       </div>
       {verified ? null : (
         <p className="text-sm text-muted-foreground">{t('app.devices.addNeedsVerified')}</p>

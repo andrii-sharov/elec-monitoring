@@ -182,12 +182,25 @@ test('a poll error is shown instead of waiting forever', async () => {
   expect(screen.queryByText('Waiting for the device to connect…')).toBeNull();
 });
 
-test('the pairing step links to the flash page in a new tab', async () => {
+test('the flash button opens the flasher in place and keeps the code', async () => {
   handlers();
-  const { user } = renderRoute('/devices/new', { me: meFixture() });
+  const { user, router } = renderRoute('/devices/new', { me: meFixture() });
   await createHome(user);
-  const link = await screen.findByRole('link', { name: 'Flash firmware first' });
-  expect(link).toHaveAttribute('href', '/flash');
-  expect(link).toHaveAttribute('target', '_blank');
-  expect(link).toHaveAttribute('rel', 'noopener');
+  const flash = await screen.findByRole('button', { name: 'Flash firmware' });
+  expect(flash).toHaveAttribute('aria-expanded', 'false');
+  await user.click(flash);
+  expect(flash).toHaveAttribute('aria-expanded', 'true');
+  expect(
+    screen.getByText('Plug the board in with a USB cable that carries data.'),
+  ).toBeInTheDocument();
+  expect(screen.getByText('K7Q2 M9XD')).toBeInTheDocument();
+  expect(router.state.location.pathname).toBe('/devices/new');
+});
+
+test('has a link back to the devices list', async () => {
+  renderRoute('/devices/new', { me: meFixture() });
+  expect(await screen.findByRole('link', { name: 'Back to devices' })).toHaveAttribute(
+    'href',
+    '/devices',
+  );
 });

@@ -109,3 +109,12 @@ test('a failed background poll keeps the list', async () => {
   expect(calls).toBeGreaterThan(1);
   expect(screen.getByRole('link', { name: /Home/ })).toBeInTheDocument();
 });
+
+test('links to the flash firmware page', async () => {
+  devicesHandler([]);
+  renderRoute('/devices', { me: meFixture() });
+  expect(await screen.findByRole('link', { name: 'Flash firmware' })).toHaveAttribute(
+    'href',
+    '/flash',
+  );
+});

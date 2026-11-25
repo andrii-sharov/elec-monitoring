@@ -222,15 +222,16 @@ void onStatusChange() {
 }
 }  // namespace
 
-void begin(const StoredConfig& config, bool byButton, uint64_t nowMs) {
-  hasToken = !config.token.empty();
+void begin(const StoredConfig& config, SetupReason reason, uint64_t nowMs) {
+  SetupMode mode = setupModeFor(reason, !config.token.empty());
+  hasToken = mode.keepToken;
   flow = std::make_unique<SetupFlow>(hasToken);
-  if (byButton) flow->enableIdleExit(nowMs);
+  if (mode.idleExit) flow->enableIdleExit(nowMs);
 
   std::string name = net::apName();
   net::beginAccessPoint(name);
   networks = net::scan();
-  Serial.printf("setup mode %s (%s)\n", name.c_str(), byButton ? "button" : "no config");
+  Serial.printf("setup mode %s (%s)\n", name.c_str(), setupReasonName(reason));
 
   dns.setErrorReplyCode(DNSReplyCode::NoError);
   dns.start(53, "*", WiFi.softAPIP());

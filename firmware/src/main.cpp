@@ -70,10 +70,10 @@ void startWatchdog() {
   esp_task_wdt_add(nullptr);
 }
 
-void enterSetup(bool byButton, uint64_t nowMs) {
+void enterSetup(SetupReason reason, uint64_t nowMs) {
   setupMode = true;
   wifiLog.setPlanned(true);
-  portal::begin(config, byButton, nowMs);
+  portal::begin(config, reason, nowMs);
 }
 
 void logCheckIn(const PreparedCheckIn& sent, const api::Response& response,
@@ -87,7 +87,7 @@ void logCheckIn(const PreparedCheckIn& sent, const api::Response& response,
                     static_cast<unsigned>(sent.seq), static_cast<unsigned>(sent.eventIds.size()));
     }
   } else if (outcome == CheckInOutcome::Unauthorized) {
-    Serial.printf("%s -> %d, re-pair the device\n", type, response.status);
+    Serial.printf("%s -> %d, token rejected\n", type, response.status);
   } else {
     uint64_t waitMs = scheduler->nextAtMs() - devclock::nowMs();
     Serial.printf("%s -> %d, retry in %u s\n", type, response.status,
@@ -123,6 +123,7 @@ void runCheckIns(uint64_t nowMs) {
       client->complete(*prepared, response.status, response.retryAfterS, doneMs, net::wifiUp());
   logCheckIn(*prepared, response, outcome);
   if (outcome == CheckInOutcome::Accepted) led::flash(doneMs);
+  if (outcome == CheckInOutcome::Unauthorized) enterSetup(SetupReason::TokenRejected, doneMs);
 }
 
 void logHeap(uint64_t nowMs) {
@@ -144,7 +145,7 @@ void setup() {
   if (setupRequired(!config.ssid.empty(), !config.token.empty())) {
     Serial.printf("boot fw %s server %s reason %s ota key %s\n", FW_VERSION, SERVER_URL,
                   resetReasonName(reason), otaKeyFingerprint().c_str());
-    enterSetup(false, devclock::nowMs());
+    enterSetup(SetupReason::NoConfig, devclock::nowMs());
     return;
   }
 
@@ -170,12 +171,12 @@ void loop() {
   if (button::heldLongEnough(nowMs)) {
     led::show(LedPattern::Held, nowMs);
     delay(kHeldLedMs);
-    enterSetup(true, devclock::nowMs());
+    enterSetup(SetupReason::Button, devclock::nowMs());
     return;
   }
 
   runCheckIns(nowMs);
-  led::show(ledPatternFor({false, net::wifiUp(), scheduler->unauthorized(), scheduler->lastFailed()}),
-            nowMs);
+  if (setupMode) return;
+  led::show(ledPatternFor({false, net::wifiUp(), scheduler->lastFailed()}), nowMs);
   delay(kLoopDelayMs);
 }

@@ -9,12 +9,12 @@ type StateDurationProps = {
   className?: string;
 };
 
-export const stateDurationTickMs = 30_000;
+export const liveTickMs = 1000;
 
 export function useLiveDuration(since: string): string {
   const format = useFormatters();
-  const now = useNow(stateDurationTickMs);
-  return format.duration((now - new Date(since).getTime()) / 1000);
+  const now = useNow(liveTickMs);
+  return format.duration((now - new Date(since).getTime()) / 1000, { withSeconds: true });
 }
 
 function useStateDurationText(state: DeviceState, since: string): string {

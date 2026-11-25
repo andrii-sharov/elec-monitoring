@@ -43,3 +43,8 @@ test('lists the steps', async () => {
   ).toBeInTheDocument();
   expect(screen.getByText(/ElecMonitor-XXXX/)).toBeInTheDocument();
 });
+
+test('has a back link to the devices list when opened directly', async () => {
+  renderRoute('/flash', { me: meFixture() });
+  expect(await screen.findByRole('link', { name: 'Back' })).toHaveAttribute('href', '/devices');
+});

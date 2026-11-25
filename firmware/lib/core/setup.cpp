@@ -36,6 +36,22 @@ SetupStatus wifiFailure(uint16_t reason) {
 
 bool setupRequired(bool hasWifi, bool hasToken) { return !hasWifi || !hasToken; }
 
+SetupMode setupModeFor(SetupReason reason, bool hasStoredToken) {
+  return {reason == SetupReason::Button && hasStoredToken, reason != SetupReason::NoConfig};
+}
+
+const char* setupReasonName(SetupReason reason) {
+  switch (reason) {
+    case SetupReason::NoConfig:
+      return "no config";
+    case SetupReason::Button:
+      return "button";
+    case SetupReason::TokenRejected:
+      return "token rejected";
+  }
+  return "unknown";
+}
+
 std::string normalizePairingCode(const std::string& code) {
   std::string out;
   for (char c : code) {

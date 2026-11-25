@@ -12,13 +12,18 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-test('online shows how long the power has been on and keeps ticking', async () => {
+test('online shows how long the power has been on and ticks every minute', async () => {
   renderInApp(<StateDuration state="ONLINE" since="2026-11-21T15:30:00Z" />);
   expect(await screen.findByText('Power on for 3 h 12 min')).toBeInTheDocument();
-  await act(() => vi.advanceTimersByTimeAsync(30_000));
-  expect(screen.getByText('Power on for 3 h 12 min')).toBeInTheDocument();
-  await act(() => vi.advanceTimersByTimeAsync(30_000));
+  await act(() => vi.advanceTimersByTimeAsync(60_000));
   expect(screen.getByText('Power on for 3 h 13 min')).toBeInTheDocument();
+});
+
+test('under an hour it shows seconds and ticks every second', async () => {
+  renderInApp(<StateDuration state="ONLINE" since="2026-11-21T18:29:30Z" />);
+  expect(await screen.findByText('Power on for 12 min 30 s')).toBeInTheDocument();
+  await act(() => vi.advanceTimersByTimeAsync(1000));
+  expect(screen.getByText('Power on for 12 min 31 s')).toBeInTheDocument();
 });
 
 test('offline shows how long there has been no contact', async () => {

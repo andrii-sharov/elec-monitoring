@@ -138,8 +138,9 @@ only sends emails.
 
 ### Firmware
 
-- **Setup mode (captive portal).** On first boot (or after holding the
-  BOOT button for 5 s) the ESP starts its own Wi-Fi network
+- **Setup mode (captive portal).** On first boot, after holding the
+  BOOT button for 5 s, or when the server rejects its token (`401`) the
+  ESP starts its own Wi-Fi network
   `ElecMonitor-XXXX`. The user connects with a phone, a setup page opens,
   and they enter:
   - home Wi-Fi name and password,
@@ -609,6 +610,15 @@ Polling pauses in hidden tabs: devices list every 30 s, device page every
 15 s, add-device wizard every 3 s while the device is `PENDING`, Telegram
 connect every 3 s until a new channel appears or the link expires.
 
+Live times tick every second between polls: how long the state has lasted,
+last seen and uptime (an `ONLINE` device adds the time since its last
+check-in to the reported uptime). Under an hour they show seconds
+(`12 min 5 s`).
+
+Pages below the top navigation (Device, Add device, Flash firmware) have a
+back link at the top: Device and Add device go to Devices, Flash firmware
+goes back in history, or to Devices when opened directly.
+
 Pages:
 
 - **Sign up / Log in / Google sign-in / Verify email / Reset password**
@@ -619,9 +629,10 @@ Pages:
   every `next`). It happens once per browser.
 - **Devices** — rendered by the app style's `DeviceSummary`: state with
   a status mark and its text, how long the state has lasted, last seen;
-  shared devices marked.
+  shared devices marked. The header links to Flash firmware next to Add
+  device.
 - **Device** — the app style's `DeviceHero` on top: in Sonar, Switchboard
-  and Lamp a live duration that ticks every 30 s ("Power on for 3 h 12 min",
+  and Lamp a live duration that ticks every second ("Power on for 3 h 12 min",
   "No contact for 25 min", "Waiting for the first check-in", "Updating"),
   and in Sonar and Switchboard a 7-day power strip built from the loaded
   outages (time before the oldest loaded outage is unknown while more
@@ -629,16 +640,21 @@ Pages:
   settings and their applied status, firmware version, update availability,
   Install button, automatic update setting, queued and running updates,
   update result, members & invites, channels, "re-pair", "rotate token",
-  "delete".
+  "delete". While the device is `PENDING`, the owner sees "Finish setting
+  up" right under the hero: a "Get pairing code" button (the code from
+  creation can't be shown again), the setup steps with the flash panel,
+  and the same polling as the wizard once a code exists.
 - **Add device** — wizard: name → pairing code → (flash) → wait for
-  first ping.
+  first ping. The flash step has a "Flash firmware" button that opens the
+  flash panel in place, so the pairing code stays on screen.
 - **Flash firmware** (`/flash`, signed in) — ESP Web Tools install button
   fed by `GET /api/v1/firmware/manifest.json`, with steps (plug in a data
   USB cable, Install and pick the port, then join `ElecMonitor-XXXX` from a
   phone). `esp-web-tools` loads with a dynamic import only on this page.
   Browsers without Web Serial see "Use Chrome or Edge on a computer"
-  instead of the button. The add-device wizard's pairing step links here
-  in a new tab, so the pairing code stays visible.
+  instead of the button. The same flash panel is embedded in the
+  add-device wizard and the device setup section. `esp-web-tools` loads
+  only when a flash panel is shown.
 - **Notifications** — connect platform Telegram bot, add own bot, add
   webhook, delivery log.
 - **API tokens** — create (shown once), list, revoke.
@@ -656,6 +672,13 @@ Pages:
   shows the same `too_small` message as the server. `auto_update` stays
   hidden until M11. While `settings_sync.pending` is true, the form shows
   "Waiting for the device to apply" in the warning color.
+- Re-pair opens a dialog with a new pairing code and the steps: hold
+  BOOT for 5 s to open the setup Wi-Fi, join `ElecMonitor-XXXX`, enter
+  Wi-Fi and the code. Claiming the code replaces the old token. The dialog
+  also offers "Disconnect the device now", which rotates the token so an
+  online device opens its setup Wi-Fi by itself at its next check-in.
+  Rotate token in the danger zone asks for confirmation, rotates, then
+  opens the same dialog with a new code.
 - Settings, re-pair, rotate token and delete render only for the device's
   owner. The timeline and the device's channel choice show for every role.
   The server still enforces access.
