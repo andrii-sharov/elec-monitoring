@@ -116,6 +116,11 @@ const matrix: Record<string, Row> = {
     path: (c) => `/api/v1/devices/${c.deviceId}/invites`,
     expect: { owner: 200, viewer: 403, stranger: 404 },
   },
+  'GET members': {
+    method: 'get',
+    path: (c) => `/api/v1/devices/${c.deviceId}/members`,
+    expect: { owner: 200, viewer: 200, stranger: 404 },
+  },
   'DELETE invite': {
     method: 'delete',
     path: (c) => `/api/v1/devices/${c.deviceId}/invites/${c.inviteId}`,

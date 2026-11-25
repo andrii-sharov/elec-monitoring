@@ -8,6 +8,8 @@ import {
   invitesSchema,
   inviteTokenParamsSchema,
   languageSchema,
+  memberParamsSchema,
+  membersSchema,
 } from '@elec/shared/api';
 import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import { Router } from 'express';
@@ -20,6 +22,7 @@ import { renderInviteEmail } from '../../email/templates.ts';
 import { createI18n } from '../../i18n.ts';
 import { AUTH_PER_IP, INVITE_PER_USER } from '../../rateLimit/limiter.ts';
 import { findDeviceView } from '../../devices/queries.ts';
+import { listMembers, removeMember } from '../../sharing/members.ts';
 import {
   acceptInvite,
   createInvite,
@@ -44,6 +47,36 @@ const json = (schema: z.ZodType) => ({ 'application/json': { schema } });
 const expired = errorResponse('`expired`: unknown, revoked or expired invite');
 
 export const sharingPaths: ZodOpenApiPathsObject = {
+  '/api/v1/devices/{id}/members': {
+    get: {
+      summary: 'List the owner and viewers',
+      description:
+        'Owner first, then viewers by join time. Emails are shown to the owner, and to each member for their own row.',
+      security: bearer,
+      requestParams: { path: deviceParamsSchema },
+      responses: {
+        '200': { description: 'Members', content: json(membersSchema) },
+        '401': unauthorized,
+        '404': deviceNotFound,
+      },
+    },
+  },
+  '/api/v1/devices/{id}/members/{userId}': {
+    delete: {
+      summary: 'Remove a viewer or leave',
+      description:
+        "The owner removes any viewer; a viewer removes only themselves. Also detaches the member's channels from the device.",
+      security: bearer,
+      requestParams: { path: memberParamsSchema },
+      responses: {
+        '204': { description: 'Removed' },
+        '401': unauthorized,
+        '403': errorResponse('`forbidden`: a viewer removing someone else'),
+        '404': errorResponse('Device or member not found'),
+        '409': errorResponse('The owner cannot be removed'),
+      },
+    },
+  },
   '/api/v1/devices/{id}/invites': {
     post: {
       summary: 'Invite a viewer by email',
@@ -123,6 +156,31 @@ export function sharingRouter(deps: AppDeps): Router {
   const { db, clock, logger, config } = deps;
   const i18n = createI18n();
   const auth = requireUser(deps);
+
+  router.get('/api/v1/devices/:id/members', auth, async (req, res) => {
+    const id = deviceIdParam(req);
+    const { user } = getAuth(res);
+    const { role } = await getAccessibleDevice(db, user.id, id, 'read');
+    res.json({ items: await listMembers(db, id, { id: user.id, role }) });
+  });
+
+  router.delete('/api/v1/devices/:id/members/:userId', auth, async (req, res) => {
+    const { id, userId } = memberParamsSchema.parse(req.params);
+    const { user } = getAuth(res);
+    await db.transaction(async (tx) => {
+      const access = await getAccessibleDevice(tx, user.id, id, 'read', { lock: true });
+      if (access.role === 'VIEWER' && userId !== user.id) {
+        throw new HttpError(403, 'forbidden', 'Viewers can only remove themselves');
+      }
+      if (userId === access.device.ownerId) {
+        throw new HttpError(409, 'conflict', 'The owner cannot be removed');
+      }
+      if (!(await removeMember(tx, id, userId))) {
+        throw new HttpError(404, 'not_found', 'Member not found');
+      }
+    });
+    res.status(204).end();
+  });
 
   router.post(
     '/api/v1/devices/:id/invites',

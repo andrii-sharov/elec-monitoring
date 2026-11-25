@@ -677,7 +677,26 @@ newest first:
   - When an account's email becomes verified (verification link, reset
     of an unverified account, Google sign-in), its pending, unexpired
     invites are accepted the same way, without calling this endpoint.
-- The owner cannot be removed with `DELETE /members`.
+- `GET /devices/:id/members` → `200 { "items": [...] }`, the owner first,
+  then viewers by join time:
+
+  ```json
+  {
+    "user_id": "…",
+    "name": "Johnny",
+    "email": "johnny@example.com",
+    "role": "OWNER",
+    "joined_at": "2026-11-21T14:02:00Z"
+  }
+  ```
+
+  `joined_at` of the owner is the device's creation time. `email` is shown
+  to the owner, and to each member for their own row; otherwise `null`.
+
+- `DELETE /devices/:id/members/:userId` → `204`. The owner removes any
+  viewer; a viewer removes only themselves (leave), else `403 forbidden`.
+  The owner cannot be removed (`409 conflict`). A user who isn't a viewer
+  → `404`. Removal also detaches the member's channels from the device.
 
 ### Notification channels
 
