@@ -15,6 +15,7 @@ import { CountryPicker } from './CountryPicker';
 import {
   applyEdit,
   defaultCountry,
+  examplePhone,
   stateFromValue,
   withCountry,
   type CountryCode,
@@ -32,6 +33,7 @@ export type PhoneTextFieldProps = {
   error?: HookFormError | undefined;
   disabled?: boolean | undefined;
   autoComplete?: string | undefined;
+  placeholder?: string | undefined;
 };
 
 function assignRef<T>(ref: Ref<T> | undefined, node: T | null) {
@@ -50,6 +52,7 @@ export function PhoneTextField({
   error,
   disabled,
   autoComplete,
+  placeholder,
 }: PhoneTextFieldProps) {
   const id = useId();
   const input = useRef<HTMLInputElement | null>(null);
@@ -117,6 +120,7 @@ export function PhoneTextField({
           spellCheck={false}
           disabled={disabled}
           aria-invalid={error ? true : undefined}
+          placeholder={placeholder ?? examplePhone(state.country)}
           value={state.display}
           onChange={handleChange}
           onBlur={onBlur}

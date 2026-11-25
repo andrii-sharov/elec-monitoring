@@ -13,6 +13,11 @@ type IdentifierFieldProps<T extends FieldValues> = Omit<
 export function IdentifierField<T extends FieldValues>(props: IdentifierFieldProps<T>) {
   const { t } = useTranslation();
   return (
-    <ControlledPhoneField mode="identifier" label={t('app.auth.phone.identifier')} {...props} />
+    <ControlledPhoneField
+      mode="identifier"
+      label={t('app.auth.phone.identifier')}
+      placeholder={t('app.placeholders.identifier')}
+      {...props}
+    />
   );
 }

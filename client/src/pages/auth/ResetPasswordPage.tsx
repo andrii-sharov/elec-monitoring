@@ -1,4 +1,4 @@
-import { resetBodySchema } from '@elec/shared/api';
+import { passwordSchema, resetBodySchema } from '@elec/shared/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -90,6 +90,7 @@ export function ResetPasswordPage() {
           label={t('app.auth.newPassword')}
           type="password"
           autoComplete="new-password"
+          placeholder={t('app.validation.too_small_string', { min: passwordSchema.minLength })}
           error={errors.password}
           {...register('password')}
         />

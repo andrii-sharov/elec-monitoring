@@ -48,6 +48,7 @@ export function PickerList<T extends string>({
         <Input
           type="search"
           aria-label={search.label}
+          placeholder={search.label}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />

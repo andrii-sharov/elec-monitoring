@@ -260,6 +260,11 @@ export const ru: Dictionary = {
         working: 'Завершаем вход…',
       },
     },
+    placeholders: {
+      identifier: 'name@example.com или 050 123 4567',
+      email: 'name@example.com',
+      deviceName: 'Например, Дом',
+    },
     phone: {
       country: 'Код страны: {{country}} {{code}}',
       search: 'Поиск страны или кода',

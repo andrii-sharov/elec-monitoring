@@ -1,9 +1,11 @@
 import {
   AsYouType,
   getCountryCallingCode,
+  getExampleNumber,
   parsePhoneNumberFromString,
   type CountryCode,
 } from 'libphonenumber-js';
+import examples from 'libphonenumber-js/mobile/examples';
 import metadata from 'libphonenumber-js/metadata.min.json';
 
 export type { CountryCode };
@@ -30,6 +32,10 @@ export function emptyState(country: CountryCode): FieldState {
 
 export function mainCountry(callingCode: string): CountryCode | undefined {
   return metadata.country_calling_codes[callingCode]?.[0] as CountryCode | undefined;
+}
+
+export function examplePhone(country: CountryCode): string {
+  return getExampleNumber(country, examples)?.formatNational() ?? '';
 }
 
 export function storedPhone(e164: string): string {

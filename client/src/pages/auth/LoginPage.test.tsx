@@ -119,6 +119,7 @@ test('a number formats as it is typed and shows the country', async () => {
   const { user } = renderRoute('/login');
   const field = await screen.findByLabelText('Email or phone');
   expect(screen.queryByRole('button', { name: /Country code/ })).not.toBeInTheDocument();
+  expect(field).toHaveAttribute('placeholder', 'name@example.com or 050 123 4567');
   await user.type(field, '0501234567');
   expect(field).toHaveValue('050 123 4567');
   expect(screen.getByRole('button', { name: 'Country code: Ukraine +380' })).toBeVisible();

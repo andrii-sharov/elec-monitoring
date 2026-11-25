@@ -65,6 +65,7 @@ test('the phone field always shows the country', async () => {
   const { user, section } = await renderSection(meFixture());
   await user.click(section.getByRole('button', { name: 'Add phone' }));
   expect(section.getByRole('button', { name: 'Country code: Ukraine +380' })).toBeVisible();
+  expect(section.getByLabelText('Phone number')).toHaveAttribute('placeholder', '050 123 4567');
   await user.type(section.getByLabelText('Phone number'), '05a01');
   expect(section.getByLabelText('Phone number')).toHaveValue('050 1');
 });

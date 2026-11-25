@@ -249,6 +249,11 @@ export const en = {
         working: 'Finishing sign-in…',
       },
     },
+    placeholders: {
+      identifier: 'name@example.com or 050 123 4567',
+      email: 'name@example.com',
+      deviceName: 'e.g. Home',
+    },
     phone: {
       country: 'Country code: {{country}} {{code}}',
       search: 'Search country or code',

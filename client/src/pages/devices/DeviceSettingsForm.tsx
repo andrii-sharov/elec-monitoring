@@ -183,7 +183,12 @@ export function DeviceSettingsForm({ device }: { device: Device }) {
         )}
       >
         <FormAlert message={formError} />
-        <TextField label={t('app.settings.name')} error={errors.name} {...register('name')} />
+        <TextField
+          label={t('app.settings.name')}
+          placeholder={t('app.placeholders.deviceName')}
+          error={errors.name}
+          {...register('name')}
+        />
         <TextField
           label={t('app.settings.pingInterval')}
           type="number"

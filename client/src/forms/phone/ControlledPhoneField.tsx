@@ -4,7 +4,7 @@ import { PhoneTextField, type PhoneTextFieldProps } from './PhoneTextField';
 
 export type ControlledPhoneFieldProps<T extends FieldValues> = Pick<
   PhoneTextFieldProps,
-  'mode' | 'label' | 'disabled' | 'autoComplete'
+  'mode' | 'label' | 'disabled' | 'autoComplete' | 'placeholder'
 > & {
   control: Control<T>;
   name: FieldPathByValue<T, string>;

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import {
   applyEdit,
   emptyState,
+  examplePhone,
   isPhoneLike,
   stateFromValue,
   storedPhone,
@@ -170,6 +171,11 @@ describe('stateFromValue', () => {
       display: 'mary@example.com',
     });
   });
+});
+
+test('examplePhone gives a national sample for the country', () => {
+  expect(examplePhone('UA')).toBe('050 123 4567');
+  expect(examplePhone('PL')).toBe('512 345 678');
 });
 
 test('storedPhone shows E.164 in international format', () => {

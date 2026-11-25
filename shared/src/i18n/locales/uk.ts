@@ -254,6 +254,11 @@ export const uk: Dictionary = {
         working: 'Завершуємо вхід…',
       },
     },
+    placeholders: {
+      identifier: 'name@example.com або 050 123 4567',
+      email: 'name@example.com',
+      deviceName: 'Наприклад, Дім',
+    },
     phone: {
       country: 'Код країни: {{country}} {{code}}',
       search: 'Пошук країни або коду',

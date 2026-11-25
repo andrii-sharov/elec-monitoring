@@ -151,6 +151,7 @@ export function SignupPage() {
           label={t('app.auth.password')}
           type="password"
           autoComplete="new-password"
+          placeholder={t('app.validation.too_small_string', { min: passwordSchema.minLength })}
           error={errors.password}
           {...register('password')}
         />

@@ -1,4 +1,4 @@
-import { changePasswordBodySchema } from '@elec/shared/api';
+import { changePasswordBodySchema, passwordSchema } from '@elec/shared/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -81,6 +81,7 @@ export function ChangePasswordForm() {
           label={t('app.account.newPassword')}
           type="password"
           autoComplete="new-password"
+          placeholder={t('app.validation.too_small_string', { min: passwordSchema.minLength })}
           error={errors.new_password}
           {...register('new_password')}
         />

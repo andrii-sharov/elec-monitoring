@@ -59,6 +59,7 @@ function NameStep({ onCreated }: { onCreated: (created: Created) => void }) {
       <TextField
         label={t('app.addDevice.nameLabel')}
         autoComplete="off"
+        placeholder={t('app.placeholders.deviceName')}
         error={errors.name}
         {...register('name')}
       />

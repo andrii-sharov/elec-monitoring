@@ -132,6 +132,7 @@ function AddForm({ kind, onAdded }: { kind: Kind; onAdded: (telegramUrl: string)
           label={t('app.auth.email')}
           type="email"
           autoComplete="email"
+          placeholder={t('app.placeholders.email')}
           error={errors.value}
           {...register('value')}
         />

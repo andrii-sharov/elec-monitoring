@@ -87,6 +87,12 @@ sign-up Email/Phone toggle goes away and every such field behaves the same.
   email. The shared `isEmailInput` (`@` check) is removed.
 - The client rejects an invalid number with "Enter a valid phone number"
   before sending, using the shared `normalizePhone`.
+- Placeholders: "Email or phone" shows `name@example.com or 050 123 4567`;
+  a phone field shows the selected country's sample number
+  (`libphonenumber-js/mobile/examples`); Add email shows `name@example.com`;
+  new-password fields show "At least 8 characters"; device name shows
+  "e.g. Home"; picker search boxes show their search label. Name, current
+  password, repeat password, numbers and times get none.
 - Flags load as one lazy chunk (`country-flag-icons/string/3x2`, about 50 kB
   gzipped) the first time a country chip renders.
 
@@ -117,3 +123,5 @@ sign-up Email/Phone toggle goes away and every such field behaves the same.
 7. Account → Add phone shows the chip from the start.
 8. Flags look right on Windows (not letters) and in dark theme.
 9. On a phone, the country list fits the screen and scrolls.
+10. Placeholders read well in uk, en and ru and disappear once typing starts;
+    the phone sample changes when another country is picked.
