@@ -40,3 +40,18 @@ export function renderEmail(i18n: i18n, kind: EmailKind, vars: Vars): RenderedEm
   const html = layout({ intro, action, link: vars.link, notes });
   return { subject, text, html };
 }
+
+export function renderInviteEmail(
+  i18n: i18n,
+  vars: { lang: Language; inviter: string; device: string; link: string },
+): RenderedEmail {
+  const t = i18n.getFixedT(vars.lang);
+  const names = { inviter: vars.inviter, device: vars.device };
+  const subject = t('email.deviceInvite.subject', names);
+  const intro = t('email.deviceInvite.intro', names);
+  const action = t('email.deviceInvite.action');
+  const notes = [t('email.deviceInvite.expiry'), t('email.footer')];
+  const text = [intro, '', `${action}:`, vars.link, '', ...notes].join('\n');
+  const html = layout({ intro, action, link: vars.link, notes });
+  return { subject, text, html };
+}

@@ -29,6 +29,13 @@ export const en = {
         'Hi {{name}}, someone tried to create an Electricity Monitor account with this email address, but you already have one. If you forgot your password, reset it on the login page.',
       action: 'Log in',
     },
+    deviceInvite: {
+      subject: '{{inviter}} shared {{device}} with you',
+      intro:
+        '{{inviter}} invited you to see the status of {{device}} in Electricity Monitor and get its alerts.',
+      action: 'Open invite',
+      expiry: 'This invite is valid for 7 days.',
+    },
   },
   telegram: {
     offline: {

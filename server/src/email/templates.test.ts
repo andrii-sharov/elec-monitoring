@@ -1,7 +1,7 @@
 import { languages, resources } from '@elec/shared';
 import { describe, expect, test } from 'vitest';
 import { createI18n } from '../i18n.ts';
-import { renderEmail, type EmailKind } from './templates.ts';
+import { renderEmail, renderInviteEmail, type EmailKind } from './templates.ts';
 
 const kinds: EmailKind[] = ['verifyEmail', 'resetPassword', 'accountExists'];
 const link = 'https://app.test/verify-email?token=abc&x=1';
@@ -34,4 +34,50 @@ test('escapes HTML in the name but keeps the text part as-is', () => {
   expect(email.html).toContain('&lt;b&gt;John&lt;/b&gt; &amp; co');
   expect(email.html).not.toContain('<b>John');
   expect(email.text).toContain('<b>John</b> & co');
+});
+
+describe('renderInviteEmail', () => {
+  const inviteLink = 'https://app.test/invite?token=abc';
+
+  test('renders the English invite', () => {
+    const email = renderInviteEmail(i18n, {
+      lang: 'en',
+      inviter: 'John',
+      device: 'Home',
+      link: inviteLink,
+    });
+    expect(email.subject).toBe('John shared Home with you');
+    expect(email.text).toContain(
+      'John invited you to see the status of Home in Electricity Monitor and get its alerts.',
+    );
+    expect(email.text).toContain(`Open invite:\n${inviteLink}`);
+    expect(email.text).toContain('This invite is valid for 7 days.');
+    expect(email.text).toContain(resources.en.translation.email.footer);
+  });
+
+  test.each(['uk', 'ru'] as const)('renders %s in its own language', (lang) => {
+    const email = renderInviteEmail(i18n, {
+      lang,
+      inviter: 'John',
+      device: 'Home',
+      link: inviteLink,
+    });
+    expect(email.subject).not.toBe('John shared Home with you');
+    expect(email.subject).toContain('John');
+    expect(email.subject).toContain('Home');
+    expect(email.text).toContain(inviteLink);
+  });
+
+  test('escapes the device and inviter names in HTML only', () => {
+    const email = renderInviteEmail(i18n, {
+      lang: 'en',
+      inviter: 'John 🔌',
+      device: '<b>Дім & "Home"',
+      link: inviteLink,
+    });
+    expect(email.html).toContain('&lt;b&gt;Дім &amp; &quot;Home&quot;');
+    expect(email.html).not.toContain('<b>');
+    expect(email.html).toContain('John 🔌');
+    expect(email.text).toContain('<b>Дім & "Home"');
+  });
 });
