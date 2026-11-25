@@ -32,7 +32,7 @@ Status: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 | M3  | [Worker and platform bot](#m3--worker-and-platform-telegram-bot)      | ✅     | M2         | [M03](plans/M03-worker-telegram.md)                              |
 | M4  | [Client app](#m4--client-app)                                         | ✅     | M3         | [M04](plans/M04-client.md) · [M04a](plans/M04a-client-styles.md) |
 | M5  | [Firmware core and device setup](#m5--firmware-core-and-device-setup) | ✅     | M2         | [M05](plans/M05-firmware.md)                                     |
-| M6  | [Sharing](#m6--sharing)                                               | ⬜     | M4         | —                                                                |
+| M6  | [Sharing](#m6--sharing)                                               | ⬜     | M4         | [M06](plans/M06-sharing.md)                                      |
 | M7  | [API tokens and public API](#m7--api-tokens-and-public-rest-api)      | ⬜     | M4         | —                                                                |
 | M8  | [Own bot and webhooks](#m8--own-telegram-bot-and-webhooks)            | ⬜     | M4         | —                                                                |
 | M9  | [Statistics](#m9--statistics)                                         | ⬜     | M4         | —                                                                |
