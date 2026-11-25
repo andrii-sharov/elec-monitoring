@@ -20,6 +20,7 @@ beforeEach(() => {
     http.get(`${base}/api/v1/devices/${id}/outages`, () =>
       HttpResponse.json({ items: [], next_cursor: null }),
     ),
+    http.get(`${base}/api/v1/devices/${id}/members`, () => HttpResponse.json({ items: [] })),
   );
 });
 

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage } from '@/forms/errorMessage';
 import { DeviceChannels } from './DeviceChannels';
+import { DeviceMembers } from './DeviceMembers';
 import { DeviceSettingsDialog } from './DeviceSettingsDialog';
 import { DeviceSetup } from './DeviceSetup';
 import { OutageTimeline } from './OutageTimeline';
@@ -91,6 +92,7 @@ function DeviceContent() {
         <OutageTimeline deviceId={id} />
       </section>
       <DeviceChannels deviceId={id} />
+      <DeviceMembers device={data} />
     </div>
   );
 }

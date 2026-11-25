@@ -715,6 +715,12 @@ Pages:
 - Settings, re-pair, rotate token and delete render only for the device's
   owner. The timeline and the device's channel choice show for every role.
   The server still enforces access.
+- Members sit below the channels and show for every role: name, role, and
+  the email where the server returns it. The owner gets **Remove** per
+  viewer (with a confirmation), an invite form, and pending invites with
+  their expiry or "Expired", **Resend** and **Revoke**. At 10 viewers and
+  unexpired invites the form is disabled with a hint. A viewer gets
+  **Leave device** (with a confirmation), which returns to Devices.
 
 ### Admin app (React)
 
