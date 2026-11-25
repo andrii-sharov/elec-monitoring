@@ -12,9 +12,9 @@ export function SwitchboardDeviceSummary({ device }: DeviceSummaryProps) {
       viewTransition
       data-app-style-slot="switchboard"
       data-state={device.state}
-      className="switchboard-tile flex aspect-[4/5] flex-col items-center justify-between gap-3 rounded-(--radius) bg-card p-3 text-center text-card-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      className="switchboard-tile flex h-full flex-col items-center justify-center gap-4 rounded-(--radius) bg-card px-3 py-6 text-center text-card-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
     >
-      <SwitchboardStatusMark state={device.state} lastSeenAt={device.last_seen_at} />
+      <SwitchboardStatusMark state={device.state} lastSeenAt={device.last_seen_at} size="lg" />
       <span className="flex w-full flex-col items-center gap-1">
         <span className="w-full truncate font-heading text-sm font-medium tracking-wide uppercase">
           {device.name}
