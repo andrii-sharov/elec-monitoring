@@ -228,7 +228,13 @@ export function sharingRouter(deps: AppDeps): Router {
     await getAccessibleDevice(db, getAuth(res).user.id, id, 'manage');
     const deleted = await db
       .delete(deviceInvite)
-      .where(and(eq(deviceInvite.id, inviteId), eq(deviceInvite.deviceId, id)))
+      .where(
+        and(
+          eq(deviceInvite.id, inviteId),
+          eq(deviceInvite.deviceId, id),
+          isNull(deviceInvite.acceptedAt),
+        ),
+      )
       .returning({ id: deviceInvite.id });
     if (deleted.length === 0) throw new HttpError(404, 'not_found', 'Invite not found');
     res.status(204).end();

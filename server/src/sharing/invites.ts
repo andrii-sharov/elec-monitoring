@@ -1,6 +1,6 @@
 import type { DeviceRole } from '@elec/shared';
 import type { Invite } from '@elec/shared/api';
-import { and, count, eq, gt, isNull, ne, sql } from 'drizzle-orm';
+import { and, asc, count, eq, gt, inArray, isNull, ne, sql } from 'drizzle-orm';
 import type { Clock } from '../clock.ts';
 import type { Executor, Tx } from '../db/client.ts';
 import { appUser, device, deviceInvite, deviceViewer } from '../db/schema/index.ts';
@@ -129,19 +129,28 @@ export async function acceptInvite(
   user: Invitee,
 ): Promise<{ deviceId: string; role: DeviceRole }> {
   const now = clock.now();
-  const [row] = await tx
-    .select({ invite: deviceInvite, ownerId: device.ownerId })
+  const tokenHash = sha256(token);
+  const [found] = await tx
+    .select({ deviceId: deviceInvite.deviceId })
     .from(deviceInvite)
-    .innerJoin(device, eq(device.id, deviceInvite.deviceId))
-    .where(eq(deviceInvite.tokenHash, sha256(token)))
-    .for('update', { of: deviceInvite });
-  if (!row || isExpired(row.invite, now)) throw gone();
-  const { invite } = row;
+    .where(eq(deviceInvite.tokenHash, tokenHash));
+  if (!found) throw gone();
+  const [owner] = await tx
+    .select({ ownerId: device.ownerId })
+    .from(device)
+    .where(eq(device.id, found.deviceId))
+    .for('update');
+  const [invite] = await tx
+    .select()
+    .from(deviceInvite)
+    .where(eq(deviceInvite.tokenHash, tokenHash))
+    .for('update');
+  if (!owner || !invite || isExpired(invite, now)) throw gone();
   if (invite.email !== user.email.toLowerCase()) {
     throw new HttpError(403, 'forbidden', 'This invite is for another email address');
   }
   const deviceId = invite.deviceId;
-  if (row.ownerId === user.id) {
+  if (owner.ownerId === user.id) {
     if (!invite.acceptedAt) {
       await tx.update(deviceInvite).set({ acceptedAt: now }).where(eq(deviceInvite.id, invite.id));
     }
@@ -159,18 +168,30 @@ export async function acceptInvite(
 
 export async function applyPendingInvites(tx: Tx, clock: Clock, user: Invitee): Promise<string[]> {
   const now = clock.now();
+  const pendingFor = () =>
+    and(
+      eq(deviceInvite.email, user.email.toLowerCase()),
+      isNull(deviceInvite.acceptedAt),
+      gt(deviceInvite.expiresAt, now),
+      ne(device.ownerId, user.id),
+    );
+  const candidates = await tx
+    .select({ deviceId: deviceInvite.deviceId })
+    .from(deviceInvite)
+    .innerJoin(device, eq(device.id, deviceInvite.deviceId))
+    .where(pendingFor());
+  if (candidates.length === 0) return [];
+  await tx
+    .select({ id: device.id })
+    .from(device)
+    .where(inArray(device.id, [...new Set(candidates.map((c) => c.deviceId))]))
+    .orderBy(asc(device.id))
+    .for('update');
   const pending = await tx
     .select({ id: deviceInvite.id, deviceId: deviceInvite.deviceId })
     .from(deviceInvite)
     .innerJoin(device, eq(device.id, deviceInvite.deviceId))
-    .where(
-      and(
-        eq(deviceInvite.email, user.email.toLowerCase()),
-        isNull(deviceInvite.acceptedAt),
-        gt(deviceInvite.expiresAt, now),
-        ne(device.ownerId, user.id),
-      ),
-    )
+    .where(pendingFor())
     .for('update', { of: deviceInvite });
   for (const invite of pending) {
     await tx.update(deviceInvite).set({ acceptedAt: now }).where(eq(deviceInvite.id, invite.id));

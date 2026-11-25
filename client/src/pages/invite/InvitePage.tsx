@@ -73,6 +73,7 @@ function useAcceptInvite(token: string | null) {
     onSuccess: (device) => {
       queryClient.setQueryData(queryKeys.device(device.id), device);
       void queryClient.invalidateQueries({ queryKey: queryKeys.devices });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.me });
       toast.success(t('app.invite.accepted', { device: device.name }));
       void navigate(`/devices/${device.id}`);
     },

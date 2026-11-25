@@ -37,7 +37,7 @@ Each task records its decisions in the spec. Task 9 marks them in the ROADMAP.
    - The email goes in the recipient account's `language`, or `uk` without an account. Link: `${urls.client}/invite?token=<token>`.
 4. **Invite object** `{ id, email, expires_at, created_at }`. `GET /devices/:id/invites` → `{ items }`, pending invites (`accepted_at is null`) including expired ones, oldest first. `DELETE /devices/:id/invites/:inviteId` → `204`. An unknown invite or one from another device → `404`.
 5. **Preview** `GET /invites/:token` (public, `AUTH_PER_IP`) → `200 { device_name, inviter_name, email, expires_at, accepted }`. An unknown, revoked or expired token → `410 expired`. An accepted invite before `expires_at` → `200` with `accepted: true`, so the page still renders after an auto-accept.
-6. **Accept** `POST /invites/:token/accept` (JWT, email need **not** be verified) → `200 Device`. In one transaction, the invite row locked:
+6. **Accept** `POST /invites/:token/accept` (JWT, email need **not** be verified) → `200 Device`. In one transaction, the device row locked first, then the invite row (D §9 lock order; `applyPendingInvites` locks its devices by ID first too):
    - Unknown or expired → `410`. Caller email ≠ invite email → `403 forbidden`.
    - Already accepted: caller is a viewer of the device → `200` with the device (idempotent). Otherwise → `410`.
    - Caller owns the device → mark accepted and return the device as `OWNER`, no viewer row.

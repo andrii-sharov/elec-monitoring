@@ -115,3 +115,20 @@ test('accept 410 shows the expired message', async () => {
   await user.click(await screen.findByRole('button', { name: 'Accept' }));
   expect(await screen.findByRole('heading', { name: 'Invite expired' })).toBeVisible();
 });
+
+test('accepting refreshes the profile, so the verify banner goes away', async () => {
+  servePreview();
+  serveAccept();
+  server.use(
+    http.get(`${base}/api/v1/me`, () => HttpResponse.json({ ...mary, email_verified: true })),
+  );
+  const { user, router } = renderRoute('/invite?token=t1', {
+    me: { ...mary, email_verified: false },
+  });
+  await user.click(await screen.findByRole('button', { name: 'Accept' }));
+  await vi.waitFor(() => expect(router.state.location.pathname).toBe(`/devices/${shared.id}`));
+  await screen.findByRole('region', { name: 'Members' });
+  await vi.waitFor(() =>
+    expect(screen.queryByText(/Confirm your email address/)).not.toBeInTheDocument(),
+  );
+});

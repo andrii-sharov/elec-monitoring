@@ -214,6 +214,20 @@ describe('DELETE /api/v1/devices/:id/invites/:inviteId', () => {
     expect((await preview(seeded.token)).status).toBe(410);
   });
 
+  test('an invite accepted in the meantime is not found and stays accepted', async () => {
+    const seeded = await seedInvite(t.db, {
+      deviceId,
+      invitedBy: owner.id,
+      email: 'mary@example.com',
+      acceptedAt: new Date('2026-11-21T16:00:00Z'),
+    });
+    const res = await request(app())
+      .delete(`/api/v1/devices/${deviceId}/invites/${seeded.id}`)
+      .set('Authorization', ownerAuth);
+    expect(res.status).toBe(404);
+    expect(await t.db.select().from(deviceInvite)).toHaveLength(1);
+  });
+
   test('an invite of another device is not found', async () => {
     const other = await createDevice(t.db, owner.id, { name: 'Cottage' });
     const seeded = await seedInvite(t.db, {
