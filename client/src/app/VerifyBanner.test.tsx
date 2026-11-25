@@ -1,4 +1,5 @@
-import { screen } from '@testing-library/react';
+import { focusManager } from '@tanstack/react-query';
+import { screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { meFixture } from '../../test/fixtures.ts';
@@ -96,4 +97,19 @@ test('a phone account confirms its number in Telegram', async () => {
   expect(spy).toHaveBeenCalledWith({ phone: '+380501234567' });
   expect(open).toHaveBeenCalledWith(telegramUrl, '_blank', 'noopener,noreferrer');
   open.mockRestore();
+});
+
+test('coming back from Telegram refreshes the profile', async () => {
+  const me = meFixture({ email: null, email_verified: false, phone: '+380501234567' });
+  server.use(
+    http.get(`${base}/api/v1/me`, () => HttpResponse.json({ ...me, phone_verified: true })),
+  );
+  renderRoute('/devices', { me });
+  expect(await screen.findByText('Confirm your number in Telegram')).toBeInTheDocument();
+  focusManager.setFocused(false);
+  focusManager.setFocused(true);
+  await waitFor(() =>
+    expect(screen.queryByText('Confirm your number in Telegram')).not.toBeInTheDocument(),
+  );
+  focusManager.setFocused(undefined);
 });

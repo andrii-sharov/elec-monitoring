@@ -155,6 +155,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     queryFn: () => getMe(api),
     enabled: status === 'authenticated',
     staleTime: Infinity,
+    refetchOnWindowFocus: (query) => (query.state.data?.phone_verified ? false : 'always'),
   });
 
   const { i18n } = useTranslation();

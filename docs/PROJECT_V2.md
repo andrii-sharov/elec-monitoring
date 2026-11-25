@@ -783,7 +783,7 @@ shared Zod schemas through the `app.validation.*` keys.
 ## 10. Security
 
 - HTTPS everywhere, including the API on EC2 and the Vercel apps.
-- Passwords: argon2id. Email verification required.
+- Passwords: argon2id. A verified email or phone is required.
 - Refresh tokens rotated with reuse detection; access JWT 15 min.
 - Device tokens and refresh tokens: random 32 bytes, only SHA-256 hash
   stored.
