@@ -26,7 +26,7 @@ import type { AppDeps } from '../app.ts';
 import { HttpError, errorResponse } from '../errors.ts';
 import { rateLimit } from '../rateLimit.ts';
 import { authEmails } from './emails.ts';
-import { getAuth, requireUser, type User } from './middleware.ts';
+import { getAuth, isVerified, requireUser, type User } from './middleware.ts';
 
 const rateLimited = errorResponse('Too many requests, with `Retry-After`');
 const validation = errorResponse('Invalid body');
@@ -153,9 +153,10 @@ export function passwordRouter(deps: AppDeps): Router {
           }
           verified.phoneVerifiedAt = sql`coalesce(${appUser.phoneVerifiedAt}, ${now})`;
         }
+        const unlinkGoogle = isVerified(before) ? {} : { googleSub: null };
         await tx
           .update(appUser)
-          .set({ passwordHash, ...verified })
+          .set({ passwordHash, ...verified, ...unlinkGoogle })
           .where(eq(appUser.id, userId));
         await expireOneTimeTokens(tx, clock, userId, 'RESET_PASSWORD');
         await revokeUserSessions(tx, clock, userId);

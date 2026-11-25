@@ -42,11 +42,11 @@ export function SignInMethods({ me }: { me: Me }) {
           <Button variant="outline" disabled={unlink.isPending} onClick={() => unlink.mutate()}>
             {t('app.account.unlink')}
           </Button>
-        ) : (
+        ) : me.email_verified || me.phone_verified ? (
           <Button variant="outline" onClick={() => startGoogle('LINK', '/account')}>
             {t('app.account.link')}
           </Button>
-        )}
+        ) : null}
       </div>
     </section>
   );

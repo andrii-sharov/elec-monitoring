@@ -864,7 +864,7 @@
             }
           },
           "409": {
-            "description": "The number belongs to another account (`already_in_use`), or this account already has a phone",
+            "description": "Another account has confirmed the number (`already_in_use`), or this account already has a phone",
             "content": {
               "application/json": {
                 "schema": {

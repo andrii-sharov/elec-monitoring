@@ -45,6 +45,17 @@ export async function bindTelegramUser(
   await tx.update(appUser).set({ telegramUserId }).where(eq(appUser.id, userId));
 }
 
+async function releaseUnverifiedPhone(
+  tx: Tx,
+  holder: { id: string; email: string | null },
+): Promise<void> {
+  if (holder.email) {
+    await tx.update(appUser).set({ phone: null }).where(eq(appUser.id, holder.id));
+  } else {
+    await tx.delete(appUser).where(eq(appUser.id, holder.id));
+  }
+}
+
 export type ContactOutcome =
   | { kind: 'mismatch' }
   | { kind: 'numberInUse'; userId: string }
@@ -99,12 +110,13 @@ export async function confirmContact(
     }
 
     const [holder] = await tx
-      .select({ id: appUser.id })
+      .select()
       .from(appUser)
       .where(and(eq(appUser.phone, phone), ne(appUser.id, userId)));
-    if (holder) return { kind: 'numberInUse', userId };
+    if (holder?.phoneVerifiedAt) return { kind: 'numberInUse', userId };
     const [user] = await tx.select().from(appUser).where(eq(appUser.id, userId));
     if (!user || (user.phoneVerifiedAt && user.phone !== phone)) return mismatch;
+    if (holder) await releaseUnverifiedPhone(tx, holder);
 
     await applyPendingInvites(tx, clock, userId, { phone });
     await bindTelegramUser(tx, userId, telegramUserId);

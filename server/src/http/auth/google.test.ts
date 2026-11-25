@@ -323,3 +323,11 @@ test('an unverified phone account cannot link Google', async () => {
   const [row] = await t.db.select().from(appUser).where(eq(appUser.id, user.id));
   expect(row).toMatchObject({ email: null, googleSub: null });
 });
+
+test('an unverified email account cannot link Google', async () => {
+  const user = await createUser(t.db, { email: 'mary@example.com', emailVerifiedAt: null });
+  const res = await linkAs(user.id);
+  expect(res.headers.location).toBe('https://app.test/auth/google?error=google_failed');
+  const [row] = await t.db.select().from(appUser).where(eq(appUser.id, user.id));
+  expect(row?.googleSub).toBeNull();
+});

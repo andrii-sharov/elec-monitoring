@@ -126,11 +126,11 @@ export function googleRouter(deps: AppDeps): Router {
     if (user.googleSub) return { error: 'google_already_linked' };
     const [owner] = await db.select().from(appUser).where(eq(appUser.googleSub, identity.sub));
     if (owner) return { error: 'google_account_in_use' };
+    if (!isVerified(user)) return { error: 'google_failed' };
     if (user.email) {
       await db.update(appUser).set({ googleSub: identity.sub }).where(eq(appUser.id, userId));
       return {};
     }
-    if (!isVerified(user)) return { error: 'google_failed' };
     return db.transaction(async (tx): Promise<Outcome> => {
       const [emailOwner] = await tx
         .select({ id: appUser.id })

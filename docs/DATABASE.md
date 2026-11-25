@@ -207,6 +207,7 @@ create table one_time_token (
   purpose          text not null check (purpose in
                      ('VERIFY_EMAIL', 'RESET_PASSWORD', 'TELEGRAM_LINK',
                       'PHONE_VERIFY', 'PHONE_RECOVER')),
+  email            text check (email = lower(email)),
   phone            text,
   telegram_user_id bigint,
   expires_at       timestamptz not null,
@@ -221,7 +222,9 @@ create index one_time_token_telegram_user_idx on one_time_token (telegram_user_i
 
 - Lifetimes: `VERIFY_EMAIL` 24 h, `RESET_PASSWORD` 1 h, `TELEGRAM_LINK`
   15 min, `PHONE_VERIFY` 24 h, `PHONE_RECOVER` 1 h.
-- `phone` is the number the token is about. `telegram_user_id` is who
+- `email` is set on a `VERIFY_EMAIL` token for an email added to an
+  existing account; the account gets it only when the link is used.
+  `phone` is the number the token is about. `telegram_user_id` is who
   opened a phone code in the bot.
 - A used or expired token returns `410 expired`, so rows stay until cleanup
   (§10).

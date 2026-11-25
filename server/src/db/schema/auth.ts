@@ -74,6 +74,7 @@ export const oneTimeToken = pgTable(
       .notNull()
       .references(() => appUser.id, { onDelete: 'cascade' }),
     purpose: text().notNull(),
+    email: text(),
     phone: text(),
     telegramUserId: bigint({ mode: 'bigint' }),
     expiresAt: tstz().notNull(),
@@ -82,6 +83,7 @@ export const oneTimeToken = pgTable(
   },
   (t) => [
     check('one_time_token_token_hash_check', sql`octet_length(token_hash) = 32`),
+    check('one_time_token_email_check', sql`email = lower(email)`),
     check(
       'one_time_token_purpose_check',
       sql`purpose in ('VERIFY_EMAIL', 'RESET_PASSWORD', 'TELEGRAM_LINK', 'PHONE_VERIFY', 'PHONE_RECOVER')`,

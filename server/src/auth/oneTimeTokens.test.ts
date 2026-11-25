@@ -30,6 +30,7 @@ test('a token works once', async () => {
   const token = await issueOneTimeToken(t.db, clock, userId, 'VERIFY_EMAIL');
   expect(await consumeOneTimeToken(t.db, clock, token, 'VERIFY_EMAIL')).toEqual({
     userId,
+    email: null,
     phone: null,
   });
   expect(await consumeOneTimeToken(t.db, clock, token, 'VERIFY_EMAIL')).toBeNull();
@@ -41,6 +42,7 @@ test('VERIFY_EMAIL lasts 24 hours', async () => {
   clock.advance(86_400_000 - 1000);
   expect(await consumeOneTimeToken(t.db, clock, early, 'VERIFY_EMAIL')).toEqual({
     userId,
+    email: null,
     phone: null,
   });
   clock.advance(1000);
@@ -58,6 +60,7 @@ test('a token only works for its own purpose', async () => {
   expect(await consumeOneTimeToken(t.db, clock, token, 'RESET_PASSWORD')).toBeNull();
   expect(await consumeOneTimeToken(t.db, clock, token, 'VERIFY_EMAIL')).toEqual({
     userId,
+    email: null,
     phone: null,
   });
 });
@@ -75,6 +78,7 @@ test('expireOneTimeTokens invalidates every unused token of that purpose', async
   expect(await consumeOneTimeToken(t.db, clock, b, 'RESET_PASSWORD')).toBeNull();
   expect(await consumeOneTimeToken(t.db, clock, verify, 'VERIFY_EMAIL')).toEqual({
     userId,
+    email: null,
     phone: null,
   });
 });
@@ -87,7 +91,22 @@ test.each([
   const early = await issueOneTimeToken(t.db, clock, userId, purpose, { phone });
   const late = await issueOneTimeToken(t.db, clock, userId, purpose, { phone });
   clock.advance(ttl * 1000 - 1000);
-  expect(await consumeOneTimeToken(t.db, clock, early, purpose)).toEqual({ userId, phone });
+  expect(await consumeOneTimeToken(t.db, clock, early, purpose)).toEqual({
+    userId,
+    email: null,
+    phone,
+  });
   clock.advance(1000);
   expect(await consumeOneTimeToken(t.db, clock, late, purpose)).toBeNull();
+});
+
+test('VERIFY_EMAIL can carry the email it confirms', async () => {
+  const token = await issueOneTimeToken(t.db, clock, userId, 'VERIFY_EMAIL', {
+    email: 'mary@example.com',
+  });
+  expect(await consumeOneTimeToken(t.db, clock, token, 'VERIFY_EMAIL')).toEqual({
+    userId,
+    email: 'mary@example.com',
+    phone: null,
+  });
 });

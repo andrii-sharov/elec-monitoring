@@ -24,7 +24,7 @@ export async function issueOneTimeToken(
   clock: Clock,
   userId: string,
   purpose: OneTimePurpose,
-  opts: { phone?: string } = {},
+  opts: { email?: string; phone?: string } = {},
 ): Promise<string> {
   const token = randomToken();
   const now = clock.now();
@@ -32,6 +32,7 @@ export async function issueOneTimeToken(
     tokenHash: sha256(token),
     userId,
     purpose,
+    email: opts.email,
     phone: opts.phone,
     expiresAt: new Date(now.getTime() + ONE_TIME_TTL_S[purpose] * 1000),
     createdAt: now,
@@ -44,7 +45,7 @@ export async function consumeOneTimeToken(
   clock: Clock,
   token: string,
   purpose: OneTimePurpose,
-): Promise<{ userId: string; phone: string | null } | null> {
+): Promise<{ userId: string; email: string | null; phone: string | null } | null> {
   const now = clock.now();
   const [row] = await db
     .update(oneTimeToken)
@@ -57,7 +58,11 @@ export async function consumeOneTimeToken(
         gt(oneTimeToken.expiresAt, now),
       ),
     )
-    .returning({ userId: oneTimeToken.userId, phone: oneTimeToken.phone });
+    .returning({
+      userId: oneTimeToken.userId,
+      email: oneTimeToken.email,
+      phone: oneTimeToken.phone,
+    });
   return row ?? null;
 }
 

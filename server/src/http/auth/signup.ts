@@ -146,12 +146,24 @@ export function signupRouter(deps: AppDeps): Router {
         if (!consumed) return false;
         const { userId } = consumed;
         const [before] = await tx.select().from(appUser).where(eq(appUser.id, userId));
-        if (before?.email && !before.emailVerifiedAt) {
-          await applyPendingInvites(tx, clock, userId, { email: before.email });
+        if (!before) return false;
+        if (consumed.email !== null) {
+          if (before.email) return false;
+          const [holder] = await tx
+            .select({ id: appUser.id })
+            .from(appUser)
+            .where(eq(appUser.email, consumed.email));
+          if (holder) return false;
+        }
+        const email = consumed.email ?? before.email;
+        if (!email) return false;
+        if (!before.emailVerifiedAt) {
+          await applyPendingInvites(tx, clock, userId, { email });
         }
         await tx
           .update(appUser)
           .set({
+            email,
             emailVerifiedAt: sql`coalesce(${appUser.emailVerifiedAt}, ${clock.now().toISOString()}::timestamptz)`,
           })
           .where(eq(appUser.id, userId));

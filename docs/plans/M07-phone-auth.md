@@ -80,8 +80,9 @@ Identity storage: columns on `app_user` (chosen) instead of a separate identitie
    - `POST /api/auth/login` `{ email | phone, password }`. The per-identifier login limit applies to the phone too.
    - `POST /api/auth/forgot-password`: email unchanged (`204`). Phone → `200 { telegram_url }` always. An existing account gets a `PHONE_RECOVER` code in the URL and, with `telegram_user_id`, the bot pushes `resetLink` at once (a fresh `RESET_PASSWORD` token). No account → the URL holds an unstored random `p_` code.
    - `POST /api/auth/reset-password`: a token carrying a phone equal to the account's phone sets `phone_verified_at` (and auto-accepts phone invites if it was unverified) instead of `email_verified_at`. Still revokes all sessions.
-   - `POST /api/auth/phone` `{ phone }` (JWT) → `200 { telegram_url }` with a `PHONE_VERIFY` code carrying the number. Another account's number → `409 conflict` with detail `{ path: 'phone', code: 'already_in_use' }`. Own number already verified → `409 conflict` without details. Also the "resend" for an unverified phone account.
-   - `POST /api/auth/email` `{ email }` (JWT) → `204`. Account already has an email → `409 conflict`. Free email → set it (unverified) and send the verification email. Taken email → nothing set, the existing account gets the "account exists" email.
+   - `POST /api/auth/phone` `{ phone }` (JWT) → `200 { telegram_url }` with a `PHONE_VERIFY` code carrying the number. A number another account has **confirmed** → `409 conflict` with detail `{ path: 'phone', code: 'already_in_use' }`; an unconfirmed holder doesn't block it and, when the bot confirms the number for this account, loses it (deleted if it has no email). Own number already verified → `409 conflict` without details. Also the "resend" for an unverified phone account.
+   - `POST /api/auth/email` `{ email }` (JWT) → `204`. Account already has an email → `409 conflict`. Free email → send the verification email; the `VERIFY_EMAIL` token carries the email, and the account gets it only when the link is used (`410` if it was taken meanwhile). Taken email → nothing set, the existing account gets the "account exists" email.
+   - Google `LINK` needs a verified account. A reset that verifies an account for the first time unlinks Google.
    - Google `LINK` on an account without email sets `email` from Google (verified) when no other account has it; otherwise `google_account_in_use`.
    - Rate limits: `EMAIL_SEND` (3 / h) per phone on signup, forgot and `POST /api/auth/phone`; `LOGIN_PER_EMAIL` per phone on login.
    - `GET /me` adds `phone: string | null`, `phone_verified: boolean`; `email` becomes `string | null`.
@@ -93,7 +94,7 @@ Identity storage: columns on `app_user` (chosen) instead of a separate identitie
    - `applyPendingInvites(tx, clock, userId, { email } | { phone })` runs where a phone becomes verified (bot confirm, reset).
    - `Member` gets `phone`, with the same visibility rule as `email`.
 8. **Bot texts** (`telegram.auth.*`, `en`; plain text):
-   - `askContact`: `To confirm your number, tap “Share my phone number” below.`; button `contactButton`: `Share my phone number`
+   - `askContact`: `To confirm your number, tap “Share my phone number” below.` + `\nDo this only if you opened this link yourself on the Electricity Monitor site. If someone sent it to you, don’t share: your number would be linked to their account.`; button `contactButton`: `Share my phone number`
    - `privateOnly`: `Open this link in a private chat with the bot.`
    - `mismatch`: `This link doesn't match your number or has expired. Go back to the site and try again.`
    - `numberInUse`: `This number is already used by another account.`

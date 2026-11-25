@@ -95,6 +95,16 @@ only sends emails.
 - A signed-in user can add the missing identifier: a phone to an email
   account, an email to a phone account (also by linking Google). The account
   must already be verified. Identifiers can't be changed or removed.
+- An added email or phone is set on the account only once it is confirmed
+  (the email link or the bot). Only a confirmed number blocks other
+  accounts: when its real owner confirms a number that an unconfirmed
+  account holds, that account loses it (and is deleted if it has no other
+  identifier).
+- The bot's confirmation request warns the user to share the number only if
+  they opened the link themselves, because a forwarded link would bind
+  their number to the sender's account.
+- Linking Google needs a verified account. A password reset that verifies
+  an account for the first time also unlinks Google.
 - Rate limits per phone match those per email.
 
 ### Google sign-in

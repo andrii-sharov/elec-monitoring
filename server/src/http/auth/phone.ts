@@ -1,5 +1,5 @@
 import { addEmailBodySchema, addPhoneBodySchema, telegramUrlSchema } from '@elec/shared/api';
-import { and, eq, isNull, ne } from 'drizzle-orm';
+import { and, eq, isNotNull, ne } from 'drizzle-orm';
 import { Router } from 'express';
 import type { ZodOpenApiPathsObject } from 'zod-openapi';
 import { issueOneTimeToken } from '../../auth/oneTimeTokens.ts';
@@ -35,7 +35,7 @@ export const phonePaths: ZodOpenApiPathsObject = {
         '401': unauthorized,
         '403': errorResponse('`not_verified`'),
         '409': errorResponse(
-          'The number belongs to another account (`already_in_use`), or this account already has a phone',
+          'Another account has confirmed the number (`already_in_use`), or this account already has a phone',
         ),
         '429': rateLimited,
       },
@@ -73,7 +73,13 @@ export function phoneRouter(deps: AppDeps): Router {
       const [holder] = await db
         .select({ id: appUser.id })
         .from(appUser)
-        .where(and(eq(appUser.phone, phone), ne(appUser.id, user.id)));
+        .where(
+          and(
+            eq(appUser.phone, phone),
+            ne(appUser.id, user.id),
+            isNotNull(appUser.phoneVerifiedAt),
+          ),
+        );
       if (holder) {
         throw new HttpError(409, 'conflict', 'The number is already used', [
           { path: 'phone', code: 'already_in_use' },
@@ -109,15 +115,9 @@ export function phoneRouter(deps: AppDeps): Router {
         emails.accountExists(existing);
         return;
       }
-      const [updated] = await db
-        .update(appUser)
-        .set({ email })
-        .where(and(eq(appUser.id, user.id), isNull(appUser.email)))
-        .returning();
-      if (!updated) throw new HttpError(409, 'conflict', 'The account already has an email');
-      const token = await issueOneTimeToken(db, clock, user.id, 'VERIFY_EMAIL');
+      const token = await issueOneTimeToken(db, clock, user.id, 'VERIFY_EMAIL', { email });
       res.status(204).end();
-      emails.verifyEmail(updated, token);
+      emails.verifyEmail({ ...user, email }, token);
     },
   );
 

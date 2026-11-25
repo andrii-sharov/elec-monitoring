@@ -213,3 +213,19 @@ test('reset of a verified account leaves its pending invites alone', async () =>
   await request(app()).post('/api/auth/reset-password').send({ token, password: NEW_PASSWORD });
   expect(await t.db.select().from(deviceViewer)).toEqual([]);
 });
+
+test('reset of an unverified account unlinks a Google account someone attached to it', async () => {
+  const user = await createUser(t.db, { emailVerifiedAt: null, googleSub: 'attacker-sub' });
+  const token = await requestReset();
+  await request(app()).post('/api/auth/reset-password').send({ token, password: NEW_PASSWORD });
+  const [row] = await t.db.select().from(appUser).where(eq(appUser.id, user.id));
+  expect(row?.googleSub).toBeNull();
+});
+
+test('reset of a verified account keeps its Google link', async () => {
+  const user = await createUser(t.db, { googleSub: 'sub-1' });
+  const token = await requestReset();
+  await request(app()).post('/api/auth/reset-password').send({ token, password: NEW_PASSWORD });
+  const [row] = await t.db.select().from(appUser).where(eq(appUser.id, user.id));
+  expect(row?.googleSub).toBe('sub-1');
+});

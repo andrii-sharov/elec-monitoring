@@ -81,7 +81,7 @@ async function tokenRow(token: string) {
 const ASK = {
   method: 'sendMessage',
   chat_id: String(TG),
-  text: 'To confirm your number, tap “Share my phone number” below.',
+  text: 'To confirm your number, tap “Share my phone number” below.\nDo this only if you opened this link yourself on the Electricity Monitor site. If someone sent it to you, don’t share: your number would be linked to their account.',
   reply_markup: {
     keyboard: [[{ text: 'Share my phone number', request_contact: true }]],
     resize_keyboard: true,
@@ -208,8 +208,8 @@ describe('contact', () => {
     await expectNothingChanged(user.id);
   });
 
-  test('refuses a number that another account holds', async () => {
-    await phoneUser();
+  test('refuses a number that another account has confirmed', async () => {
+    await phoneUser({ phoneVerified: true });
     const other = await createUser(t.db, { email: 'mary@example.com', language: 'en' });
     await start(await verifyCode(other.id));
     expect((await share()).text).toBe('This number is already used by another account.');

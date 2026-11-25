@@ -344,10 +344,10 @@ Successful sign-in responses set the refresh cookie and return:
 | POST   | `/api/auth/logout`              | cookie                                                         | `204`, clears the cookie                                                                                                                                                                                                                                                                                                                                                 |
 | POST   | `/api/auth/logout-all`          | signed in                                                      | `204`, revokes all refresh tokens                                                                                                                                                                                                                                                                                                                                        |
 | POST   | `/api/auth/forgot-password`     | `email` or `phone`                                             | Email: always `204`. Phone: always `200 { "telegram_url" }`; an account with a bound Telegram user also gets the reset link there at once                                                                                                                                                                                                                                |
-| POST   | `/api/auth/reset-password`      | `token`, `password`                                            | `204`, verifies the email or phone the link was sent to, logs out all sessions. Unknown, used, expired or superseded token → `410`                                                                                                                                                                                                                                       |
+| POST   | `/api/auth/reset-password`      | `token`, `password`                                            | `204`, verifies the email or phone the link was sent to, logs out all sessions. If the account had nothing verified before, Google is unlinked. Unknown, used, expired or superseded token → `410`                                                                                                                                                                       |
 | POST   | `/api/auth/change-password`     | `current_password`, `new_password` (signed in)                 | `204`. Revokes other sessions. Wrong current password → `403 invalid_credentials`. Account without a password → `409 conflict`                                                                                                                                                                                                                                           |
-| POST   | `/api/auth/phone`               | `phone` (signed in)                                            | `200 { "telegram_url" }` to confirm the number; also the resend for an unverified phone account. Another account's number → `409` with detail `phone` / `already_in_use`; the account already has a verified or different phone → `409`; a new number on an unverified account → `403 not_verified`                                                                      |
-| POST   | `/api/auth/email`               | `email` (signed in, verified)                                  | `204`. A free email is set (unverified) and gets the verification email; a taken one is not set and its owner gets the "account exists" email. Account already has an email → `409`                                                                                                                                                                                      |
+| POST   | `/api/auth/phone`               | `phone` (signed in)                                            | `200 { "telegram_url" }` to confirm the number; also the resend for an unverified phone account. A number another account has confirmed → `409` with detail `phone` / `already_in_use` (an unconfirmed holder does not block it); the account already has a verified or different phone → `409`; a new number on an unverified account → `403 not_verified`              |
+| POST   | `/api/auth/email`               | `email` (signed in, verified)                                  | `204`. A free email gets the verification email and is set on the account only when that link is used (`verify-email` answers `410` if the email was taken meanwhile); a taken one gets the "account exists" email. Account already has an email → `409`                                                                                                                 |
 | DELETE | `/api/auth/google`              | signed in                                                      | `204`. `409` if it is the only sign-in method                                                                                                                                                                                                                                                                                                                            |
 
 Bodies with `email` or `phone` take exactly one of them. A phone is
@@ -365,8 +365,8 @@ without a signed-in session), `google_email_unverified`,
 `google_account_in_use` (the Google account, or its email when linking to
 an account without one, belongs to another user) and
 `google_already_linked` (the user already has a different Google account).
-`LINK` on an account without an email sets the Google email as verified; an
-unverified account gets `google_failed`.
+`LINK` needs a verified account (otherwise `google_failed`). On an account
+without an email it sets the Google email as verified.
 The callback never answers with JSON or a `500` page for these cases. `LINK`
 finds the user from the refresh cookie, which the browser sends on the
 top-level `GET` because the cookie path is `/api/auth`.
@@ -901,7 +901,8 @@ Phone confirmation:
 - `/start p_<code>` in a private chat records the sender on a live phone
   code and asks for the contact. The reply adds
   `"reply_markup": { "keyboard": [[{ "text": "…", "request_contact": true }]], … }`
-  and is the same for valid, unknown, used and expired codes. In a group
+  and is the same for valid, unknown, used and expired codes. It warns
+  the user to share the number only if they opened the link themselves. In a group
   the bot asks to open the link in a private chat.
 - A `contact` message is accepted only in a private chat, when
   `contact.user_id` equals `message.from.id` and the number matches a code
@@ -909,7 +910,8 @@ Phone confirmation:
   Telegram user to the account, accepts pending phone invites and connects
   the chat to every device the user owns or views. A recovery code binds the
   Telegram user and replies with a password reset link. A number that
-  another account holds is refused. Any other contact gets a "doesn't
+  another account has confirmed is refused; an unconfirmed holder loses the
+  number (and is deleted if it has no email). Any other contact gets a "doesn't
   match" reply. These replies remove the keyboard
   (`"reply_markup": { "remove_keyboard": true }`).
 

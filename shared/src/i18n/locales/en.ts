@@ -39,7 +39,8 @@ export const en = {
   },
   telegram: {
     auth: {
-      askContact: 'To confirm your number, tap “Share my phone number” below.',
+      askContact:
+        'To confirm your number, tap “Share my phone number” below.\nDo this only if you opened this link yourself on the Electricity Monitor site. If someone sent it to you, don’t share: your number would be linked to their account.',
       contactButton: 'Share my phone number',
       privateOnly: 'Open this link in a private chat with the bot.',
       mismatch:

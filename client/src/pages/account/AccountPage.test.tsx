@@ -93,6 +93,12 @@ test('Link Google stores the intent and navigates to the API', async () => {
   expect(assign).toHaveBeenCalledWith(`${base}/api/auth/google?app=CLIENT&intent=LINK`);
 });
 
+test('an unverified account is not offered Link Google', async () => {
+  await renderAccount(meFixture({ email_verified: false, phone_verified: false }));
+  expect(screen.getByText('Google account not linked')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Link Google' })).not.toBeInTheDocument();
+});
+
 test('change password: mismatch shows an inline error and sends nothing', async () => {
   const bodies = captureBody('/api/auth/change-password', 'post');
   const { user } = await renderAccount();

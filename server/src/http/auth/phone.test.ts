@@ -269,6 +269,20 @@ describe('POST /api/auth/phone', () => {
     expect((await addPhone(auth)).status).toBe(200);
   });
 
+  test('an unconfirmed holder does not block the number, and loses it on confirmation', async () => {
+    const squatter = await phoneUser({ phoneVerified: false });
+    const { user, auth } = await authed({ email: 'mary@example.com' });
+    const res = await addPhone(auth);
+    expect(res.status).toBe(200);
+
+    await tellBot(777, { text: `/start p_${codeFrom(res.body.telegram_url)}` });
+    await tellBot(777, { contact: { phone_number: '380501234567', user_id: 777 } });
+
+    expect(await userRow(user.id)).toMatchObject({ phone: PHONE, phoneVerifiedAt: clock.now() });
+    const [gone] = await t.db.select().from(appUser).where(eq(appUser.id, squatter.id));
+    expect(gone).toBeUndefined();
+  });
+
   test("refuses another account's number", async () => {
     await phoneUser();
     const { auth } = await authed({ email: 'mary@example.com' });
@@ -300,19 +314,50 @@ describe('POST /api/auth/phone', () => {
   });
 });
 
+const verify = (token: string) => request(app()).post('/api/auth/verify-email').send({ token });
+
+async function verifyTokenFromMail(): Promise<string> {
+  await vi.waitFor(() => expect(email.sent).toHaveLength(1));
+  return /verify-email\?token=([\w-]+)/.exec(email.sent[0]!.text)![1]!;
+}
+
 describe('POST /api/auth/email', () => {
   const addEmail = (auth: string, address = 'john@example.com') =>
     request(app()).post('/api/auth/email').set('Authorization', auth).send({ email: address });
 
-  test('sets an unverified email and sends the verification mail', async () => {
+  test('sends the verification mail and sets the email only once it is confirmed', async () => {
     const { user, auth } = await authed({ phone: PHONE });
     expect((await addEmail(auth, ' John@Example.com ')).status).toBe(204);
+    expect((await userRow(user.id)).email).toBeNull();
+    const token = await verifyTokenFromMail();
+    expect(email.sent[0]!.to).toBe('john@example.com');
+
+    expect((await verify(token)).status).toBe(204);
     expect(await userRow(user.id)).toMatchObject({
       email: 'john@example.com',
-      emailVerifiedAt: null,
+      emailVerifiedAt: clock.now(),
     });
-    await vi.waitFor(() => expect(email.sent).toHaveLength(1));
-    expect(email.sent[0]!.text).toContain('https://app.test/verify-email?token=');
+  });
+
+  test('an unconfirmed email never reaches the account', async () => {
+    const { auth } = await authed({ phone: PHONE });
+    await addEmail(auth, 'mary@example.com');
+    await verifyTokenFromMail();
+    const res = await request(app())
+      .post('/api/auth/signup')
+      .send({ ...profile, password: TEST_PASSWORD, email: 'mary@example.com' });
+    expect(res.status).toBe(201);
+    const [mary] = await t.db.select().from(appUser).where(eq(appUser.email, 'mary@example.com'));
+    expect(mary!.phone).toBeNull();
+  });
+
+  test('the confirmation link fails when the email was taken in the meantime', async () => {
+    const { user, auth } = await authed({ phone: PHONE });
+    await addEmail(auth);
+    const token = await verifyTokenFromMail();
+    await createUser(t.db);
+    expect((await verify(token)).status).toBe(410);
+    expect((await userRow(user.id)).email).toBeNull();
   });
 
   test('keeps a taken email private and warns its owner', async () => {
