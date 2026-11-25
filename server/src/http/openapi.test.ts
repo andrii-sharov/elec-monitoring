@@ -250,3 +250,28 @@ describe('M6 sharing endpoints', () => {
     );
   });
 });
+
+describe('M7 phone sign-in', () => {
+  test.each(['/api/auth/phone', '/api/auth/email'])(
+    'POST %s needs a bearer token and is in Auth',
+    async (path) => {
+      const operation = findOperation((await document()).paths, `post ${path}`);
+      expect(operation!.security).toEqual([{ bearerAuth: [] }]);
+      expect(operation!.tags).toEqual(['Auth']);
+    },
+  );
+
+  test('declares TelegramUrl and a phone on every identity schema', async () => {
+    const { schemas } = (await document()).components;
+    expect(schemas.TelegramUrl).toBeDefined();
+    for (const name of ['Me', 'Invite', 'InvitePreview', 'Member']) {
+      expect(schemas[name].properties.phone, `${name}.phone`).toBeDefined();
+    }
+  });
+
+  test('has no trace of API tokens', async () => {
+    const spec = await document();
+    expect(Object.keys(spec.components.securitySchemes)).toEqual(['bearerAuth', 'deviceToken']);
+    expect(JSON.stringify(spec)).not.toMatch(/api_token|em_live|jwt_required|insufficient_scope/);
+  });
+});
