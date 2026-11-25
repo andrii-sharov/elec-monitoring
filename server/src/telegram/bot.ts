@@ -5,6 +5,7 @@ import { consumeOneTimeToken } from '../auth/oneTimeTokens.ts';
 import type { Clock } from '../clock.ts';
 import type { Db } from '../db/client.ts';
 import { appUser, device, deviceChannel, notificationChannel } from '../db/schema/index.ts';
+import { canReadDevice } from '../devices/access.ts';
 import { parseCommand, type TelegramUpdate } from './commands.ts';
 
 export type BotDeps = { db: Db; clock: Clock; i18n: i18n; botUsername: string };
@@ -146,11 +147,14 @@ async function link(
         updatedAt: deps.clock.now(),
       })
       .returning({ id: notificationChannel.id });
-    const owned = await tx.select({ id: device.id }).from(device).where(eq(device.ownerId, userId));
-    if (owned.length > 0) {
+    const readable = await tx
+      .select({ id: device.id })
+      .from(device)
+      .where(canReadDevice(userId, device.ownerId, device.id));
+    if (readable.length > 0) {
       await tx
         .insert(deviceChannel)
-        .values(owned.map((d) => ({ deviceId: d.id, channelId: channel!.id })))
+        .values(readable.map((d) => ({ deviceId: d.id, channelId: channel!.id })))
         .onConflictDoNothing();
     }
     return { language: user!.language as Language, key: 'linked' };

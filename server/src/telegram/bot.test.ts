@@ -5,6 +5,7 @@ import { createPlatformChannel, linkChannel } from '../../test/channels.ts';
 import { createTestDb, type TestDb } from '../../test/db.ts';
 import { createDevice } from '../../test/devices.ts';
 import { FakeClock } from '../../test/fakes.ts';
+import { addViewer } from '../../test/sharing.ts';
 import { issueOneTimeToken } from '../auth/oneTimeTokens.ts';
 import {
   appUser,
@@ -82,6 +83,22 @@ describe('/start <code>', () => {
     expect(links.map((l) => l.deviceId).toSorted()).toEqual([home.id, dacha.id].toSorted());
     const [token] = await t.db.select().from(oneTimeToken);
     expect(token!.usedAt).not.toBeNull();
+  });
+
+  test("also links the devices the user views, not strangers' devices", async () => {
+    const { user, home } = await userWithDevices();
+    const owner = await createUser(t.db, { email: 'owner@example.com' });
+    const shared = await createDevice(t.db, owner.id, { name: 'Cottage' });
+    const foreign = await createDevice(t.db, owner.id, { name: 'Office' });
+    await addViewer(t.db, shared.id, user.id);
+    const code = await issueOneTimeToken(t.db, clock, user.id, 'TELEGRAM_LINK');
+
+    await handleUpdate(deps, message(`/start ${code}`, { first_name: 'John' }));
+
+    const linked = (await t.db.select().from(deviceChannel)).map((l) => l.deviceId);
+    expect(linked).toContain(home.id);
+    expect(linked).toContain(shared.id);
+    expect(linked).not.toContain(foreign.id);
   });
 
   test('a used code and an expired code both say the link expired', async () => {

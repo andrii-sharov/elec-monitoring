@@ -5,6 +5,7 @@ import { createPlatformChannel, linkChannel } from '../../test/channels.ts';
 import { createTestDb, type TestDb } from '../../test/db.ts';
 import { markOffline, pairDevice } from '../../test/devices.ts';
 import { FakeClock } from '../../test/fakes.ts';
+import { addViewer } from '../../test/sharing.ts';
 import { appUser, delivery, device, notificationChannel, outage } from '../db/schema/index.ts';
 import { toOutageItem } from '../http/devices/views.ts';
 import { createNotificationQueue } from './queue.ts';
@@ -141,5 +142,55 @@ describe('createNotificationQueue', () => {
     await run((tx) => queue.offAlert(tx, { deviceId, outageId }));
     await t.db.delete(notificationChannel).where(eq(notificationChannel.id, a.id));
     expect(await t.db.select().from(delivery)).toHaveLength(0);
+  });
+});
+
+describe('fan-out to viewers', () => {
+  async function shared() {
+    const owner = await createUser(t.db, { email: 'john@example.com' });
+    const viewer = await createUser(t.db, { email: 'mary@example.com' });
+    const stranger = await createUser(t.db, { email: 'pete@example.com' });
+    const { deviceId, outageId } = await openOutage(owner.id);
+    await addViewer(t.db, deviceId, viewer.id);
+    return { owner, viewer, stranger, deviceId, outageId };
+  }
+
+  test('queues for the owner and viewers, never a stranger', async () => {
+    const { owner, viewer, stranger, deviceId, outageId } = await shared();
+    const mine = await createPlatformChannel(t.db, owner.id);
+    const theirs = await createPlatformChannel(t.db, viewer.id);
+    const foreign = await createPlatformChannel(t.db, stranger.id);
+    for (const c of [mine, theirs, foreign]) await linkChannel(t.db, deviceId, c.id);
+
+    await run((tx) => queue.offAlert(tx, { deviceId, outageId }));
+
+    const rows = await t.db.select().from(delivery);
+    expect(rows.map((r) => r.channelId).toSorted()).toEqual([mine.id, theirs.id].toSorted());
+  });
+
+  test('skips a disabled viewer channel', async () => {
+    const { viewer, deviceId, outageId } = await shared();
+    const off = await createPlatformChannel(t.db, viewer.id, { enabled: false });
+    await linkChannel(t.db, deviceId, off.id);
+    await run((tx) => queue.offAlert(tx, { deviceId, outageId }));
+    expect(await t.db.select().from(delivery)).toEqual([]);
+  });
+
+  test('skips a viewer webhook without the event', async () => {
+    const { viewer, deviceId, outageId } = await shared();
+    const [hook] = await t.db
+      .insert(notificationChannel)
+      .values({
+        userId: viewer.id,
+        type: 'WEBHOOK',
+        name: 'Hook',
+        webhookUrl: 'https://hooks.example.com/x',
+        webhookEvents: ['device.online'],
+        webhookSecretEnc: Buffer.from('secret'),
+      })
+      .returning();
+    await linkChannel(t.db, deviceId, hook!.id);
+    await run((tx) => queue.offAlert(tx, { deviceId, outageId }));
+    expect(await t.db.select().from(delivery)).toEqual([]);
   });
 });

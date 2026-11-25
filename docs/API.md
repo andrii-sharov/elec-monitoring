@@ -736,8 +736,7 @@ The code is valid for 15 minutes, and a new request expires the previous
 unused code. Limit: 10 per 15 minutes per user. The bot receives
 `/start <link_code>` and creates a `TELEGRAM_PLATFORM` channel, named after
 the group title or the user's Telegram name. The channel is attached to
-every device the caller owns at that moment; devices created later are not
-attached automatically. The client polls `GET /channels` until the channel
+every device the caller owns or views at that moment; devices created or shared later are not attached automatically. The client polls `GET /channels` until the channel
 appears. `url` opens a private chat, `group_url` lets the user pick a
 group.
 

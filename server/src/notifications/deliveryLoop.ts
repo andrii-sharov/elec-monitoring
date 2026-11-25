@@ -28,6 +28,7 @@ export type DeliveryDeps = {
 };
 
 async function decide(deps: DeliveryDeps, d: ClaimedDelivery): Promise<Outcome> {
+  if (!d.hasAccess) return { type: 'SKIPPED', reason: 'no access' };
   if (!d.channel.enabled) return { type: 'SKIPPED', reason: 'channel disabled' };
   if (d.event === 'device.offline' && d.outageEndedAt) {
     return { type: 'SKIPPED', reason: 'outage closed' };

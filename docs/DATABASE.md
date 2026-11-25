@@ -663,10 +663,7 @@ create index delivery_due_idx on delivery (next_attempt_at) where status in ('QU
   `consecutive_failures`, so a Telegram outage can't disable channels. A
   `migrate_to_chat_id` reply updates `telegram_chat_id` and retries at
   once. Channels disable at 20 counted failures.
-- **Skipped sends.** A `device.offline` delivery whose outage has closed,
-  or whose channel is disabled, becomes `FAILED` with `last_error` set to
-  `skipped: outage closed` or `skipped: channel disabled`. The failure
-  counter is unchanged.
+- **Skipped sends.** A delivery whose channel's user can no longer read the device (a removed viewer) becomes `FAILED` with `last_error = 'skipped: no access'`. A `device.offline` delivery whose outage has closed, or whose channel is disabled, becomes `FAILED` with `skipped: outage closed` or `skipped: channel disabled`. The failure counter is unchanged.
 - **Send loop.** The worker claims up to 30 due rows, sends rows of one
   channel in order, runs up to 10 channels at once, and takes a token from
   a 30 messages/s pacer before every send. It beats `worker_heartbeat`

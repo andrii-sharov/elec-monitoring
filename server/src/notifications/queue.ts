@@ -8,6 +8,7 @@ import {
   notificationChannel,
   outage,
 } from '../db/schema/index.ts';
+import { canReadDevice } from '../devices/access.ts';
 import { toOutageItem } from '../http/devices/views.ts';
 import type { DeliveryPayload } from './render.ts';
 import { notificationEvent, type NotificationKind } from './rules.ts';
@@ -46,7 +47,7 @@ async function enqueue(clock: Clock, tx: Tx, kind: NotificationKind, e: OutageEv
       and(
         eq(deviceChannel.deviceId, e.deviceId),
         eq(notificationChannel.enabled, true),
-        eq(notificationChannel.userId, row.device.ownerId),
+        canReadDevice(notificationChannel.userId, row.device.ownerId, e.deviceId),
         sql`(${notificationChannel.type} <> 'WEBHOOK' or ${event} = any(${notificationChannel.webhookEvents}))`,
       ),
     );

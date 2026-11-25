@@ -516,9 +516,7 @@ the same localization rules.
 3. Bot receives `/start <link_code>` (via Telegram webhook to our API)
    and saves the `chat_id` as a new channel.
 4. Works for private chats and groups (`startgroup` link). The new
-   channel is attached to every device the user owns at that moment, and
-   the user can change that per device. Devices created later aren't
-   attached automatically.
+   channel is attached to every device the user owns or views at that moment, and the user can change that per device. Devices created or shared later aren't attached by the link (joining a shared device attaches the viewer's channels, §6).
 
 Bot commands: `/status` (devices that notify this chat), `/stats`
 (last 7 days, with statistics), `/stop` (unlink the chat). Removing the bot

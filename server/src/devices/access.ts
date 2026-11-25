@@ -1,5 +1,5 @@
 import type { DeviceRole } from '@elec/shared';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql, type SQL, type SQLWrapper } from 'drizzle-orm';
 import type { Executor } from '../db/client.ts';
 import { device, deviceViewer } from '../db/schema/index.ts';
 import { HttpError } from '../http/errors.ts';
@@ -7,6 +7,14 @@ import { HttpError } from '../http/errors.ts';
 export type DeviceRow = typeof device.$inferSelect;
 
 export type DeviceAccess = 'read' | 'manage';
+
+export function canReadDevice(
+  userId: SQLWrapper | string,
+  ownerId: SQLWrapper | string,
+  deviceId: SQLWrapper | string,
+): SQL {
+  return sql`(${userId} = ${ownerId} or exists (select 1 from ${deviceViewer} where ${deviceViewer.deviceId} = ${deviceId} and ${deviceViewer.userId} = ${userId}))`;
+}
 
 export async function getAccessibleDevice(
   db: Executor,

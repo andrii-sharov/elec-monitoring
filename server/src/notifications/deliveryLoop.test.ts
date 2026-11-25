@@ -3,7 +3,10 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest'
 import { createTestDb, type TestDb } from '../../test/db.ts';
 import { seedDelivery } from '../../test/deliveries.ts';
 import { FakeClock, FakeTelegramClient, silentLogger } from '../../test/fakes.ts';
-import { appUser, delivery } from '../db/schema/index.ts';
+import { and, eq as equals } from 'drizzle-orm';
+import { createUser } from '../../test/auth.ts';
+import { addViewer } from '../../test/sharing.ts';
+import { appUser, delivery, deviceViewer, notificationChannel } from '../db/schema/index.ts';
 import { createI18n } from '../i18n.ts';
 import { createPacer } from './pacer.ts';
 import { processDueDeliveries, runDeliveryLoop, type DeliveryDeps } from './deliveryLoop.ts';
@@ -146,6 +149,57 @@ describe('processDueDeliveries', () => {
 
   test('does nothing when nothing is due', async () => {
     expect(await processDueDeliveries(deps)).toBe(0);
+  });
+});
+
+describe('viewers', () => {
+  async function sharedOutage(viewerOverrides: Partial<typeof appUser.$inferInsert> = {}) {
+    const owner = await seedDelivery(t.db, {
+      userOverrides: { email: 'john@example.com', language: 'uk', timezone: 'Europe/Kyiv' },
+    });
+    const viewer = await createUser(t.db, { email: 'mary@example.com', ...viewerOverrides });
+    await addViewer(t.db, owner.device.id, viewer.id);
+    const theirs = await seedDelivery(t.db, {
+      user: viewer,
+      device: owner.device,
+      outageId: owner.outageId,
+    });
+    return { owner, viewer, theirs };
+  }
+
+  test('a removed viewer is skipped while the owner is sent', async () => {
+    const { owner, viewer, theirs } = await sharedOutage();
+    await t.db
+      .delete(deviceViewer)
+      .where(
+        and(equals(deviceViewer.deviceId, owner.device.id), equals(deviceViewer.userId, viewer.id)),
+      );
+
+    await processDueDeliveries(deps);
+
+    expect(telegram.sent.map((s) => s.chatId)).toEqual([owner.channel.telegramChatId]);
+    expect((await stored(owner.delivery.id)).status).toBe('SENT');
+    const skipped = await stored(theirs.delivery.id);
+    expect(skipped.status).toBe('FAILED');
+    expect(skipped.lastError).toBe('skipped: no access');
+    const [channel] = await t.db
+      .select()
+      .from(notificationChannel)
+      .where(equals(notificationChannel.id, theirs.channel.id));
+    expect(channel?.consecutiveFailures).toBe(0);
+  });
+
+  test('each recipient gets their own language and time zone', async () => {
+    const { owner, theirs } = await sharedOutage({
+      language: 'en',
+      timezone: 'America/New_York',
+    });
+    await processDueDeliveries(deps);
+    const byChat = new Map(telegram.sent.map((s) => [s.chatId, s.text]));
+    expect(byChat.get(owner.channel.telegramChatId!)).toContain('18:42');
+    expect(byChat.get(theirs.channel.telegramChatId!)).toBe(
+      '🔴 Home — device stopped checking in\nLast signal: 21 Nov 11:42',
+    );
   });
 });
 

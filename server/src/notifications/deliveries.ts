@@ -3,6 +3,7 @@ import { and, asc, eq, inArray, lte, sql } from 'drizzle-orm';
 import type { Clock } from '../clock.ts';
 import type { Db } from '../db/client.ts';
 import { appUser, delivery, device, notificationChannel, outage } from '../db/schema/index.ts';
+import { canReadDevice } from '../devices/access.ts';
 import type { QuietHours } from './format.ts';
 import type { DeliveryPayload } from './render.ts';
 import type { SendResult } from './telegram.ts';
@@ -30,6 +31,7 @@ export type ClaimedDelivery = {
   quietHours: QuietHours | null;
   outageEndedAt: Date | null;
   offAlertQueued: boolean;
+  hasAccess: boolean;
 };
 
 export type Outcome = SendResult | { type: 'SKIPPED'; reason: string };
@@ -72,6 +74,9 @@ export async function claimDeliveries(
         offAlertQueuedAt: outage.offAlertQueuedAt,
         quietStart: device.quietHoursStart,
         quietEnd: device.quietHoursEnd,
+        hasAccess: canReadDevice(notificationChannel.userId, device.ownerId, device.id).mapWith(
+          Boolean,
+        ),
       })
       .from(delivery)
       .innerJoin(notificationChannel, eq(notificationChannel.id, delivery.channelId))
@@ -101,6 +106,7 @@ export async function claimDeliveries(
           quietHours: r.quietStart && r.quietEnd ? { start: r.quietStart, end: r.quietEnd } : null,
           outageEndedAt: r.outageEndedAt,
           offAlertQueued: r.offAlertQueuedAt !== null,
+          hasAccess: r.hasAccess,
         },
       ];
     });
