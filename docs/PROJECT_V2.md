@@ -643,6 +643,14 @@ goes back in history, or to Devices when opened directly.
 Pages:
 
 - **Sign up / Log in / Google sign-in / Verify email / Reset password**
+- **Invite** (`/invite?token=…`, public) — "Johnny invited you to Home".
+  Signed out: **Create account** (sign-up with the invited email filled
+  in; its check-email screen says the shared device appears after
+  confirming), **Log in** (email filled in, back to the invite after) and
+  Google. Signed in with the invited email: **Accept** (**Open device**
+  once accepted) goes to the Device page. Signed in as another account:
+  "This invite is for … You're signed in as …" with **Sign out**. An
+  expired, revoked or unknown invite says so and asks for a new one.
 - **Welcome** — on the first signed-in page load in a browser with no
   saved app style, the user is sent to `/welcome/appearance?next=…` to
   pick one, with a live preview of the whole page. **Use this style** or

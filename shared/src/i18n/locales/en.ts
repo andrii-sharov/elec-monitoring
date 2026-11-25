@@ -188,6 +188,7 @@ export const en = {
         checkEmailTitle: 'Check your email',
         checkEmailBody:
           'We sent a confirmation link to {{email}}. Open it to finish creating your account.',
+        inviteNote: 'After you confirm your email, the shared device appears in your list.',
       },
       verify: {
         loading: 'Confirming your email…',
@@ -450,6 +451,22 @@ export const en = {
       OFFLINE: 'Offline',
       PENDING: 'Pending',
       UPDATING: 'Updating',
+    },
+    invite: {
+      loading: 'Opening the invite…',
+      title: '{{inviter}} invited you to {{device}}',
+      body: 'You will see its status and outages and can get its alerts in your own channels.',
+      forEmail: 'Use the account for {{email}}.',
+      createAccount: 'Create account',
+      login: 'Log in',
+      accept: 'Accept',
+      open: 'Open device',
+      accepted: 'You now have access to {{device}}',
+      expiredTitle: 'Invite expired',
+      expiredBody: 'This invite has expired or was revoked. Ask the owner for a new one.',
+      wrongAccountTitle: 'Wrong account',
+      wrongAccountBody: "This invite is for {{email}}. You're signed in as {{current}}.",
+      signOut: 'Sign out',
     },
     verify: {
       banner: 'Confirm your email address. Check your inbox for the confirmation link.',

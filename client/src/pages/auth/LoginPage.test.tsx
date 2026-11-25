@@ -82,3 +82,8 @@ test('a signed-in user is sent away from /login', async () => {
   const { router } = renderRoute('/login', { me: meFixture() });
   await waitFor(() => expect(router.state.location.pathname).toBe('/devices'));
 });
+
+test('an email in the link prefills the form', async () => {
+  renderRoute('/login?email=mary%40example.com');
+  expect(await screen.findByLabelText('Email')).toHaveValue('mary@example.com');
+});

@@ -13,6 +13,7 @@ import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { SignupPage } from '@/pages/auth/SignupPage';
 import { VerifyEmailPage } from '@/pages/auth/VerifyEmailPage';
 import { FlashPage } from '@/pages/firmware/FlashPage';
+import { InvitePage } from '@/pages/invite/InvitePage';
 import { NotificationsPage } from '@/pages/notifications/NotificationsPage';
 import { NotFound } from '@/pages/NotFound';
 import { WelcomeAppearancePage } from '@/pages/welcome/WelcomeAppearancePage';
@@ -34,6 +35,7 @@ export const routes: RouteObject[] = [
         ],
       },
       { path: 'verify-email', Component: VerifyEmailPage },
+      { path: 'invite', Component: InvitePage },
       { path: 'reset-password', Component: ResetPasswordPage },
       { path: 'auth/google', Component: GoogleCallbackPage },
       {

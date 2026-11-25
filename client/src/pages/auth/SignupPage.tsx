@@ -5,7 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import type { z } from 'zod';
 import { signup } from '@/api/endpoints';
 import { isApiError } from '@/api/errors';
@@ -32,6 +32,8 @@ function browserTimezone(): string {
 export function SignupPage() {
   const { t, i18n } = useTranslation();
   const { api } = useSession();
+  const [params] = useSearchParams();
+  const fromInvite = params.get('invite') === '1';
   const language: Language = languages.find((l) => l === i18n.resolvedLanguage) ?? 'uk';
   const {
     register,
@@ -40,7 +42,7 @@ export function SignupPage() {
     formState: { errors },
   } = useForm<Input, unknown, Output>({
     resolver: zodResolver(formSchema),
-    defaultValues: { email: '', password: '', name: '' },
+    defaultValues: { email: params.get('email') ?? '', password: '', name: '' },
   });
   const mutation = useMutation({
     mutationFn: (values: Output) =>
@@ -62,6 +64,9 @@ export function SignupPage() {
         <p className="text-sm text-muted-foreground">
           {t('app.auth.signup.checkEmailBody', { email: submittedEmail })}
         </p>
+        {fromInvite ? (
+          <p className="text-sm text-muted-foreground">{t('app.auth.signup.inviteNote')}</p>
+        ) : null}
       </AuthLayout>
     );
   }

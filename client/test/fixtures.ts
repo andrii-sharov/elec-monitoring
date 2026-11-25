@@ -1,4 +1,13 @@
-import type { Channel, Device, Me, OutageItem, Session } from '@elec/shared/api';
+import type {
+  Channel,
+  Device,
+  Invite,
+  InvitePreview,
+  Me,
+  Member,
+  OutageItem,
+  Session,
+} from '@elec/shared/api';
 
 export function meFixture(overrides: Partial<Me> = {}): Me {
   return {
@@ -67,6 +76,38 @@ export function channelFixture(overrides: Partial<Channel> = {}): Channel {
     disabled_reason: null,
     config: { chat_id: '-1001234567890' },
     created_at: '2026-11-21T16:42:00Z',
+    ...overrides,
+  };
+}
+
+export function memberFixture(overrides: Partial<Member> = {}): Member {
+  return {
+    user_id: '9c1d2e3f-4a5b-4c6d-8e7f-0a1b2c3d4e01',
+    name: 'Mary',
+    email: 'mary@example.com',
+    role: 'VIEWER',
+    joined_at: '2026-11-21T16:42:00Z',
+    ...overrides,
+  };
+}
+
+export function inviteFixture(overrides: Partial<Invite> = {}): Invite {
+  return {
+    id: '1d2e3f4a-5b6c-4d7e-8f9a-0b1c2d3e4f01',
+    email: 'anna@example.com',
+    expires_at: '2026-11-28T16:42:00Z',
+    created_at: '2026-11-21T16:42:00Z',
+    ...overrides,
+  };
+}
+
+export function invitePreviewFixture(overrides: Partial<InvitePreview> = {}): InvitePreview {
+  return {
+    device_name: 'Home',
+    inviter_name: 'John',
+    email: 'mary@example.com',
+    expires_at: '2026-11-28T16:42:00Z',
+    accepted: false,
     ...overrides,
   };
 }

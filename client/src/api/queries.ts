@@ -10,7 +10,10 @@ import {
   getDevice,
   getDeviceChannels,
   getDevices,
+  getInvitePreview,
+  getInvites,
   getMe,
+  getMembers,
   getOutages,
 } from './endpoints.ts';
 import { useSession } from './session.tsx';
@@ -22,6 +25,9 @@ export const queryKeys = {
   outages: (id: string) => ['outages', id],
   channels: ['channels'],
   deviceChannels: (id: string) => ['deviceChannels', id],
+  members: (id: string) => ['members', id],
+  invites: (id: string) => ['invites', id],
+  invitePreview: (token: string) => ['invitePreview', token],
 } as const;
 
 export const pollMs = { devices: 30_000, device: 15_000 } as const;
@@ -80,5 +86,28 @@ export function useDeviceChannels(id: string) {
   return useQuery({
     queryKey: queryKeys.deviceChannels(id),
     queryFn: () => getDeviceChannels(api, id),
+  });
+}
+
+export function useMembers(id: string) {
+  const { api } = useSession();
+  return useQuery({ queryKey: queryKeys.members(id), queryFn: () => getMembers(api, id) });
+}
+
+export function useInvites(id: string, { enabled }: { enabled: boolean }) {
+  const { api } = useSession();
+  return useQuery({
+    queryKey: queryKeys.invites(id),
+    queryFn: () => getInvites(api, id),
+    enabled,
+  });
+}
+
+export function useInvitePreview(token: string | null) {
+  const { api } = useSession();
+  return useQuery({
+    queryKey: queryKeys.invitePreview(token ?? ''),
+    queryFn: () => getInvitePreview(api, token!),
+    enabled: token !== null,
   });
 }

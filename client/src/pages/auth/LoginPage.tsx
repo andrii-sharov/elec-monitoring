@@ -29,7 +29,7 @@ export function LoginPage() {
     formState: { errors },
   } = useForm<Input, unknown, Output>({
     resolver: zodResolver(loginBodySchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: params.get('email') ?? '', password: '' },
   });
   const mutation = useMutation({
     mutationFn: (body: Output) => login(api, body),

@@ -1,5 +1,6 @@
 import {
   changePasswordBodySchema,
+  createInviteBodySchema,
   channelIdsSchema,
   channelListSchema,
   createDeviceBodySchema,
@@ -8,10 +9,14 @@ import {
   devicePatchSchema,
   deviceSchema,
   forgotBodySchema,
+  invitePreviewSchema,
+  inviteSchema,
+  invitesSchema,
   loginBodySchema,
   meDeleteSchema,
   mePatchSchema,
   meSchema,
+  membersSchema,
   outagesPageSchema,
   pairingCodeSchema,
   putChannelIdsSchema,
@@ -144,4 +149,43 @@ export function putDeviceChannels(
   body: Body<typeof putChannelIdsSchema>,
 ) {
   return api.request(`${device(id)}/channels`, { method: 'PUT', body, schema: channelIdsSchema });
+}
+
+export function getMembers(api: ApiClient, id: string) {
+  return api.request(`${device(id)}/members`, { schema: membersSchema });
+}
+
+export function removeMember(api: ApiClient, id: string, userId: string) {
+  return api.request(`${device(id)}/members/${encodeURIComponent(userId)}`, { method: 'DELETE' });
+}
+
+export function getInvites(api: ApiClient, id: string) {
+  return api.request(`${device(id)}/invites`, { schema: invitesSchema });
+}
+
+export function createInvite(
+  api: ApiClient,
+  id: string,
+  body: Body<typeof createInviteBodySchema>,
+) {
+  return api.request(`${device(id)}/invites`, { method: 'POST', body, schema: inviteSchema });
+}
+
+export function revokeInvite(api: ApiClient, id: string, inviteId: string) {
+  return api.request(`${device(id)}/invites/${encodeURIComponent(inviteId)}`, {
+    method: 'DELETE',
+  });
+}
+
+export function getInvitePreview(api: ApiClient, token: string) {
+  return api.request(`/api/v1/invites/${encodeURIComponent(token)}`, {
+    schema: invitePreviewSchema,
+  });
+}
+
+export function acceptInvite(api: ApiClient, token: string) {
+  return api.request(`/api/v1/invites/${encodeURIComponent(token)}/accept`, {
+    method: 'POST',
+    schema: deviceSchema,
+  });
 }

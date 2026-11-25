@@ -61,3 +61,29 @@ test('an empty name shows Required and sends nothing', async () => {
   expect(await screen.findByText('Required')).toBeInTheDocument();
   expect(spy).not.toHaveBeenCalled();
 });
+
+test('an invite link prefills the email and adds the shared-device note', async () => {
+  server.use(http.post(`${base}/api/auth/signup`, () => new HttpResponse(null, { status: 201 })));
+  const { user } = renderRoute('/signup?email=mary%40example.com&invite=1');
+  expect(await screen.findByLabelText('Email')).toHaveValue('mary@example.com');
+  await user.type(screen.getByLabelText('Name'), 'Mary');
+  await user.type(screen.getByLabelText('Password'), 'long enough 1');
+  await user.click(screen.getByRole('button', { name: 'Create account' }));
+  expect(
+    await screen.findByText(
+      'After you confirm your email, the shared device appears in your list.',
+    ),
+  ).toBeVisible();
+});
+
+test('without an invite the check-email screen has no shared-device note', async () => {
+  server.use(http.post(`${base}/api/auth/signup`, () => new HttpResponse(null, { status: 201 })));
+  const { user } = renderRoute('/signup');
+  expect(await screen.findByLabelText('Email')).toHaveValue('');
+  await user.type(screen.getByLabelText('Name'), 'Mary');
+  await user.type(screen.getByLabelText('Email'), 'mary@example.com');
+  await user.type(screen.getByLabelText('Password'), 'long enough 1');
+  await user.click(screen.getByRole('button', { name: 'Create account' }));
+  await screen.findByRole('heading', { name: 'Check your email' });
+  expect(screen.queryByText(/shared device/)).not.toBeInTheDocument();
+});
