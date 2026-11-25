@@ -93,14 +93,23 @@ describe('POST /api/v1/devices', () => {
     },
   );
 
-  test('requires a verified email', async () => {
+  test('a verified phone-only user can create a device', async () => {
+    const { auth } = await authed({ phone: '+380501234567' });
+    const res = await request(app())
+      .post('/api/v1/devices')
+      .set('Authorization', auth)
+      .send({ name: 'Home' });
+    expect(res.status).toBe(201);
+  });
+
+  test('requires a verified email or phone', async () => {
     const { auth } = await authed({ emailVerifiedAt: null });
     const res = await request(app())
       .post('/api/v1/devices')
       .set('Authorization', auth)
       .send({ name: 'Home' });
     expect(res.status).toBe(403);
-    expect(res.body.error.code).toBe('email_not_verified');
+    expect(res.body.error.code).toBe('not_verified');
   });
 
   test('requires a JWT', async () => {

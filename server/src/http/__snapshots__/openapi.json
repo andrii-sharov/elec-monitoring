@@ -1133,7 +1133,7 @@
             }
           },
           "403": {
-            "description": "`email_not_verified`",
+            "description": "`not_verified`",
             "content": {
               "application/json": {
                 "schema": {
@@ -2222,7 +2222,7 @@
             }
           },
           "403": {
-            "description": "`email_not_verified`",
+            "description": "`not_verified`",
             "content": {
               "application/json": {
                 "schema": {
@@ -2289,7 +2289,7 @@
             }
           },
           "403": {
-            "description": "`email_not_verified`",
+            "description": "`not_verified`",
             "content": {
               "application/json": {
                 "schema": {
@@ -2350,7 +2350,7 @@
             }
           },
           "403": {
-            "description": "`email_not_verified`",
+            "description": "`not_verified`",
             "content": {
               "application/json": {
                 "schema": {
@@ -2772,7 +2772,7 @@
             }
           },
           "403": {
-            "description": "`forbidden` (not the owner) or `email_not_verified`",
+            "description": "`forbidden` (not the owner) or `not_verified`",
             "content": {
               "application/json": {
                 "schema": {
@@ -3265,6 +3265,15 @@
           "email_verified": {
             "type": "boolean"
           },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone_verified": {
+            "type": "boolean"
+          },
           "name": {
             "type": "string"
           },
@@ -3293,6 +3302,8 @@
           "id",
           "email",
           "email_verified",
+          "phone",
+          "phone_verified",
           "name",
           "language",
           "timezone",

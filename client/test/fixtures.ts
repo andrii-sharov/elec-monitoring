@@ -14,6 +14,8 @@ export function meFixture(overrides: Partial<Me> = {}): Me {
     id: '5b0c1f0e-4f1a-4c39-9d2a-0a8f3c1d2e01',
     email: 'johnny@example.com',
     email_verified: true,
+    phone: null,
+    phone_verified: false,
     name: 'Johnny',
     language: 'en',
     timezone: 'Europe/Kyiv',

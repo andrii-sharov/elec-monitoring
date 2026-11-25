@@ -22,6 +22,21 @@ test('a verified user sees no banner', async () => {
   expect(screen.queryByRole('button', { name: 'Resend email' })).toBeNull();
 });
 
+test('a verified phone counts as verified', async () => {
+  const me = meFixture({
+    email: null,
+    email_verified: false,
+    phone: '+380501234567',
+    phone_verified: true,
+  });
+  renderRoute('/devices', { me });
+  await screen.findByText('No devices yet');
+  expect(screen.queryByRole('button', { name: 'Resend email' })).toBeNull();
+  for (const button of screen.getAllByRole('button', { name: 'Add device' })) {
+    expect(button).toBeEnabled();
+  }
+});
+
 test('an unverified user sees the banner and a disabled Add device', async () => {
   renderRoute('/devices', { me: meFixture({ email_verified: false }) });
   expect(await screen.findByRole('button', { name: 'Resend email' })).toBeInTheDocument();

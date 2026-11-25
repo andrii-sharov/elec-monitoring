@@ -125,7 +125,7 @@ export const en = {
       validation_error: 'Check the highlighted fields.',
       unauthorized: 'Your session has ended. Sign in again.',
       forbidden: "You don't have access to this.",
-      email_not_verified: 'Confirm your email address first.',
+      not_verified: 'Confirm your email or phone first.',
       not_found: 'Not found.',
       conflict: 'This conflicts with existing data. Refresh the page and try again.',
       expired: 'This link or code has expired.',

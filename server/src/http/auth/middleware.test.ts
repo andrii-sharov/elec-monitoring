@@ -6,7 +6,7 @@ import { createUser, signIn } from '../../../test/auth.ts';
 import { createTestDb, type TestDb } from '../../../test/db.ts';
 import { FakeClock } from '../../../test/fakes.ts';
 import { appUser, session } from '../../db/schema/index.ts';
-import { getAuth, requireUser, requireVerifiedEmail } from './middleware.ts';
+import { getAuth, requireUser, requireVerified } from './middleware.ts';
 
 let t: TestDb;
 let clock: FakeClock;
@@ -32,7 +32,7 @@ function app() {
       a.get('/test/me', requireUser(deps), (_req, res) => {
         res.json({ id: getAuth(res).user.id });
       });
-      a.get('/test/verified', requireUser(deps), requireVerifiedEmail, (_req, res) => {
+      a.get('/test/verified', requireUser(deps), requireVerified, (_req, res) => {
         res.status(204).end();
       });
     },
@@ -81,18 +81,27 @@ test('rejects a deleted user', async () => {
   expect(res.status).toBe(401);
 });
 
-test('requireVerifiedEmail blocks unverified users', async () => {
+test('requireVerified blocks unverified users', async () => {
   const user = await createUser(t.db, { emailVerifiedAt: null });
   const { accessToken } = await signIn({ db: t.db, clock, config: testConfig }, user.id);
   const res = await request(app())
     .get('/test/verified')
     .set('Authorization', `Bearer ${accessToken}`);
   expect(res.status).toBe(403);
-  expect(res.body.error.code).toBe('email_not_verified');
+  expect(res.body.error.code).toBe('not_verified');
 });
 
-test('requireVerifiedEmail lets verified users through', async () => {
+test('requireVerified lets a verified email through', async () => {
   const user = await createUser(t.db);
+  const { accessToken } = await signIn({ db: t.db, clock, config: testConfig }, user.id);
+  const res = await request(app())
+    .get('/test/verified')
+    .set('Authorization', `Bearer ${accessToken}`);
+  expect(res.status).toBe(204);
+});
+
+test('requireVerified lets a verified phone through', async () => {
+  const user = await createUser(t.db, { phone: '+380501234567' });
   const { accessToken } = await signIn({ db: t.db, clock, config: testConfig }, user.id);
   const res = await request(app())
     .get('/test/verified')

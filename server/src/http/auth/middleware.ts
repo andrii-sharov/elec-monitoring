@@ -46,9 +46,13 @@ export function getAuth(res: Response): AuthContext {
   return auth;
 }
 
-export const requireVerifiedEmail: RequestHandler = (_req, res, next) => {
-  if (!getAuth(res).user.emailVerifiedAt) {
-    throw new HttpError(403, 'email_not_verified', 'Email address is not verified');
+export function isVerified(user: User): boolean {
+  return user.emailVerifiedAt !== null || user.phoneVerifiedAt !== null;
+}
+
+export const requireVerified: RequestHandler = (_req, res, next) => {
+  if (!isVerified(getAuth(res).user)) {
+    throw new HttpError(403, 'not_verified', 'Email or phone is not verified');
   }
   next();
 };

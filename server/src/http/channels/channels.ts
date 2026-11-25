@@ -19,7 +19,7 @@ import { deviceChannel, notificationChannel } from '../../db/schema/index.ts';
 import { getAccessibleDevice } from '../../devices/access.ts';
 import { TELEGRAM_LINK_PER_USER } from '../../rateLimit/limiter.ts';
 import type { AppDeps } from '../app.ts';
-import { getAuth, requireUser, requireVerifiedEmail } from '../auth/middleware.ts';
+import { getAuth, requireUser, requireVerified } from '../auth/middleware.ts';
 import { bearer, deviceIdParam, deviceNotFound, unauthorized } from '../devices/devices.ts';
 import { HttpError, errorResponse } from '../errors.ts';
 import { rateLimit } from '../rateLimit.ts';
@@ -38,7 +38,7 @@ export const channelsPaths: ZodOpenApiPathsObject = {
       responses: {
         '201': { description: 'Bot links', content: json(telegramLinkSchema) },
         '401': unauthorized,
-        '403': errorResponse('`email_not_verified`'),
+        '403': errorResponse('`not_verified`'),
         '429': errorResponse('Too many requests'),
       },
     },
@@ -53,7 +53,7 @@ export const channelsPaths: ZodOpenApiPathsObject = {
           content: json(channelListSchema),
         },
         '401': unauthorized,
-        '403': errorResponse('`email_not_verified`'),
+        '403': errorResponse('`not_verified`'),
       },
     },
   },
@@ -68,7 +68,7 @@ export const channelsPaths: ZodOpenApiPathsObject = {
         '204': { description: 'Deleted' },
         '400': errorResponse('Invalid channel ID'),
         '401': unauthorized,
-        '403': errorResponse('`email_not_verified`'),
+        '403': errorResponse('`not_verified`'),
         '404': errorResponse('Channel not found or not yours'),
       },
     },
@@ -104,7 +104,7 @@ export const channelsPaths: ZodOpenApiPathsObject = {
 export function channelsRouter(deps: AppDeps): Router {
   const router = Router();
   const { db, clock, config } = deps;
-  const auth = [requireUser(deps), requireVerifiedEmail];
+  const auth = [requireUser(deps), requireVerified];
 
   router.post(
     '/api/v1/channels/telegram-link',

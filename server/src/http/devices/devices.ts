@@ -17,7 +17,7 @@ import { PAIRING_CODE_TTL_MS, hashPairingCode, newPairingCode } from '../../devi
 import { findDeviceView, findDeviceViews } from '../../devices/queries.ts';
 import { applySettingsPatch } from '../../devices/settings.ts';
 import type { AppDeps } from '../app.ts';
-import { getAuth, requireUser, requireVerifiedEmail } from '../auth/middleware.ts';
+import { getAuth, requireUser, requireVerified } from '../auth/middleware.ts';
 import { HttpError, errorResponse } from '../errors.ts';
 import { toDevice, toDeviceListItem } from './views.ts';
 
@@ -69,7 +69,7 @@ export const devicesPaths: ZodOpenApiPathsObject = {
         },
         '400': errorResponse('Invalid body'),
         '401': unauthorized,
-        '403': errorResponse('`email_not_verified`'),
+        '403': errorResponse('`not_verified`'),
         '409': errorResponse('Device limit reached'),
       },
     },
@@ -149,7 +149,7 @@ export function devicesRouter(deps: AppDeps): Router {
   const { db, clock } = deps;
   const auth = requireUser(deps);
 
-  router.post('/api/v1/devices', auth, requireVerifiedEmail, async (req, res) => {
+  router.post('/api/v1/devices', auth, requireVerified, async (req, res) => {
     const { user } = getAuth(res);
     const { name } = createDeviceBodySchema.parse(req.body ?? {});
     const now = clock.now();

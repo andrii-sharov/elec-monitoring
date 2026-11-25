@@ -31,7 +31,7 @@ import {
   toInvite,
 } from '../../sharing/invites.ts';
 import type { AppDeps } from '../app.ts';
-import { getAuth, requireUser, requireVerifiedEmail } from '../auth/middleware.ts';
+import { getAuth, requireUser, requireVerified } from '../auth/middleware.ts';
 import {
   bearer,
   deviceIdParam,
@@ -89,7 +89,7 @@ export const sharingPaths: ZodOpenApiPathsObject = {
         '201': { description: 'The pending invite', content: json(inviteSchema) },
         '400': errorResponse('Invalid body'),
         '401': unauthorized,
-        '403': errorResponse('`forbidden` (not the owner) or `email_not_verified`'),
+        '403': errorResponse('`forbidden` (not the owner) or `not_verified`'),
         '404': deviceNotFound,
         '409': errorResponse('Already a member, or the member limit is reached'),
         '429': errorResponse('Too many invites'),
@@ -185,7 +185,7 @@ export function sharingRouter(deps: AppDeps): Router {
   router.post(
     '/api/v1/devices/:id/invites',
     auth,
-    requireVerifiedEmail,
+    requireVerified,
     rateLimit(deps.rateLimiter, 'invite', { user: INVITE_PER_USER }),
     async (req, res) => {
       const { user } = getAuth(res);

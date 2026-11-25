@@ -6,6 +6,8 @@ export const meSchema = z
     id: z.string(),
     email: z.string().nullable(),
     email_verified: z.boolean(),
+    phone: z.string().nullable(),
+    phone_verified: z.boolean(),
     name: z.string(),
     language: languageSchema,
     timezone: z.string(),

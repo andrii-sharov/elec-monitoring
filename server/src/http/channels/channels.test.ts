@@ -225,7 +225,7 @@ describe('DELETE /api/v1/channels/:id', () => {
     const id = crypto.randomUUID();
     const res = await del(auth, id);
     expect(res.status).toBe(403);
-    expect(res.body.error.code).toBe('email_not_verified');
+    expect(res.body.error.code).toBe('not_verified');
     expect((await request(app()).delete(`/api/v1/channels/${id}`)).status).toBe(401);
   });
 });
@@ -248,6 +248,6 @@ describe('auth', () => {
         .send({ channel_ids: [] }),
     ]);
     expect(responses.map((r) => r.status)).toEqual([403, 403, 403, 403]);
-    expect(responses[0]!.body.error.code).toBe('email_not_verified');
+    expect(responses[0]!.body.error.code).toBe('not_verified');
   });
 });

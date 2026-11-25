@@ -58,7 +58,7 @@ Validation errors add `details`:
 | 401  | `invalid_credentials` | Log in with a wrong email or password (the same answer for both)             |
 | 403  | `invalid_credentials` | A signed-in user's password re-check fails (change password, delete account) |
 | 403  | `reauth_required`     | Google-only account deletes itself more than 5 min after sign-in             |
-| 403  | `email_not_verified`  | Unverified account creates a device                                          |
+| 403  | `not_verified`        | Account without a verified email or phone creates a device                   |
 | 404  | `not_found`           | Missing, or the caller has no access (do not leak existence)                 |
 | 409  | `conflict`            | State does not allow the action (see each endpoint)                          |
 | 410  | `expired`             | Pairing code, invite or email link expired or used                           |
@@ -636,7 +636,7 @@ newest first:
 | POST   | `/invites/:token/accept`         | signed in | invitee              | Accept invite          |
 
 - `POST /devices/:id/invites` `{ "email": "…" }` (trimmed, lowercased)
-  → `201` with the invite object. The account needs a verified email.
+  → `201` with the invite object. The account needs a verified email or phone.
   Limit: 10 per hour per user. Sends the email in the recipient's
   language, or `uk` if they have no account, with the link
   `https://app.<domain>/invite?token=<token>`. The link is valid 7 days.
@@ -820,6 +820,8 @@ the same delivery ID again (`202`).
   "id": "…",
   "email": "user@example.com",
   "email_verified": true,
+  "phone": null,
+  "phone_verified": false,
   "name": "Johnny",
   "language": "uk",
   "timezone": "Europe/Kyiv",

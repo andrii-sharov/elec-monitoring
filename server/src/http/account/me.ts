@@ -16,6 +16,8 @@ export function toMe(user: User): Me {
     id: user.id,
     email: user.email,
     email_verified: user.emailVerifiedAt !== null,
+    phone: user.phone,
+    phone_verified: user.phoneVerifiedAt !== null,
     name: user.name,
     language: languageSchema.catch('uk').parse(user.language),
     timezone: user.timezone,

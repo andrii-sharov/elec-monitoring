@@ -16,7 +16,7 @@ export function VerifyBanner() {
     onSuccess: () => toast.success(t('app.verify.resent')),
     onError: (error) => toast.error(errorMessage(t, error)),
   });
-  if (!me || me.email_verified) return null;
+  if (!me || me.email_verified || me.phone_verified) return null;
   return (
     <Alert className="flex flex-wrap items-center justify-between gap-2">
       <AlertDescription className="flex items-center gap-2">

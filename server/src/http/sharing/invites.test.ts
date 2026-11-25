@@ -149,7 +149,7 @@ describe('POST /api/v1/devices/:id/invites', () => {
     await t.db.update(appUser).set({ emailVerifiedAt: null }).where(eq(appUser.id, owner.id));
     const res = await invite({ email: 'mary@example.com' });
     expect(res.status).toBe(403);
-    expect(res.body.error.code).toBe('email_not_verified');
+    expect(res.body.error.code).toBe('not_verified');
   });
 
   test('is rate limited', async () => {

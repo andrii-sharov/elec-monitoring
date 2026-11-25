@@ -42,6 +42,8 @@ test('GET /me returns the profile of a password user', async () => {
     id: user.id,
     email: 'john@example.com',
     email_verified: true,
+    phone: null,
+    phone_verified: false,
     name: 'John',
     language: 'uk',
     timezone: 'Europe/Kyiv',
@@ -50,6 +52,17 @@ test('GET /me returns the profile of a password user', async () => {
     is_admin: false,
   });
   expect(res.body).toEqual(JSON.parse(JSON.stringify(toMe(user))));
+});
+
+test('GET /me returns a verified phone-only user', async () => {
+  const { auth } = await authed({ phone: '+380501234567' });
+  const res = await request(app()).get('/api/v1/me').set('Authorization', auth);
+  expect(res.body).toMatchObject({
+    email: null,
+    email_verified: false,
+    phone: '+380501234567',
+    phone_verified: true,
+  });
 });
 
 test('GET /me reflects a Google-only account and the admin flag', async () => {

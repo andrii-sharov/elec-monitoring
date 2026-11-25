@@ -65,7 +65,7 @@ export function TelegramConnect() {
   const { api, me } = useSession();
   const channels = useChannels();
   const [link, setLink] = useState<Link | null>(null);
-  const verified = me?.email_verified ?? false;
+  const verified = Boolean(me?.email_verified || me?.phone_verified);
 
   const create = useMutation({
     mutationFn: (knownIds: string[]) =>

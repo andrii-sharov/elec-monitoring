@@ -17,7 +17,7 @@ export function DevicesPage() {
   const devices = useDevices();
   const style = useAppStyle();
   const { DeviceSummary } = style.slots;
-  const verified = me?.email_verified ?? false;
+  const verified = Boolean(me?.email_verified || me?.phone_verified);
 
   const addButton = (
     <Button disabled={!verified} onClick={() => void navigate('/devices/new')}>
