@@ -16,7 +16,7 @@ test('a short password shows an inline error and sends nothing', async () => {
   );
   const { user } = renderRoute('/signup');
   await user.type(await screen.findByLabelText('Name'), 'Johnny');
-  await user.type(screen.getByLabelText('Email'), 'johnny@example.com');
+  await user.type(screen.getByLabelText('Email or phone'), 'johnny@example.com');
   await user.type(screen.getByLabelText('Password'), '1234567');
   await user.click(screen.getByRole('button', { name: 'Create account' }));
   expect(await screen.findByText('At least 8 characters')).toBeInTheDocument();
@@ -33,7 +33,7 @@ test('valid sign-up sends language and timezone and shows the check-email screen
   );
   const { user } = renderRoute('/signup');
   await user.type(await screen.findByLabelText('Name'), 'Johnny');
-  await user.type(screen.getByLabelText('Email'), 'johnny@example.com');
+  await user.type(screen.getByLabelText('Email or phone'), 'johnny@example.com');
   await user.type(screen.getByLabelText('Password'), 'password1');
   await user.click(screen.getByRole('button', { name: 'Create account' }));
   expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeInTheDocument();
@@ -55,7 +55,7 @@ test('an empty name shows Required and sends nothing', async () => {
     }),
   );
   const { user } = renderRoute('/signup');
-  await user.type(await screen.findByLabelText('Email'), 'johnny@example.com');
+  await user.type(await screen.findByLabelText('Email or phone'), 'johnny@example.com');
   await user.type(screen.getByLabelText('Password'), 'password1');
   await user.click(screen.getByRole('button', { name: 'Create account' }));
   expect(await screen.findByText('Required')).toBeInTheDocument();
@@ -65,7 +65,7 @@ test('an empty name shows Required and sends nothing', async () => {
 test('an invite link prefills the email and adds the shared-device note', async () => {
   server.use(http.post(`${base}/api/auth/signup`, () => new HttpResponse(null, { status: 201 })));
   const { user } = renderRoute('/signup?email=mary%40example.com&invite=1');
-  expect(await screen.findByLabelText('Email')).toHaveValue('mary@example.com');
+  expect(await screen.findByLabelText('Email or phone')).toHaveValue('mary@example.com');
   await user.type(screen.getByLabelText('Name'), 'Mary');
   await user.type(screen.getByLabelText('Password'), 'long enough 1');
   await user.click(screen.getByRole('button', { name: 'Create account' }));
@@ -79,9 +79,9 @@ test('an invite link prefills the email and adds the shared-device note', async 
 test('without an invite the check-email screen has no shared-device note', async () => {
   server.use(http.post(`${base}/api/auth/signup`, () => new HttpResponse(null, { status: 201 })));
   const { user } = renderRoute('/signup');
-  expect(await screen.findByLabelText('Email')).toHaveValue('');
+  expect(await screen.findByLabelText('Email or phone')).toHaveValue('');
   await user.type(screen.getByLabelText('Name'), 'Mary');
-  await user.type(screen.getByLabelText('Email'), 'mary@example.com');
+  await user.type(screen.getByLabelText('Email or phone'), 'mary@example.com');
   await user.type(screen.getByLabelText('Password'), 'long enough 1');
   await user.click(screen.getByRole('button', { name: 'Create account' }));
   await screen.findByRole('heading', { name: 'Check your email' });
@@ -91,9 +91,8 @@ test('without an invite the check-email screen has no shared-device note', async
 const telegramUrl = 'https://t.me/TestBot?start=p_abc';
 
 async function fillPhoneSignup(user: ReturnType<typeof renderRoute>['user'], phone: string) {
-  await user.click(await screen.findByRole('button', { name: 'Phone' }));
-  await user.type(screen.getByLabelText('Name'), 'Johnny');
-  await user.type(screen.getByLabelText('Phone number'), phone);
+  await user.type(await screen.findByLabelText('Name'), 'Johnny');
+  await user.type(screen.getByLabelText('Email or phone'), phone);
   await user.type(screen.getByLabelText('Password'), 'password1');
   await user.click(screen.getByRole('button', { name: 'Create account' }));
 }
@@ -111,7 +110,7 @@ test('phone sign-up sends the number and shows the Telegram link', async () => {
   expect(await screen.findByText('Confirm in Telegram')).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Open Telegram' })).toHaveAttribute('href', telegramUrl);
   expect(spy).toHaveBeenCalledWith({
-    phone: '050 123 45 67',
+    phone: '+380501234567',
     password: 'password1',
     name: 'Johnny',
     language: 'en',
@@ -119,7 +118,7 @@ test('phone sign-up sends the number and shows the Telegram link', async () => {
   });
 });
 
-test('a rejected phone shows the error under the field', async () => {
+test('a number used by another account shows the error under the field', async () => {
   server.use(
     http.post(`${base}/api/auth/signup`, () =>
       HttpResponse.json(
@@ -127,7 +126,7 @@ test('a rejected phone shows the error under the field', async () => {
           error: {
             code: 'validation_error',
             message: 'x',
-            details: [{ path: 'phone', code: 'invalid_phone' }],
+            details: [{ path: 'phone', code: 'already_in_use' }],
           },
         },
         { status: 400 },
@@ -135,11 +134,17 @@ test('a rejected phone shows the error under the field', async () => {
     ),
   );
   const { user } = renderRoute('/signup');
-  await fillPhoneSignup(user, '12');
-  expect(await screen.findByText('Enter a valid phone number')).toBeInTheDocument();
+  await fillPhoneSignup(user, '0501234567');
+  expect(await screen.findByText('This number is used by another account')).toBeInTheDocument();
 });
 
-test('a phone invite link opens the phone form prefilled', async () => {
+test('a phone invite link prefills the formatted number', async () => {
   renderRoute('/signup?phone=%2B380501234567&invite=1');
-  expect(await screen.findByLabelText('Phone number')).toHaveValue('+380501234567');
+  expect(await screen.findByLabelText('Email or phone')).toHaveValue('+380 50 123 4567');
+});
+
+test('there is no email or phone switch', async () => {
+  renderRoute('/signup');
+  await screen.findByLabelText('Email or phone');
+  expect(screen.queryByRole('button', { name: 'Phone' })).not.toBeInTheDocument();
 });

@@ -85,5 +85,5 @@ test('forgot password with a phone shows the Telegram screen', async () => {
   await user.click(screen.getByRole('button', { name: 'Send reset link' }));
   expect(await screen.findByText(/We sent a link to Telegram/)).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Open Telegram' })).toHaveAttribute('href', telegramUrl);
-  expect(spy).toHaveBeenCalledWith({ phone: '0501234567' });
+  expect(spy).toHaveBeenCalledWith({ phone: '+380501234567' });
 });

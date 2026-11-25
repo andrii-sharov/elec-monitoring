@@ -13,15 +13,18 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { errorMessage } from '@/forms/errorMessage';
 import { FormAlert } from '@/forms/FormAlert';
+import { ControlledPhoneField } from '@/forms/phone/ControlledPhoneField';
+import { storedPhone } from '@/forms/phone/phoneText';
 import { TextField } from '@/forms/TextField';
 import { applyServerErrors } from '@/forms/zodErrors';
+import { phoneValueSchema } from '../auth/identifier';
 import { TelegramConfirm } from '../auth/TelegramConfirm';
 
 type Kind = 'email' | 'phone';
 
 const formSchemas = {
   email: z.object({ value: emailSchema }),
-  phone: z.object({ value: z.string().trim().min(1) }),
+  phone: z.object({ value: phoneValueSchema }),
 };
 type Values = z.input<typeof formSchemas.email>;
 
@@ -36,7 +39,11 @@ export function Identifiers({ me }: { me: Me }) {
     <div className="flex flex-wrap items-center justify-between gap-2">
       <span className="flex flex-wrap items-center gap-2">
         <span className="text-muted-foreground">{t(`app.account.identifiers.${kind}`)}</span>
-        <span>{value ?? t('app.account.identifiers.notAdded')}</span>
+        <span>
+          {value && kind === 'phone'
+            ? storedPhone(value)
+            : (value ?? t('app.account.identifiers.notAdded'))}
+        </span>
         {value ? (
           <Badge variant={verified ? 'secondary' : 'outline'}>
             {t(`app.account.identifiers.${verified ? 'confirmed' : 'notConfirmed'}`)}
@@ -84,6 +91,7 @@ function AddForm({ kind, onAdded }: { kind: Kind; onAdded: (telegramUrl: string)
   const queryClient = useQueryClient();
   const {
     register,
+    control,
     handleSubmit,
     setError,
     formState: { errors },
@@ -119,13 +127,22 @@ function AddForm({ kind, onAdded }: { kind: Kind; onAdded: (telegramUrl: string)
       onSubmit={handleSubmit(({ value }) => add.mutate(value))}
     >
       <FormAlert message={formError} />
-      <TextField
-        label={t(kind === 'email' ? 'app.auth.email' : 'app.auth.phone.number')}
-        type={kind === 'email' ? 'email' : 'tel'}
-        autoComplete={kind === 'email' ? 'email' : 'tel'}
-        error={errors.value}
-        {...register('value')}
-      />
+      {kind === 'email' ? (
+        <TextField
+          label={t('app.auth.email')}
+          type="email"
+          autoComplete="email"
+          error={errors.value}
+          {...register('value')}
+        />
+      ) : (
+        <ControlledPhoneField
+          mode="phone"
+          label={t('app.auth.phone.number')}
+          control={control}
+          name="value"
+        />
+      )}
       <Button type="submit" className="self-start" disabled={add.isPending}>
         {t('app.account.identifiers.submit')}
       </Button>

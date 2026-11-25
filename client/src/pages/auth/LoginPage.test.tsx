@@ -89,6 +89,7 @@ test('an email in the link prefills the form', async () => {
 
 test.each([
   ['+380501234567', { phone: '+380501234567' }],
+  ['050 123 45 67', { phone: '+380501234567' }],
   ['john@example.com', { email: 'john@example.com' }],
 ])('logs in with %s', async (identifier, expected) => {
   const spy = loginHandler();
@@ -101,29 +102,50 @@ test.each([
 
 test('prefills the phone from the link', async () => {
   renderRoute('/login?phone=%2B380501234567');
-  expect(await screen.findByLabelText('Email or phone')).toHaveValue('+380501234567');
+  expect(await screen.findByLabelText('Email or phone')).toHaveValue('+380 50 123 4567');
 });
 
-test('a rejected phone shows the error under the field', async () => {
-  server.use(
-    http.post(`${base}/api/auth/login`, () =>
-      HttpResponse.json(
-        {
-          error: {
-            code: 'validation_error',
-            message: 'x',
-            details: [{ path: 'phone', code: 'invalid_phone' }],
-          },
-        },
-        { status: 400 },
-      ),
-    ),
-  );
+test('a short phone is caught before sending', async () => {
+  const spy = loginHandler();
   const { user } = renderRoute('/login');
   await user.type(await screen.findByLabelText('Email or phone'), '12');
   await user.type(screen.getByLabelText('Password'), 'password1');
   await user.click(screen.getByRole('button', { name: 'Log in' }));
   expect(await screen.findByText('Enter a valid phone number')).toBeInTheDocument();
+  expect(spy).not.toHaveBeenCalled();
+});
+
+test('a number formats as it is typed and shows the country', async () => {
+  const { user } = renderRoute('/login');
+  const field = await screen.findByLabelText('Email or phone');
+  expect(screen.queryByRole('button', { name: /Country code/ })).not.toBeInTheDocument();
+  await user.type(field, '0501234567');
+  expect(field).toHaveValue('050 123 4567');
+  expect(screen.getByRole('button', { name: 'Country code: Ukraine +380' })).toBeVisible();
+});
+
+test('letters switch the field back to email', async () => {
+  const { user } = renderRoute('/login');
+  const field = await screen.findByLabelText('Email or phone');
+  await user.type(field, '050j');
+  expect(field).toHaveValue('050j');
+  expect(screen.queryByRole('button', { name: /Country code/ })).not.toBeInTheDocument();
+});
+
+test('picking a country reads the number in that country', async () => {
+  const spy = loginHandler();
+  const { user } = renderRoute('/login');
+  const field = await screen.findByLabelText('Email or phone');
+  await user.type(field, '512345678');
+  await user.click(screen.getByRole('button', { name: /Country code/ }));
+  await user.type(screen.getByRole('searchbox', { name: 'Search country or code' }), '+48');
+  await user.click(await screen.findByRole('button', { name: /Poland/ }));
+  expect(field).toHaveValue('512 345 678');
+  await user.type(screen.getByLabelText('Password'), 'password1');
+  await user.click(screen.getByRole('button', { name: 'Log in' }));
+  await waitFor(() =>
+    expect(spy).toHaveBeenCalledWith({ phone: '+48512345678', password: 'password1' }),
+  );
 });
 
 test('an incomplete email is caught before sending', async () => {

@@ -275,6 +275,6 @@ test('members and pending invites show a phone when there is no email', async ()
   });
   renderRoute(`/devices/${id}`, { me: johnny });
   const section = await membersSection();
-  expect(await section.findByText('+380501234567')).toBeVisible();
-  expect(await section.findByText('+380509999999')).toBeVisible();
+  expect(await section.findByText('+380 50 123 4567')).toBeVisible();
+  expect(await section.findByText('+380 50 999 9999')).toBeVisible();
 });

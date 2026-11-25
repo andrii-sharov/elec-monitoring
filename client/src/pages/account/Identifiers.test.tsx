@@ -31,7 +31,7 @@ test('a phone account adds an email and is told to check the inbox', async () =>
     ),
   );
   const { user, section } = await renderSection(phoneOnly);
-  expect(section.getByText('+380501234567')).toBeVisible();
+  expect(section.getByText('+380 50 123 4567')).toBeVisible();
   expect(section.getByText('Confirmed')).toBeVisible();
   await user.click(section.getByRole('button', { name: 'Add email' }));
   await user.type(section.getByLabelText('Email'), 'john@example.com');
@@ -58,7 +58,15 @@ test('an email account adds a phone and gets the Telegram link', async () => {
     'href',
     telegramUrl,
   );
-  expect(body).toHaveBeenCalledWith({ phone: '050 123 45 67' });
+  expect(body).toHaveBeenCalledWith({ phone: '+380501234567' });
+});
+
+test('the phone field always shows the country', async () => {
+  const { user, section } = await renderSection(meFixture());
+  await user.click(section.getByRole('button', { name: 'Add phone' }));
+  expect(section.getByRole('button', { name: 'Country code: Ukraine +380' })).toBeVisible();
+  await user.type(section.getByLabelText('Phone number'), '05a01');
+  expect(section.getByLabelText('Phone number')).toHaveValue('050 1');
 });
 
 test('a number used by another account is reported on the field', async () => {

@@ -239,7 +239,6 @@ export const uk: Dictionary = {
       phone: {
         identifier: 'Email або телефон',
         number: 'Номер телефону',
-        tab: 'Телефон',
         confirmTitle: 'Підтвердіть у Telegram',
         confirmHint: 'Відкрийте бота, натисніть Start і поділіться своїм номером.',
         openTelegram: 'Відкрити Telegram',
@@ -254,6 +253,11 @@ export const uk: Dictionary = {
         title: 'Вхід через Google',
         working: 'Завершуємо вхід…',
       },
+    },
+    phone: {
+      country: 'Код країни: {{country}} {{code}}',
+      search: 'Пошук країни або коду',
+      empty: 'Країн не знайдено',
     },
     validation: {
       too_small_string: 'Щонайменше {{min}} символів',

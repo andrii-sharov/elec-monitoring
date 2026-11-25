@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage } from '@/forms/errorMessage';
 import { FormAlert } from '@/forms/FormAlert';
+import { storedPhone } from '@/forms/phone/phoneText';
 import { applyServerErrors } from '@/forms/zodErrors';
 import { useFormatters } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
@@ -106,7 +107,7 @@ function MemberList({ device, members }: { device: Device; members: Member[] }) 
           <Badge variant="secondary">
             {member.role === 'OWNER' ? t('app.members.owner') : t('app.members.viewer')}
           </Badge>
-          {[member.email, member.phone].map((value) =>
+          {[member.email, member.phone && storedPhone(member.phone)].map((value) =>
             value ? (
               <span key={value} className="text-sm text-muted-foreground">
                 {value}
@@ -161,7 +162,7 @@ function useInvitedToast() {
   return (invite: Invite) =>
     toast.success(
       invite.phone
-        ? t('app.members.phoneInviteCreated', { phone: invite.phone })
+        ? t('app.members.phoneInviteCreated', { phone: storedPhone(invite.phone) })
         : t('app.members.invited', { email: invite.email }),
     );
 }
@@ -179,13 +180,7 @@ function InviteForm({
   const { api } = useSession();
   const queryClient = useQueryClient();
   const announce = useInvitedToast();
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setError,
-    formState: { errors },
-  } = useForm<InviteInput, unknown, InviteOutput>({
+  const { control, handleSubmit, reset, setError } = useForm<InviteInput, unknown, InviteOutput>({
     resolver: zodResolver(inviteFormSchema),
     defaultValues: { identifier: '' },
   });
@@ -220,12 +215,7 @@ function InviteForm({
         {full ? t('app.members.limit') : t('app.members.inviteHint')}
       </p>
       <FormAlert message={formError} />
-      <IdentifierField
-        autoComplete="off"
-        disabled={full}
-        error={errors.identifier}
-        {...register('identifier')}
-      />
+      <IdentifierField control={control} name="identifier" autoComplete="off" disabled={full} />
       <Button type="submit" className="self-start" disabled={full || send.isPending}>
         {t('app.members.inviteSubmit')}
       </Button>
@@ -304,7 +294,7 @@ function PendingInvites({
           const expired = new Date(invite.expires_at).getTime() <= now;
           return (
             <li key={invite.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3">
-              <span>{invite.email ?? invite.phone}</span>
+              <span>{invite.email ?? (invite.phone && storedPhone(invite.phone))}</span>
               {expired ? (
                 <Badge variant="outline">{t('app.members.expired')}</Badge>
               ) : (

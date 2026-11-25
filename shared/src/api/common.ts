@@ -73,10 +73,6 @@ export function withIdentifier<S extends z.ZodRawShape>(shape: S) {
 
 export const identifierSchema = withIdentifier({});
 
-export function isEmailInput(value: string): boolean {
-  return value.includes('@');
-}
-
 export const passwordSchema = z.string().min(8).max(128);
 
 export const nameSchema = z.string().trim().min(1).max(100);

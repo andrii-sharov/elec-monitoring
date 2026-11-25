@@ -32,6 +32,7 @@ export function LoginPage() {
   const next = safeNext(params.get('next'));
   const {
     register,
+    control,
     handleSubmit,
     setError,
     formState: { errors },
@@ -72,7 +73,7 @@ export function LoginPage() {
         onSubmit={handleSubmit((values) => mutation.mutate(values))}
       >
         <FormAlert message={mutation.error ? errorMessage(t, mutation.error) : null} />
-        <IdentifierField error={errors.identifier} {...register('identifier')} />
+        <IdentifierField control={control} name="identifier" />
         <TextField
           label={t('app.auth.password')}
           type="password"

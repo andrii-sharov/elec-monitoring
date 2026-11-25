@@ -234,7 +234,6 @@ export const en = {
       phone: {
         identifier: 'Email or phone',
         number: 'Phone number',
-        tab: 'Phone',
         confirmTitle: 'Confirm in Telegram',
         confirmHint: 'Open the bot, press Start and share your number.',
         openTelegram: 'Open Telegram',
@@ -249,6 +248,11 @@ export const en = {
         title: 'Google sign-in',
         working: 'Finishing sign-in…',
       },
+    },
+    phone: {
+      country: 'Country code: {{country}} {{code}}',
+      search: 'Search country or code',
+      empty: 'No countries found',
     },
     validation: {
       too_small_string: 'At least {{min}} characters',

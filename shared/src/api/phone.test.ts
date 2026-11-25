@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { identifierSchema, isEmailInput, normalizePhone, telegramPhone } from './common.ts';
+import { identifierSchema, normalizePhone, telegramPhone } from './common.ts';
 
 function issues(body: unknown) {
   const result = identifierSchema.safeParse(body);
@@ -69,9 +69,4 @@ describe('identifierSchema', () => {
       { path: 'email', code: 'invalid_format', reason: undefined },
     ]);
   });
-});
-
-test('isEmailInput looks for an @', () => {
-  expect(isEmailInput('john@example.com')).toBe(true);
-  expect(isEmailInput('050 123 45 67')).toBe(false);
 });

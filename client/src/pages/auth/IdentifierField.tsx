@@ -1,10 +1,18 @@
-import type { ComponentProps } from 'react';
+import type { FieldValues } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { TextField } from '@/forms/TextField';
+import {
+  ControlledPhoneField,
+  type ControlledPhoneFieldProps,
+} from '@/forms/phone/ControlledPhoneField';
 
-type IdentifierFieldProps = Omit<ComponentProps<typeof TextField>, 'label' | 'type'>;
+type IdentifierFieldProps<T extends FieldValues> = Omit<
+  ControlledPhoneFieldProps<T>,
+  'mode' | 'label'
+>;
 
-export function IdentifierField(props: IdentifierFieldProps) {
+export function IdentifierField<T extends FieldValues>(props: IdentifierFieldProps<T>) {
   const { t } = useTranslation();
-  return <TextField label={t('app.auth.phone.identifier')} autoComplete="username" {...props} />;
+  return (
+    <ControlledPhoneField mode="identifier" label={t('app.auth.phone.identifier')} {...props} />
+  );
 }

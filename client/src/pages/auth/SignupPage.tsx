@@ -1,4 +1,4 @@
-import { emailSchema, nameSchema, passwordSchema } from '@elec/shared/api';
+import { nameSchema, passwordSchema } from '@elec/shared/api';
 import { languages, type Language } from '@elec/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
@@ -17,19 +17,19 @@ import { TextField } from '@/forms/TextField';
 import { applyServerErrors } from '@/forms/zodErrors';
 import { AuthLayout } from './AuthLayout';
 import { GoogleButton } from './GoogleButton';
+import { identifierErrors, identifierValueSchema, toIdentifier } from './identifier';
+import { IdentifierField } from './IdentifierField';
 import { TelegramConfirm } from './TelegramConfirm';
 
-const shared = { password: passwordSchema, name: nameSchema };
-const formSchemas = {
-  email: z.object({ email: emailSchema, phone: z.string(), ...shared }),
-  phone: z.object({ email: z.string(), phone: z.string().trim().min(1), ...shared }),
-};
-type Method = keyof typeof formSchemas;
-type Input = z.input<typeof formSchemas.email>;
-type Output = z.output<typeof formSchemas.email>;
+const formSchema = z.object({
+  identifier: identifierValueSchema,
+  password: passwordSchema,
+  name: nameSchema,
+});
+type Input = z.input<typeof formSchema>;
+type Output = z.output<typeof formSchema>;
 
-const methods: Method[] = ['email', 'phone'];
-const fields = ['email', 'phone', 'password', 'name'] as const;
+const fields = ['identifier', 'password', 'name'] as const;
 const fallbackTimezone = 'Europe/Kyiv';
 
 function browserTimezone(): string {
@@ -41,27 +41,25 @@ export function SignupPage() {
   const { api } = useSession();
   const [params] = useSearchParams();
   const fromInvite = params.get('invite') === '1';
-  const [method, setMethod] = useState<Method>(params.get('phone') ? 'phone' : 'email');
   const language: Language = languages.find((l) => l === i18n.resolvedLanguage) ?? 'uk';
   const {
     register,
+    control,
     handleSubmit,
     setError,
-    clearErrors,
     formState: { errors },
   } = useForm<Input, unknown, Output>({
-    resolver: zodResolver(formSchemas[method]),
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      email: params.get('email') ?? '',
-      phone: params.get('phone') ?? '',
+      identifier: params.get('email') ?? params.get('phone') ?? '',
       password: '',
       name: '',
     },
   });
   const mutation = useMutation({
-    mutationFn: ({ email, phone, password, name }: Output) =>
+    mutationFn: ({ identifier, password, name }: Output) =>
       signup(api, {
-        ...(method === 'phone' ? { phone } : { email }),
+        ...toIdentifier(identifier),
         password,
         name,
         language,
@@ -69,7 +67,7 @@ export function SignupPage() {
       }),
   });
   const [formError, setFormError] = useState<string | null>(null);
-  const submittedEmail = mutation.variables?.email ?? '';
+  const submittedEmail = mutation.variables?.identifier ?? '';
 
   if (mutation.isSuccess && mutation.data) {
     return (
@@ -135,54 +133,20 @@ export function SignupPage() {
             onError: (error) => {
               const mapped =
                 isApiError(error, 'validation_error') &&
-                applyServerErrors(error, setError, fields, t);
+                applyServerErrors(identifierErrors(error), setError, fields, t);
               if (!mapped) setFormError(errorMessage(t, error));
             },
           });
         })}
       >
         <FormAlert message={formError} />
-        <fieldset className="grid grid-cols-2 gap-2">
-          {methods.map((option) => (
-            <Button
-              key={option}
-              type="button"
-              variant={method === option ? 'default' : 'outline'}
-              aria-pressed={method === option}
-              onClick={() => {
-                setMethod(option);
-                clearErrors();
-              }}
-            >
-              {t(option === 'email' ? 'app.auth.email' : 'app.auth.phone.tab')}
-            </Button>
-          ))}
-        </fieldset>
         <TextField
           label={t('app.auth.name')}
           autoComplete="name"
           error={errors.name}
           {...register('name')}
         />
-        {method === 'email' ? (
-          <TextField
-            key="email"
-            label={t('app.auth.email')}
-            type="email"
-            autoComplete="email"
-            error={errors.email}
-            {...register('email')}
-          />
-        ) : (
-          <TextField
-            key="phone"
-            label={t('app.auth.phone.number')}
-            type="tel"
-            autoComplete="tel"
-            error={errors.phone}
-            {...register('phone')}
-          />
-        )}
+        <IdentifierField control={control} name="identifier" />
         <TextField
           label={t('app.auth.password')}
           type="password"

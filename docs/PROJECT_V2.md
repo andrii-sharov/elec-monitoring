@@ -81,6 +81,10 @@ only sends emails.
 
 - A user picks an email or a mobile phone as the identifier. Phones are
   stored as E.164; each phone and email belongs to one account at most.
+- Forms take the identifier in one "Email or phone" field. A phone is
+  recognised as it is typed: a country picker (flag and dialing code,
+  default Ukraine) appears and the number formats live. The client sends
+  E.164.
 - Sign up, log in and forgot password work with a phone. The number is
   confirmed once, by sharing the contact with the platform Telegram bot
   (§7). No SMS.

@@ -24,21 +24,21 @@ Status: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 
 ## Status board
 
-| #   | Milestone                                                             | Status | Depends on | Plan                                                             |
-| --- | --------------------------------------------------------------------- | ------ | ---------- | ---------------------------------------------------------------- |
-| M0  | [Foundation](#m0--foundation)                                         | ✅     | —          | [M00](plans/M00-foundation.md)                                   |
-| M1  | [Auth](#m1--auth)                                                     | ✅     | M0         | [M01](plans/M01-auth.md)                                         |
-| M2  | [Devices and check-ins](#m2--devices-and-check-ins)                   | ✅     | M1         | [M02](plans/M02-devices.md)                                      |
-| M3  | [Worker and platform bot](#m3--worker-and-platform-telegram-bot)      | ✅     | M2         | [M03](plans/M03-worker-telegram.md)                              |
-| M4  | [Client app](#m4--client-app)                                         | ✅     | M3         | [M04](plans/M04-client.md) · [M04a](plans/M04a-client-styles.md) |
-| M5  | [Firmware core and device setup](#m5--firmware-core-and-device-setup) | ✅     | M2         | [M05](plans/M05-firmware.md)                                     |
-| M6  | [Sharing](#m6--sharing)                                               | 🟡     | M4         | [M06](plans/M06-sharing.md)                                      |
-| M7  | [Phone sign-in via Telegram](#m7--phone-sign-in-via-telegram)         | 🟡     | M4         | [M07](plans/M07-phone-auth.md)                                   |
-| M8  | [Own bot and webhooks](#m8--own-telegram-bot-and-webhooks)            | ⬜     | M4         | —                                                                |
-| M9  | [Statistics](#m9--statistics)                                         | ⬜     | M4         | —                                                                |
-| M10 | [Admin app](#m10--admin-app)                                          | ⬜     | M4         | —                                                                |
-| M11 | [Remote management and OTA](#m11--remote-device-management-and-ota)   | ⬜     | M4, M5     | —                                                                |
-| M12 | [Launch readiness](#m12--launch-readiness)                            | ⬜     | all        | —                                                                |
+| #   | Milestone                                                             | Status | Depends on | Plan                                                               |
+| --- | --------------------------------------------------------------------- | ------ | ---------- | ------------------------------------------------------------------ |
+| M0  | [Foundation](#m0--foundation)                                         | ✅     | —          | [M00](plans/M00-foundation.md)                                     |
+| M1  | [Auth](#m1--auth)                                                     | ✅     | M0         | [M01](plans/M01-auth.md)                                           |
+| M2  | [Devices and check-ins](#m2--devices-and-check-ins)                   | ✅     | M1         | [M02](plans/M02-devices.md)                                        |
+| M3  | [Worker and platform bot](#m3--worker-and-platform-telegram-bot)      | ✅     | M2         | [M03](plans/M03-worker-telegram.md)                                |
+| M4  | [Client app](#m4--client-app)                                         | ✅     | M3         | [M04](plans/M04-client.md) · [M04a](plans/M04a-client-styles.md)   |
+| M5  | [Firmware core and device setup](#m5--firmware-core-and-device-setup) | ✅     | M2         | [M05](plans/M05-firmware.md)                                       |
+| M6  | [Sharing](#m6--sharing)                                               | 🟡     | M4         | [M06](plans/M06-sharing.md)                                        |
+| M7  | [Phone sign-in via Telegram](#m7--phone-sign-in-via-telegram)         | 🟡     | M4         | [M07](plans/M07-phone-auth.md) · [M07a](plans/M07a-phone-input.md) |
+| M8  | [Own bot and webhooks](#m8--own-telegram-bot-and-webhooks)            | ⬜     | M4         | —                                                                  |
+| M9  | [Statistics](#m9--statistics)                                         | ⬜     | M4         | —                                                                  |
+| M10 | [Admin app](#m10--admin-app)                                          | ⬜     | M4         | —                                                                  |
+| M11 | [Remote management and OTA](#m11--remote-device-management-and-ota)   | ⬜     | M4, M5     | —                                                                  |
+| M12 | [Launch readiness](#m12--launch-readiness)                            | ⬜     | all        | —                                                                  |
 
 M5 (firmware) can run alongside M3–M4 once the check-in endpoints exist.
 
@@ -339,6 +339,7 @@ A §1, §3, §4 Sharing and Account, §6 · D §3, §4 `device_invite`, §11.
 - [x] Share devices by phone
 - [x] Client: sign up, log in and reset with a phone
 - [x] Client: account and sharing with a phone
+- [x] Phone input with a country picker and live formatting ([M07a](plans/M07a-phone-input.md))
 
 **Done when:** tests cover one number typed in different formats, sign-up
 with another person's number, a forwarded contact or a code opened in a

@@ -29,12 +29,7 @@ const backLink = (label: string) => (
 export function ForgotPasswordPage() {
   const { t } = useTranslation();
   const { api } = useSession();
-  const {
-    register,
-    handleSubmit,
-    setError,
-    formState: { errors },
-  } = useForm<Input, unknown, Output>({
+  const { control, handleSubmit, setError } = useForm<Input, unknown, Output>({
     resolver: zodResolver(formSchema),
     defaultValues: { identifier: '' },
   });
@@ -82,7 +77,7 @@ export function ForgotPasswordPage() {
         onSubmit={handleSubmit((values) => mutation.mutate(values))}
       >
         <FormAlert message={mutation.error ? errorMessage(t, mutation.error) : null} />
-        <IdentifierField error={errors.identifier} {...register('identifier')} />
+        <IdentifierField control={control} name="identifier" />
         <Button type="submit" disabled={mutation.isPending}>
           {t('app.auth.forgot.submit')}
         </Button>

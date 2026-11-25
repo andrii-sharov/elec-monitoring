@@ -103,8 +103,7 @@ Identity storage: columns on `app_user` (chosen) instead of a separate identitie
    - `signupAttempt`: `Someone tried to create an Electricity Monitor account with your number. You already have one. Log in: {{link}}` + `\nIf you forgot your password, use “Forgot password” on the login page.`
    - `invite`: `{{inviter}} shared {{device}} with you in Electricity Monitor. Open the invite: {{link}}` + `\nThe invite is valid for 7 days.`
 9. **Client.**
-   - Sign up: an Email / Phone switch; Phone → after submit, a "Confirm in Telegram" screen with the button (`telegram_url`).
-   - Log in and Forgot password: one "Email or phone" field (contains `@` → email).
+   - Sign up, Log in and Forgot password: one "Email or phone" field that recognises a phone as it is typed ([M07a](M07a-phone-input.md) replaced the sign-up Email / Phone switch). Phone sign-up → after submit, a "Confirm in Telegram" screen with the button (`telegram_url`).
    - Forgot with a phone → "We sent a link to Telegram. Didn't get it? Open the bot and share your number." with the button.
    - Verify banner for an unverified phone account: "Confirm your number in Telegram" → `POST /api/auth/phone` → open `telegram_url`.
    - Account: email and phone rows with status; "Add phone" and "Add email" when missing.

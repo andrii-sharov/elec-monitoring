@@ -245,7 +245,6 @@ export const ru: Dictionary = {
       phone: {
         identifier: 'Email или телефон',
         number: 'Номер телефона',
-        tab: 'Телефон',
         confirmTitle: 'Подтвердите в Telegram',
         confirmHint: 'Откройте бота, нажмите Start и поделитесь своим номером.',
         openTelegram: 'Открыть Telegram',
@@ -260,6 +259,11 @@ export const ru: Dictionary = {
         title: 'Вход через Google',
         working: 'Завершаем вход…',
       },
+    },
+    phone: {
+      country: 'Код страны: {{country}} {{code}}',
+      search: 'Поиск страны или кода',
+      empty: 'Страны не найдены',
     },
     validation: {
       too_small_string: 'Не менее {{min}} символов',
