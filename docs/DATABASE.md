@@ -37,8 +37,7 @@ Design rules follow the `supabase-postgres-best-practices` skill.
     new type and a column conversion. A check constraint is simply
     replaced.
   - Standard values keep their own spelling and stay `text` + `check`:
-    language codes (`uk`), webhook event names (`device.offline`) and
-    token scopes (`read`).
+    language codes (`uk`) and webhook event names (`device.offline`).
 - **Strings:** `text`. Length limits live in the Zod schemas. The database
   only rejects blanks where it matters.
 - **Emails:** stored lowercased by the server. `check (email = lower(email))`
@@ -91,7 +90,6 @@ erDiagram
     app_user ||--o{ session : "signs in"
     session ||--o{ refresh_token : rotates
     app_user ||--o{ one_time_token : has
-    app_user ||--o{ api_token : has
     app_user ||--o{ device : owns
     app_user ||--o{ device_viewer : views
     device ||--o{ device_viewer : "shared with"
@@ -109,14 +107,14 @@ erDiagram
     notification_channel ||--o{ delivery : "sent to"
 ```
 
-| Group               | Tables                                                                |
-| ------------------- | --------------------------------------------------------------------- |
-| Accounts and auth   | `app_user`, `session`, `refresh_token`, `one_time_token`, `api_token` |
-| Devices and sharing | `device`, `device_viewer`, `device_invite`                            |
-| Firmware and OTA    | `firmware_release`, `firmware_update_attempt`                         |
-| Monitoring history  | `device_boot`, `device_diagnostic`, `outage`                          |
-| Notifications       | `notification_channel`, `device_channel`, `delivery`                  |
-| Platform            | `worker_heartbeat`                                                    |
+| Group               | Tables                                                   |
+| ------------------- | -------------------------------------------------------- |
+| Accounts and auth   | `app_user`, `session`, `refresh_token`, `one_time_token` |
+| Devices and sharing | `device`, `device_viewer`, `device_invite`               |
+| Firmware and OTA    | `firmware_release`, `firmware_update_attempt`            |
+| Monitoring history  | `device_boot`, `device_diagnostic`, `outage`             |
+| Notifications       | `notification_channel`, `device_channel`, `delivery`     |
+| Platform            | `worker_heartbeat`                                       |
 
 ## 3. Accounts and auth
 
@@ -209,28 +207,6 @@ create index one_time_token_user_id_idx on one_time_token (user_id, purpose);
   15 min.
 - A used or expired token returns `410 expired`, so rows stay until cleanup
   (§10).
-
-### `api_token`
-
-```sql
-create table api_token (
-  id             uuid primary key,
-  user_id        uuid not null references app_user (id) on delete cascade,
-  name           text not null,
-  token_hash     bytea not null unique check (octet_length(token_hash) = 32),
-  display_prefix text not null,
-  scopes         text[] not null check (scopes in ('{read}', '{read,write}')),
-  last_used_at   timestamptz,
-  created_at     timestamptz not null default now()
-);
-
-create index api_token_user_id_idx on api_token (user_id);
-```
-
-- `display_prefix` is the listed prefix, e.g. `em_live_ab12`.
-- Update `last_used_at` at most once a minute per token, not on every
-  request.
-- `DELETE /tokens/:id` deletes the row.
 
 ## 4. Devices and sharing
 

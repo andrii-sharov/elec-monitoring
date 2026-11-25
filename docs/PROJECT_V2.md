@@ -31,8 +31,7 @@ The platform is **free** for all users for now.
   - Telegram via the **platform bot** (simple, default),
   - Telegram via the **user's own bot** (advanced),
   - **Webhooks** (signed, with retries).
-- Public **REST API** with user-generated API tokens and Swagger UI
-  backed by a generated OpenAPI document.
+- **REST API** with Swagger UI backed by a generated OpenAPI document.
 - Outage classification:
   - **short** vs **long** interruption, threshold adjustable per device,
   - suspected **power** loss, a **network** interruption, or an **unknown**
@@ -600,9 +599,8 @@ in their documented machine-readable formats across all languages.
 REST, admin, Telegram webhook, health and docs. It also covers auth,
 errors, rate limits, and request and response shapes.
 
-- One Express API serves devices, both React apps and scripts.
-- The client app and scripts use the same `/api/v1` endpoints, with an
-  access JWT or an API token.
+- One Express API serves devices and both React apps.
+- The client app uses the `/api/v1` endpoints with an access JWT.
 - Device endpoints, including the check-in, live under `/api/v1/device/*`.
 - The server generates the public OpenAPI document from its schemas and
   serves it through Swagger UI.
@@ -687,7 +685,6 @@ Pages:
   only when a flash panel is shown.
 - **Notifications** — connect platform Telegram bot, add own bot, add
   webhook, delivery log.
-- **API tokens** — create (shown once), list, revoke.
 - **API docs** — Swagger UI backed by the generated OpenAPI document.
 - **Account** — name, timezone, language, linked Google, log out
   everywhere, delete account. Appearance: theme and app style, applied at
@@ -762,9 +759,8 @@ shared Zod schemas through the `app.validation.*` keys.
 - HTTPS everywhere, including the API on EC2 and the Vercel apps.
 - Passwords: argon2id. Email verification required.
 - Refresh tokens rotated with reuse detection; access JWT 15 min.
-- Device tokens, API tokens, refresh tokens: random 32 bytes, only
-  SHA-256 hash stored. API tokens have a prefix (`em_live_`) so leaked
-  tokens are easy to find.
+- Device tokens and refresh tokens: random 32 bytes, only SHA-256 hash
+  stored.
 - Bot tokens and webhook secrets encrypted at rest (AES-256-GCM).
 - Every query checks the user's access (owner / viewer); tests check
   that user A can't read user B's data.
@@ -994,8 +990,7 @@ client UI.
   portal, pairing code, browser flashing. The first firmware already has
   the OTA partition layout and verifying key.
 - **M6 Sharing:** invites, viewer role.
-- **M7 API integrations:** API tokens, public REST API, complete OpenAPI
-  document and Swagger UI.
+- **M7 Phone sign-in via Telegram.**
 - **M8 Own Telegram bot + webhooks** with delivery log and retries.
 - **M9 Statistics** in API, client app and `/stats` bot command.
 - **M10 Admin app:** read-only monitoring of the API, worker, devices and

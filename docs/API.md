@@ -17,7 +17,7 @@ marker once a proposal is accepted.
 | ----------------------------- | ------------------------- | ---------------------------------- |
 | `/api/v1/device/*`            | ESP devices (v2 firmware) | Device token (claim: pairing code) |
 | `/api/auth/*`                 | Client and admin apps     | Credentials, refresh cookie        |
-| `/api/v1/*` (other paths)     | Client app, scripts       | Access JWT or API token            |
+| `/api/v1/*` (other paths)     | Client app                | Access JWT                         |
 | `/api/admin/*` **(proposed)** | Admin app                 | Access JWT + platform admin role   |
 | `/telegram/webhook/:secret`   | Telegram                  | Secret in path                     |
 | `/health`                     | Render, CI smoke tests    | None                               |
@@ -30,13 +30,6 @@ All hosted at `https://api.<domain>`. JSON bodies, UTF-8.
 | ---------- | --------------------------------------------- |
 | Device     | `Authorization: Bearer <device token>`        |
 | Client app | `Authorization: Bearer <access JWT>` (15 min) |
-| Script     | `Authorization: Bearer em_live_<token>`       |
-
-The client app and scripts call the same `/api/v1` endpoints. The
-server tells an API token from a JWT by the `em_live_` prefix. API
-tokens have scope `read` or `read write`. API tokens cannot manage API
-tokens, invites or the account. Those endpoints are "JWT only" and
-reject API tokens with `403 jwt_required`.
 
 ### Errors
 
@@ -62,8 +55,6 @@ Validation errors add `details`:
 | 400  | `validation_error`    | Body, query or path fails the schema                                         |
 | 401  | `unauthorized`        | Missing, invalid or expired token                                            |
 | 403  | `forbidden`           | Authenticated, but the role does not allow it (e.g. viewer edits settings)   |
-| 403  | `jwt_required`        | API token used on a JWT-only endpoint                                        |
-| 403  | `insufficient_scope`  | `read` token on a `write` endpoint                                           |
 | 401  | `invalid_credentials` | Log in with a wrong email or password (the same answer for both)             |
 | 403  | `invalid_credentials` | A signed-in user's password re-check fails (change password, delete account) |
 | 403  | `reauth_required`     | Google-only account deletes itself more than 5 min after sign-in             |
@@ -81,8 +72,8 @@ Validation errors add `details`:
 - IDs: UUID strings for all resources.
 - Enum values are `UPPER_CASE` in payloads and query parameters: `ONLINE`,
   `POWER`, `SHORT`. Standard values keep their own spelling: language
-  codes (`uk`), webhook event names (`device.offline`), token scopes
-  (`read`), error codes (`not_found`) and HTTP header values.
+  codes (`uk`), webhook event names (`device.offline`), error codes
+  (`not_found`) and HTTP header values.
 - Lists use cursor pagination: `?limit=50&cursor=<opaque>` →
   `{ "items": [...], "next_cursor": "..." | null }`. Max `limit` 100.
 
@@ -91,7 +82,6 @@ Validation errors add `details`:
 | Who                             | Limit                 |
 | ------------------------------- | --------------------- |
 | Device check-in                 | 6 / min per device    |
-| API token                       | 60 / min per token    |
 | Client app JWT                  | 120 / min per user    |
 | Auth / claim                    | 10 / min per IP       |
 | Firmware image download         | 20 / min per IP       |
@@ -344,17 +334,17 @@ Successful sign-in responses set the refresh cookie and return:
 | ------ | ------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | POST   | `/api/auth/signup`              | `email`, `password`, `name`, `language`, `timezone` | `201` with no body; it does not sign in. Sends a verification email. Existing email → the same `201` and an email to the existing account (no enumeration)                            |
 | POST   | `/api/auth/verify-email`        | `token`                                             | `204`. Unknown, used, expired or wrong-purpose token → `410 expired`                                                                                                                  |
-| POST   | `/api/auth/resend-verification` | — (JWT)                                             | `204`. A verified account gets `204` and no email                                                                                                                                     |
+| POST   | `/api/auth/resend-verification` | — (signed in)                                       | `204`. A verified account gets `204` and no email                                                                                                                                     |
 | POST   | `/api/auth/login`               | `email`, `password`                                 | `200` session. Wrong credentials → `401 invalid_credentials`                                                                                                                          |
 | GET    | `/api/auth/google`              | query `app=CLIENT\|ADMIN`, `intent=LOGIN\|LINK`     | `302` to Google with PKCE and `state`                                                                                                                                                 |
 | GET    | `/api/auth/google/callback`     | from Google                                         | `302` to `<app origin>/auth/google`, with the refresh cookie set on `LOGIN`. The app then calls `refresh`. On failure the redirect adds `?error=` (see below)                         |
 | POST   | `/api/auth/refresh`             | cookie                                              | `200` session, rotates the cookie. Token reused within 10 s → `409 conflict` (the parallel request already set the new cookie; retry once). Reused after 10 s → revoke session, `401` |
 | POST   | `/api/auth/logout`              | cookie                                              | `204`, clears the cookie                                                                                                                                                              |
-| POST   | `/api/auth/logout-all`          | JWT                                                 | `204`, revokes all refresh tokens                                                                                                                                                     |
+| POST   | `/api/auth/logout-all`          | signed in                                           | `204`, revokes all refresh tokens                                                                                                                                                     |
 | POST   | `/api/auth/forgot-password`     | `email`                                             | Always `204`                                                                                                                                                                          |
 | POST   | `/api/auth/reset-password`      | `token`, `password`                                 | `204`, verifies the email, logs out all sessions. Unknown, used, expired or superseded token → `410`                                                                                  |
-| POST   | `/api/auth/change-password`     | `current_password`, `new_password` (JWT)            | `204`. Revokes other sessions. Wrong current password → `403 invalid_credentials`. Account without a password → `409 conflict`                                                        |
-| DELETE | `/api/auth/google`              | JWT                                                 | `204`. `409` if it is the only sign-in method                                                                                                                                         |
+| POST   | `/api/auth/change-password`     | `current_password`, `new_password` (signed in)      | `204`. Revokes other sessions. Wrong current password → `403 invalid_credentials`. Account without a password → `409 conflict`                                                        |
+| DELETE | `/api/auth/google`              | signed in                                           | `204`. `409` if it is the only sign-in method                                                                                                                                         |
 
 Email links open the client app: `${CLIENT_URL}/verify-email?token=…` and
 `${CLIENT_URL}/reset-password?token=…`. Every bad token (unknown, used,
@@ -372,24 +362,24 @@ top-level `GET` because the cookie path is `/api/auth`.
 Google callback redirect targets come from an allowlist
 (`CLIENT_URL`, `ADMIN_URL`). Never redirect to a URL from the query.
 
-## 4. Client and public REST API (`/api/v1`)
+## 4. Client REST API (`/api/v1`)
 
-Scope column: `read`, `write`, or "JWT" (JWT only). Role: who may call
+Auth column: `signed in` (access JWT) or `none`. Role: who may call
 it for a given device. A viewer calling an owner-only endpoint gets
 `403 forbidden`. A user who is neither owner nor viewer gets
 `404 not_found`.
 
 ### Devices
 
-| Method | Path                        | Scope | Role          | Purpose                           |
-| ------ | --------------------------- | ----- | ------------- | --------------------------------- |
-| GET    | `/devices`                  | read  | owner, viewer | Own and shared devices with state |
-| POST   | `/devices`                  | write | verified user | Create device → pairing code      |
-| GET    | `/devices/:id`              | read  | owner, viewer | Device details                    |
-| PATCH  | `/devices/:id`              | write | owner         | Name and settings                 |
-| DELETE | `/devices/:id`              | write | owner         | Delete device                     |
-| POST   | `/devices/:id/pairing-code` | write | owner         | New pairing code (re-pair)        |
-| POST   | `/devices/:id/rotate-token` | write | owner         | Invalidate device token           |
+| Method | Path                        | Auth      | Role          | Purpose                           |
+| ------ | --------------------------- | --------- | ------------- | --------------------------------- |
+| GET    | `/devices`                  | signed in | owner, viewer | Own and shared devices with state |
+| POST   | `/devices`                  | signed in | verified user | Create device → pairing code      |
+| GET    | `/devices/:id`              | signed in | owner, viewer | Device details                    |
+| PATCH  | `/devices/:id`              | signed in | owner         | Name and settings                 |
+| DELETE | `/devices/:id`              | signed in | owner         | Delete device                     |
+| POST   | `/devices/:id/pairing-code` | signed in | owner         | New pairing code (re-pair)        |
+| POST   | `/devices/:id/rotate-token` | signed in | owner         | Invalidate device token           |
 
 `POST /devices` body `{ "name": "Home" }` (trimmed, 1–64 chars) → `201`.
 The response `device` is the full device object below. The pairing code
@@ -488,13 +478,13 @@ links and queued notifications for the device.
 
 ### Firmware
 
-| Method | Path                                          | Scope | Role     | Purpose                                      |
-| ------ | --------------------------------------------- | ----- | -------- | -------------------------------------------- |
-| POST   | `/devices/:id/firmware-update`                | write | owner    | Queue or explicitly retry a firmware install |
-| DELETE | `/devices/:id/firmware-update` **(proposed)** | write | owner    | Cancel a queued install                      |
-| GET    | `/firmware/releases` **(proposed)**           | read  | any user | Published releases                           |
-| GET    | `/firmware/manifest.json`                     | none  | public   | ESP Web Tools manifest                       |
-| GET    | `/firmware/images/:version/factory.bin`       | none  | public   | Factory image for browser flashing           |
+| Method | Path                                          | Auth      | Role     | Purpose                                      |
+| ------ | --------------------------------------------- | --------- | -------- | -------------------------------------------- |
+| POST   | `/devices/:id/firmware-update`                | signed in | owner    | Queue or explicitly retry a firmware install |
+| DELETE | `/devices/:id/firmware-update` **(proposed)** | signed in | owner    | Cancel a queued install                      |
+| GET    | `/firmware/releases` **(proposed)**           | signed in | any user | Published releases                           |
+| GET    | `/firmware/manifest.json`                     | none      | public   | ESP Web Tools manifest                       |
+| GET    | `/firmware/images/:version/factory.bin`       | none      | public   | Factory image for browser flashing           |
 
 `POST /devices/:id/firmware-update` body `{ "version": "2.1.0" }`
 (optional, default latest compatible) → `202` with the `update` object.
@@ -538,11 +528,11 @@ the browser.
 
 ### Outages and stats
 
-| Method | Path                       | Scope | Role          | Purpose                                              |
-| ------ | -------------------------- | ----- | ------------- | ---------------------------------------------------- |
-| GET    | `/devices/:id/outages`     | read  | owner, viewer | Outages and power blips, filtered, cursor pagination |
-| GET    | `/devices/:id/stats`       | read  | owner, viewer | Stats for `DAY`, `WEEK` or `MONTH`                   |
-| GET    | `/devices/:id/diagnostics` | read  | owner         | Wi-Fi and API reachability diagnostics               |
+| Method | Path                       | Auth      | Role          | Purpose                                              |
+| ------ | -------------------------- | --------- | ------------- | ---------------------------------------------------- |
+| GET    | `/devices/:id/outages`     | signed in | owner, viewer | Outages and power blips, filtered, cursor pagination |
+| GET    | `/devices/:id/stats`       | signed in | owner, viewer | Stats for `DAY`, `WEEK` or `MONTH`                   |
+| GET    | `/devices/:id/diagnostics` | signed in | owner         | Wi-Fi and API reachability diagnostics               |
 
 `GET /devices/:id/outages?from&to&kind&cause&type&limit&cursor`, newest
 first:
@@ -635,15 +625,15 @@ newest first:
 
 ### Sharing
 
-| Method | Path                             | Scope | Role                 | Purpose                |
-| ------ | -------------------------------- | ----- | -------------------- | ---------------------- |
-| GET    | `/devices/:id/members`           | read  | owner, viewer        | Owner and viewers      |
-| POST   | `/devices/:id/invites`           | JWT   | owner                | Invite by email        |
-| GET    | `/devices/:id/invites`           | JWT   | owner                | Pending invites        |
-| DELETE | `/devices/:id/invites/:inviteId` | JWT   | owner                | Revoke an invite       |
-| DELETE | `/devices/:id/members/:userId`   | write | owner, viewer (self) | Remove viewer or leave |
-| GET    | `/invites/:token`                | none  | public               | Invite preview         |
-| POST   | `/invites/:token/accept`         | JWT   | invitee              | Accept invite          |
+| Method | Path                             | Auth      | Role                 | Purpose                |
+| ------ | -------------------------------- | --------- | -------------------- | ---------------------- |
+| GET    | `/devices/:id/members`           | signed in | owner, viewer        | Owner and viewers      |
+| POST   | `/devices/:id/invites`           | signed in | owner                | Invite by email        |
+| GET    | `/devices/:id/invites`           | signed in | owner                | Pending invites        |
+| DELETE | `/devices/:id/invites/:inviteId` | signed in | owner                | Revoke an invite       |
+| DELETE | `/devices/:id/members/:userId`   | signed in | owner, viewer (self) | Remove viewer or leave |
+| GET    | `/invites/:token`                | none      | public               | Invite preview         |
+| POST   | `/invites/:token/accept`         | signed in | invitee              | Accept invite          |
 
 - `POST /devices/:id/invites` `{ "email": "…" }` (trimmed, lowercased)
   → `201` with the invite object. The account needs a verified email.
@@ -700,19 +690,19 @@ newest first:
 
 ### Notification channels
 
-| Method | Path                                         | Scope | Purpose                                   |
-| ------ | -------------------------------------------- | ----- | ----------------------------------------- |
-| GET    | `/channels`                                  | read  | List my channels                          |
-| POST   | `/channels`                                  | write | Add own bot or webhook                    |
-| POST   | `/channels/telegram-link`                    | write | Link to connect the platform Telegram bot |
-| PATCH  | `/channels/:id`                              | write | Update, enable, disable                   |
-| DELETE | `/channels/:id`                              | write | Delete channel                            |
-| POST   | `/channels/:id/test`                         | write | Send test message                         |
-| POST   | `/channels/:id/rotate-secret` **(proposed)** | write | New webhook secret                        |
-| GET    | `/devices/:id/channels`                      | read  | My channels used by this device           |
-| PUT    | `/devices/:id/channels`                      | write | Set which of my channels this device uses |
-| GET    | `/channels/:id/deliveries`                   | read  | Delivery log                              |
-| POST   | `/deliveries/:id/redeliver`                  | write | Retry a delivery                          |
+| Method | Path                                         | Auth      | Purpose                                   |
+| ------ | -------------------------------------------- | --------- | ----------------------------------------- |
+| GET    | `/channels`                                  | signed in | List my channels                          |
+| POST   | `/channels`                                  | signed in | Add own bot or webhook                    |
+| POST   | `/channels/telegram-link`                    | signed in | Link to connect the platform Telegram bot |
+| PATCH  | `/channels/:id`                              | signed in | Update, enable, disable                   |
+| DELETE | `/channels/:id`                              | signed in | Delete channel                            |
+| POST   | `/channels/:id/test`                         | signed in | Send test message                         |
+| POST   | `/channels/:id/rotate-secret` **(proposed)** | signed in | New webhook secret                        |
+| GET    | `/devices/:id/channels`                      | signed in | My channels used by this device           |
+| PUT    | `/devices/:id/channels`                      | signed in | Set which of my channels this device uses |
+| GET    | `/channels/:id/deliveries`                   | signed in | Delivery log                              |
+| POST   | `/deliveries/:id/redeliver`                  | signed in | Retry a delivery                          |
 
 Channels belong to the caller. Viewers attach their own channels to
 shared devices.
@@ -815,21 +805,13 @@ A platform channel's `config` is `{ "chat_id": "-1001234567890" }`.
 `status`: `QUEUED` | `SENT` | `RETRYING` | `FAILED`. `redeliver` queues
 the same delivery ID again (`202`).
 
-### API tokens (JWT only)
-
-| Method | Path          | Body             | Success                                                                                     |
-| ------ | ------------- | ---------------- | ------------------------------------------------------------------------------------------- |
-| GET    | `/tokens`     | —                | `200` list: `id`, `name`, `scopes`, `prefix` (`em_live_ab12`), `last_used_at`, `created_at` |
-| POST   | `/tokens`     | `name`, `scopes` | `201` with `token`, shown once                                                              |
-| DELETE | `/tokens/:id` | —                | `204`                                                                                       |
-
 ### Account
 
-| Method | Path  | Scope | Purpose                  |
-| ------ | ----- | ----- | ------------------------ |
-| GET    | `/me` | read  | Profile                  |
-| PATCH  | `/me` | JWT   | Name, timezone, language |
-| DELETE | `/me` | JWT   | Delete account           |
+| Method | Path  | Auth      | Purpose                  |
+| ------ | ----- | --------- | ------------------------ |
+| GET    | `/me` | signed in | Profile                  |
+| PATCH  | `/me` | signed in | Name, timezone, language |
+| DELETE | `/me` | signed in | Delete account           |
 
 `GET /me`:
 
@@ -895,14 +877,14 @@ Allowed updates: `message`, `my_chat_member`.
 
 The server generates the OpenAPI document from route and request and
 response schemas, including authentication, errors and examples. Swagger
-UI loads it so integrators can read the reference and try requests with
-their own API token. Admin endpoints are not included.
+UI loads it so developers can read the reference and try requests with
+an access token. Admin endpoints are not included.
 
 Each operation belongs to exactly one tag, so Swagger UI shows grouped
 sections, in this order: `Health`, `Auth`, `Account`, `Devices`,
 `Device` (firmware endpoints, `deviceToken` security), `Outages`,
-`Notifications`, `Sharing`, `Firmware`. A later milestone adds
-`API tokens` as its endpoints ship. A tag is declared only once it has operations.
+`Notifications`, `Sharing`, `Firmware`. A tag is declared only once it
+has operations.
 
 ## 8. Outgoing webhooks
 
@@ -944,8 +926,8 @@ in PROJECT_V2.md §3–§12. Section numbers below refer to PROJECT_V2.md.
 - **Stats response** has no power blips, no cause breakdown and no series
   for charts. §5 says blips count "once in history and statistics".
   Proposed fields in [Outages and stats](#outages-and-stats).
-- ~~**Invites.**~~ ✅ Resolved (M6): invites are JWT only; member removal
-  stays `write`, so a script can remove a viewer but not invite one.
+- ~~**Invites.**~~ ✅ Resolved (M6): invites and member removal need a
+  signed-in user.
 - **Ping interval vs rate limit.** 6 pings/min allows 10 s, but boot
   retries share the limit. A 15 s minimum leaves room.
 

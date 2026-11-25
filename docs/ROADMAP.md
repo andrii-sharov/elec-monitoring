@@ -33,7 +33,7 @@ Status: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 | M4  | [Client app](#m4--client-app)                                         | ✅     | M3         | [M04](plans/M04-client.md) · [M04a](plans/M04a-client-styles.md) |
 | M5  | [Firmware core and device setup](#m5--firmware-core-and-device-setup) | ✅     | M2         | [M05](plans/M05-firmware.md)                                     |
 | M6  | [Sharing](#m6--sharing)                                               | 🟡     | M4         | [M06](plans/M06-sharing.md)                                      |
-| M7  | [API tokens and public API](#m7--api-tokens-and-public-rest-api)      | ⬜     | M4         | —                                                                |
+| M7  | [Phone sign-in via Telegram](#m7--phone-sign-in-via-telegram)         | 🟡     | M4         | [M07](plans/M07-phone-auth.md)                                   |
 | M8  | [Own bot and webhooks](#m8--own-telegram-bot-and-webhooks)            | ⬜     | M4         | —                                                                |
 | M9  | [Statistics](#m9--statistics)                                         | ⬜     | M4         | —                                                                |
 | M10 | [Admin app](#m10--admin-app)                                          | ⬜     | M4         | —                                                                |
@@ -322,24 +322,28 @@ flashing in Chrome (P §5 hardware checks).
 device endpoint), invite expiry with a controlled clock and the
 sign-up-then-accept flow pass. 👤 Invite a second account on staging.
 
-## M7 — API tokens and public REST API
+## M7 — Phone sign-in via Telegram
 
-**Goal:** scripts use the same API with tokens; integrators get docs.
-**Spec:** P §8, §10 · A §1 Auth headers and Rate limits, §4 API tokens,
-§7.
+**Goal:** Users sign up and sign in with an email or a phone; phones are
+confirmed once in the platform Telegram bot.
+**Spec:** [M07](plans/M07-phone-auth.md#design) · P §3, §6, §7, §10 ·
+A §1, §3, §4 Sharing and Account, §6 · D §3, §4 `device_invite`, §11.
 
-- [ ] API tokens: create (`em_live_` prefix, shown once, hash stored),
-      list, revoke; `last_used_at` at most once a minute
-- [ ] Auth accepts a JWT or an API token; `insufficient_scope` and
-      `jwt_required`
-- [ ] Rate limits: 60 / min per token, 120 / min per user JWT
-- [ ] OpenAPI complete: security schemes, errors and examples for every
-      public endpoint; admin routes excluded
-- [ ] Client: API tokens page and API docs page
+- [x] API tokens removed: table, error codes and spec mentions
+- [ ] Phone numbers in E.164 and the identity columns
+- [ ] "Verified" means a verified email or phone
+- [ ] Telegram pushes from the API
+- [ ] Confirm a phone in the bot
+- [ ] Sign up, log in, reset and add an identifier with a phone
+- [ ] Share devices by phone
+- [ ] Client: sign up, log in and reset with a phone
+- [ ] Client: account and sharing with a phone
 
-**Done when:** a scope matrix test passes, the OpenAPI document
-validates, and a test fails if a public route is missing from it.
-👤 Call the API with a token from Swagger UI.
+**Done when:** tests cover one number typed in different formats, sign-up
+with another person's number, a forwarded contact or a code opened in a
+group, a user who blocked the bot, and a Telegram user moving between
+accounts. 👤 Run the
+[manual checks](plans/M07-phone-auth.md#manual-checks-staging) on staging.
 
 ## M8 — Own Telegram bot and webhooks
 

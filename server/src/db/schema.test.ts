@@ -59,7 +59,6 @@ describe('migrations', () => {
       `select relname from pg_class where relnamespace = 'public'::regnamespace and relkind = 'r' order by relname`,
     );
     expect(tables.map((r) => r.relname)).toEqual([
-      'api_token',
       'app_user',
       'delivery',
       'device',
@@ -78,6 +77,12 @@ describe('migrations', () => {
       'session',
       'worker_heartbeat',
     ]);
+  });
+
+  test('has no api_token table', async () => {
+    expect(
+      await rows(`select 1 from information_schema.tables where table_name = 'api_token'`),
+    ).toEqual([]);
   });
 
   test('enable RLS on every table with no policies', async () => {

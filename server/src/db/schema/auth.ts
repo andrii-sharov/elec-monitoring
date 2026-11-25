@@ -83,24 +83,3 @@ export const oneTimeToken = pgTable(
     index('one_time_token_user_id_idx').on(t.userId, t.purpose),
   ],
 ).enableRLS();
-
-export const apiToken = pgTable(
-  'api_token',
-  {
-    id: uuid().primaryKey().$defaultFn(newId),
-    userId: uuid()
-      .notNull()
-      .references(() => appUser.id, { onDelete: 'cascade' }),
-    name: text().notNull(),
-    tokenHash: bytea().notNull().unique('api_token_token_hash_key'),
-    displayPrefix: text().notNull(),
-    scopes: text().array().notNull(),
-    lastUsedAt: tstz(),
-    createdAt: tstz().notNull().defaultNow(),
-  },
-  (t) => [
-    check('api_token_token_hash_check', sql`octet_length(token_hash) = 32`),
-    check('api_token_scopes_check', sql`scopes in ('{read}', '{read,write}')`),
-    index('api_token_user_id_idx').on(t.userId),
-  ],
-).enableRLS();

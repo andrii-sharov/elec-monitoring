@@ -2701,7 +2701,7 @@
     "/api/v1/devices/{id}/invites": {
       "post": {
         "summary": "Invite a viewer by email",
-        "description": "JWT only. Owner only. Emails a link valid for 7 days. Inviting the same email again replaces the earlier link. At most 10 viewers and pending invites per device.",
+        "description": "Owner only. Emails a link valid for 7 days. Inviting the same email again replaces the earlier link. At most 10 viewers and pending invites per device.",
         "security": [
           {
             "bearerAuth": []
@@ -2815,7 +2815,7 @@
       },
       "get": {
         "summary": "List pending invites",
-        "description": "JWT only. Owner only. Expired invites are included, oldest first.",
+        "description": "Owner only. Expired invites are included, oldest first.",
         "security": [
           {
             "bearerAuth": []
@@ -2895,7 +2895,7 @@
     "/api/v1/devices/{id}/invites/{inviteId}": {
       "delete": {
         "summary": "Revoke an invite",
-        "description": "JWT only. Owner only. The invite link stops working.",
+        "description": "Owner only. The invite link stops working.",
         "security": [
           {
             "bearerAuth": []
@@ -3019,7 +3019,7 @@
     "/api/v1/invites/{token}/accept": {
       "post": {
         "summary": "Accept an invite",
-        "description": "JWT only. The account email must match the invite. Joins the device as a viewer, attaches all of the caller's channels and marks the email verified. Accepting again returns the device.",
+        "description": "The account email must match the invite. Joins the device as a viewer, attaches all of the caller's channels and marks the email verified. Accepting again returns the device.",
         "security": [
           {
             "bearerAuth": []

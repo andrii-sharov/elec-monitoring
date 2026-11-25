@@ -5,8 +5,6 @@ export const errorCodes = [
   'validation_error',
   'unauthorized',
   'forbidden',
-  'jwt_required',
-  'insufficient_scope',
   'email_not_verified',
   'not_found',
   'conflict',

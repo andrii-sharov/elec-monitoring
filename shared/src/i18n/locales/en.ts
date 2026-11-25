@@ -125,8 +125,6 @@ export const en = {
       validation_error: 'Check the highlighted fields.',
       unauthorized: 'Your session has ended. Sign in again.',
       forbidden: "You don't have access to this.",
-      jwt_required: 'Sign in to continue.',
-      insufficient_scope: "You don't have permission for this action.",
       email_not_verified: 'Confirm your email address first.',
       not_found: 'Not found.',
       conflict: 'This conflicts with existing data. Refresh the page and try again.',
