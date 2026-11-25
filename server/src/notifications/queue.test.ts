@@ -145,16 +145,15 @@ describe('createNotificationQueue', () => {
   });
 });
 
+async function shared() {
+  const owner = await createUser(t.db, { email: 'john@example.com' });
+  const viewer = await createUser(t.db, { email: 'mary@example.com' });
+  const stranger = await createUser(t.db, { email: 'pete@example.com' });
+  const { deviceId, outageId } = await openOutage(owner.id);
+  await addViewer(t.db, deviceId, viewer.id);
+  return { owner, viewer, stranger, deviceId, outageId };
+}
 describe('fan-out to viewers', () => {
-  async function shared() {
-    const owner = await createUser(t.db, { email: 'john@example.com' });
-    const viewer = await createUser(t.db, { email: 'mary@example.com' });
-    const stranger = await createUser(t.db, { email: 'pete@example.com' });
-    const { deviceId, outageId } = await openOutage(owner.id);
-    await addViewer(t.db, deviceId, viewer.id);
-    return { owner, viewer, stranger, deviceId, outageId };
-  }
-
   test('queues for the owner and viewers, never a stranger', async () => {
     const { owner, viewer, stranger, deviceId, outageId } = await shared();
     const mine = await createPlatformChannel(t.db, owner.id);

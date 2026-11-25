@@ -122,11 +122,11 @@ describe('DELETE /api/v1/devices/:id/members/:userId', () => {
       .set('Authorization', auth.mary);
     expect(seen.status).toBe(404);
     const links = await t.db.select().from(deviceChannel);
-    expect(links.map((l) => [l.deviceId, l.channelId]).sort()).toEqual(
+    expect(links.map((l) => [l.deviceId, l.channelId]).toSorted()).toEqual(
       [
         [other.id, maryChannel.id],
         [deviceId, peteChannel.id],
-      ].sort(),
+      ].toSorted(),
     );
   });
 

@@ -83,7 +83,7 @@ describe('POST /api/v1/invites/:token/accept', () => {
     const linked = await request(app())
       .get(`/api/v1/devices/${deviceId}/channels`)
       .set('Authorization', auth);
-    expect([...linked.body.channel_ids].sort()).toEqual([...channelIds].sort());
+    expect([...linked.body.channel_ids].toSorted()).toEqual([...channelIds].toSorted());
     const [row] = await t.db.select().from(deviceInvite);
     expect(row?.acceptedAt).toEqual(clock.now());
   });

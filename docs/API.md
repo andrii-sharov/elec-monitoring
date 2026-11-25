@@ -944,10 +944,8 @@ in PROJECT_V2.md §3–§12. Section numbers below refer to PROJECT_V2.md.
 - **Stats response** has no power blips, no cause breakdown and no series
   for charts. §5 says blips count "once in history and statistics".
   Proposed fields in [Outages and stats](#outages-and-stats).
-- **Invites.** The original table gave invites `write` scope, but the
-  text said API tokens can't manage invites. This file uses JWT only.
-  Member removal stays `write`, so a script can remove a viewer but not
-  invite one. Fine if intended.
+- ~~**Invites.**~~ ✅ Resolved (M6): invites are JWT only; member removal
+  stays `write`, so a script can remove a viewer but not invite one.
 - **Ping interval vs rate limit.** 6 pings/min allows 10 s, but boot
   retries share the limit. A 15 s minimum leaves room.
 

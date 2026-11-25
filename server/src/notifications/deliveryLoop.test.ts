@@ -152,21 +152,20 @@ describe('processDueDeliveries', () => {
   });
 });
 
+async function sharedOutage(viewerOverrides: Partial<typeof appUser.$inferInsert> = {}) {
+  const owner = await seedDelivery(t.db, {
+    userOverrides: { email: 'john@example.com', language: 'uk', timezone: 'Europe/Kyiv' },
+  });
+  const viewer = await createUser(t.db, { email: 'mary@example.com', ...viewerOverrides });
+  await addViewer(t.db, owner.device.id, viewer.id);
+  const theirs = await seedDelivery(t.db, {
+    user: viewer,
+    device: owner.device,
+    outageId: owner.outageId,
+  });
+  return { owner, viewer, theirs };
+}
 describe('viewers', () => {
-  async function sharedOutage(viewerOverrides: Partial<typeof appUser.$inferInsert> = {}) {
-    const owner = await seedDelivery(t.db, {
-      userOverrides: { email: 'john@example.com', language: 'uk', timezone: 'Europe/Kyiv' },
-    });
-    const viewer = await createUser(t.db, { email: 'mary@example.com', ...viewerOverrides });
-    await addViewer(t.db, owner.device.id, viewer.id);
-    const theirs = await seedDelivery(t.db, {
-      user: viewer,
-      device: owner.device,
-      outageId: owner.outageId,
-    });
-    return { owner, viewer, theirs };
-  }
-
   test('a removed viewer is skipped while the owner is sent', async () => {
     const { owner, viewer, theirs } = await sharedOutage();
     await t.db

@@ -218,3 +218,35 @@ describe('M5 firmware endpoints', () => {
     expect(operation!.tags).toEqual(['Firmware']);
   });
 });
+
+describe('M6 sharing endpoints', () => {
+  const sharingApi = [
+    'get /api/v1/devices/{id}/members',
+    'delete /api/v1/devices/{id}/members/{userId}',
+    'post /api/v1/devices/{id}/invites',
+    'get /api/v1/devices/{id}/invites',
+    'delete /api/v1/devices/{id}/invites/{inviteId}',
+    'post /api/v1/invites/{token}/accept',
+  ];
+
+  test.each(sharingApi)('%s needs a bearer token and is in Sharing', async (route) => {
+    const operation = findOperation((await document()).paths, route);
+    expect(operation).toBeDefined();
+    expect(operation!.security).toEqual([{ bearerAuth: [] }]);
+    expect(operation!.tags).toEqual(['Sharing']);
+  });
+
+  test('the invite preview is public and in Sharing', async () => {
+    const operation = findOperation((await document()).paths, 'get /api/v1/invites/{token}');
+    expect(operation).toBeDefined();
+    expect(operation!.security).toBeUndefined();
+    expect(operation!.tags).toEqual(['Sharing']);
+  });
+
+  test('declares the sharing schemas', async () => {
+    const { components } = await document();
+    expect(Object.keys(components.schemas)).toEqual(
+      expect.arrayContaining(['Member', 'Invite', 'InvitePreview']),
+    );
+  });
+});
