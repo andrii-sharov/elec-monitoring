@@ -66,9 +66,10 @@ export function signupRouter(deps: AppDeps): Router {
 
   function send(
     kind: EmailKind,
-    user: { email: string; name: string; language: string },
+    user: { email: string | null; name: string; language: string },
     url: string,
   ) {
+    if (!user.email) return;
     const lang = languageSchema.catch('uk').parse(user.language);
     const rendered = renderEmail(i18n, kind, { lang, name: user.name, link: url });
     sendInBackground(deps.email, logger, { to: user.email, ...rendered });

@@ -1,0 +1,2240 @@
+{
+  "id": "f8adf5ca-66e5-4293-aad1-7842d28b02e3",
+  "prevId": "b7cd9d26-a7e4-4ea9-8ba0-a2f4cf05dfbf",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.app_user": {
+      "name": "app_user",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email_verified_at": {
+          "name": "email_verified_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone_verified_at": {
+          "name": "phone_verified_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "telegram_user_id": {
+          "name": "telegram_user_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "google_sub": {
+          "name": "google_sub",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "language": {
+          "name": "language",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'uk'"
+        },
+        "timezone": {
+          "name": "timezone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Europe/Kyiv'"
+        },
+        "is_admin": {
+          "name": "is_admin",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "app_user_email_key": {
+          "name": "app_user_email_key",
+          "nullsNotDistinct": false,
+          "columns": ["email"]
+        },
+        "app_user_phone_key": {
+          "name": "app_user_phone_key",
+          "nullsNotDistinct": false,
+          "columns": ["phone"]
+        },
+        "app_user_telegram_user_id_key": {
+          "name": "app_user_telegram_user_id_key",
+          "nullsNotDistinct": false,
+          "columns": ["telegram_user_id"]
+        },
+        "app_user_google_sub_key": {
+          "name": "app_user_google_sub_key",
+          "nullsNotDistinct": false,
+          "columns": ["google_sub"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "app_user_email_check": {
+          "name": "app_user_email_check",
+          "value": "email = lower(email)"
+        },
+        "app_user_identifier_check": {
+          "name": "app_user_identifier_check",
+          "value": "email is not null or phone is not null"
+        },
+        "app_user_language_check": {
+          "name": "app_user_language_check",
+          "value": "language in ('uk', 'en', 'ru')"
+        },
+        "app_user_sign_in_method_check": {
+          "name": "app_user_sign_in_method_check",
+          "value": "password_hash is not null or google_sub is not null"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.one_time_token": {
+      "name": "one_time_token",
+      "schema": "",
+      "columns": {
+        "token_hash": {
+          "name": "token_hash",
+          "type": "bytea",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "purpose": {
+          "name": "purpose",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "telegram_user_id": {
+          "name": "telegram_user_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "used_at": {
+          "name": "used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "one_time_token_user_id_idx": {
+          "name": "one_time_token_user_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "purpose",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "one_time_token_telegram_user_idx": {
+          "name": "one_time_token_telegram_user_idx",
+          "columns": [
+            {
+              "expression": "telegram_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "used_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "one_time_token_user_id_app_user_id_fk": {
+          "name": "one_time_token_user_id_app_user_id_fk",
+          "tableFrom": "one_time_token",
+          "tableTo": "app_user",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "one_time_token_token_hash_check": {
+          "name": "one_time_token_token_hash_check",
+          "value": "octet_length(token_hash) = 32"
+        },
+        "one_time_token_purpose_check": {
+          "name": "one_time_token_purpose_check",
+          "value": "purpose in ('VERIFY_EMAIL', 'RESET_PASSWORD', 'TELEGRAM_LINK', 'PHONE_VERIFY', 'PHONE_RECOVER')"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.refresh_token": {
+      "name": "refresh_token",
+      "schema": "",
+      "columns": {
+        "token_hash": {
+          "name": "token_hash",
+          "type": "bytea",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "used_at": {
+          "name": "used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "refresh_token_session_id_idx": {
+          "name": "refresh_token_session_id_idx",
+          "columns": [
+            {
+              "expression": "session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "refresh_token_session_id_session_id_fk": {
+          "name": "refresh_token_session_id_session_id_fk",
+          "tableFrom": "refresh_token",
+          "tableTo": "session",
+          "columnsFrom": ["session_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "refresh_token_token_hash_check": {
+          "name": "refresh_token_token_hash_check",
+          "value": "octet_length(token_hash) = 32"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.session": {
+      "name": "session",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "last_used_at": {
+          "name": "last_used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "session_user_id_idx": {
+          "name": "session_user_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "session_user_id_app_user_id_fk": {
+          "name": "session_user_id_app_user_id_fk",
+          "tableFrom": "session",
+          "tableTo": "app_user",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.device": {
+      "name": "device",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pairing_code_hash": {
+          "name": "pairing_code_hash",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pairing_code_expires_at": {
+          "name": "pairing_code_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "claimed_at": {
+          "name": "claimed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "state": {
+          "name": "state",
+          "type": "device_state",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'PENDING'"
+        },
+        "state_since": {
+          "name": "state_since",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "last_seen_at": {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "offline_at": {
+          "name": "offline_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "boot_id": {
+          "name": "boot_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "seq": {
+          "name": "seq",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "uptime_s": {
+          "name": "uptime_s",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rssi": {
+          "name": "rssi",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fw_version": {
+          "name": "fw_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ping_interval_s": {
+          "name": "ping_interval_s",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 30
+        },
+        "previous_ping_interval_s": {
+          "name": "previous_ping_interval_s",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "offline_timeout_s": {
+          "name": "offline_timeout_s",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 120
+        },
+        "short_outage_threshold_s": {
+          "name": "short_outage_threshold_s",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 180
+        },
+        "notify_short_outages": {
+          "name": "notify_short_outages",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "notify_network_outages": {
+          "name": "notify_network_outages",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "quiet_hours_start": {
+          "name": "quiet_hours_start",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quiet_hours_end": {
+          "name": "quiet_hours_end",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "auto_update": {
+          "name": "auto_update",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "settings_version": {
+          "name": "settings_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "applied_settings_version": {
+          "name": "applied_settings_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "device_owner_id_idx": {
+          "name": "device_owner_id_idx",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "device_offline_at_idx": {
+          "name": "device_offline_at_idx",
+          "columns": [
+            {
+              "expression": "offline_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "state = 'ONLINE'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "device_owner_id_app_user_id_fk": {
+          "name": "device_owner_id_app_user_id_fk",
+          "tableFrom": "device",
+          "tableTo": "app_user",
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "device_token_hash_key": {
+          "name": "device_token_hash_key",
+          "nullsNotDistinct": false,
+          "columns": ["token_hash"]
+        },
+        "device_pairing_code_hash_key": {
+          "name": "device_pairing_code_hash_key",
+          "nullsNotDistinct": false,
+          "columns": ["pairing_code_hash"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "device_name_check": {
+          "name": "device_name_check",
+          "value": "name <> ''"
+        },
+        "device_token_hash_check": {
+          "name": "device_token_hash_check",
+          "value": "octet_length(token_hash) = 32"
+        },
+        "device_pairing_code_hash_check": {
+          "name": "device_pairing_code_hash_check",
+          "value": "octet_length(pairing_code_hash) = 32"
+        },
+        "device_ping_interval_check": {
+          "name": "device_ping_interval_check",
+          "value": "ping_interval_s >= 15"
+        },
+        "device_offline_timeout_check": {
+          "name": "device_offline_timeout_check",
+          "value": "offline_timeout_s >= 2 * ping_interval_s"
+        },
+        "device_short_outage_threshold_check": {
+          "name": "device_short_outage_threshold_check",
+          "value": "short_outage_threshold_s > 0"
+        },
+        "device_quiet_hours_check": {
+          "name": "device_quiet_hours_check",
+          "value": "(quiet_hours_start is null) = (quiet_hours_end is null)"
+        },
+        "device_pairing_code_expiry_check": {
+          "name": "device_pairing_code_expiry_check",
+          "value": "(pairing_code_hash is null) = (pairing_code_expires_at is null)"
+        },
+        "device_online_offline_at_check": {
+          "name": "device_online_offline_at_check",
+          "value": "(state = 'ONLINE') = (offline_at is not null)"
+        },
+        "device_applied_settings_version_check": {
+          "name": "device_applied_settings_version_check",
+          "value": "applied_settings_version <= settings_version"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.device_invite": {
+      "name": "device_invite",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "device_id": {
+          "name": "device_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "invited_by": {
+          "name": "invited_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "accepted_at": {
+          "name": "accepted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "device_invite_pending_key": {
+          "name": "device_invite_pending_key",
+          "columns": [
+            {
+              "expression": "device_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "accepted_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "device_invite_pending_phone_key": {
+          "name": "device_invite_pending_phone_key",
+          "columns": [
+            {
+              "expression": "device_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "phone",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "accepted_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "device_invite_device_id_idx": {
+          "name": "device_invite_device_id_idx",
+          "columns": [
+            {
+              "expression": "device_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "device_invite_invited_by_idx": {
+          "name": "device_invite_invited_by_idx",
+          "columns": [
+            {
+              "expression": "invited_by",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "device_invite_device_id_device_id_fk": {
+          "name": "device_invite_device_id_device_id_fk",
+          "tableFrom": "device_invite",
+          "tableTo": "device",
+          "columnsFrom": ["device_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "device_invite_invited_by_app_user_id_fk": {
+          "name": "device_invite_invited_by_app_user_id_fk",
+          "tableFrom": "device_invite",
+          "tableTo": "app_user",
+          "columnsFrom": ["invited_by"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "device_invite_token_hash_key": {
+          "name": "device_invite_token_hash_key",
+          "nullsNotDistinct": false,
+          "columns": ["token_hash"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "device_invite_email_check": {
+          "name": "device_invite_email_check",
+          "value": "email = lower(email)"
+        },
+        "device_invite_one_identifier_check": {
+          "name": "device_invite_one_identifier_check",
+          "value": "num_nonnulls(email, phone) = 1"
+        },
+        "device_invite_token_hash_check": {
+          "name": "device_invite_token_hash_check",
+          "value": "octet_length(token_hash) = 32"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.device_viewer": {
+      "name": "device_viewer",
+      "schema": "",
+      "columns": {
+        "device_id": {
+          "name": "device_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "device_viewer_user_id_idx": {
+          "name": "device_viewer_user_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "device_viewer_device_id_device_id_fk": {
+          "name": "device_viewer_device_id_device_id_fk",
+          "tableFrom": "device_viewer",
+          "tableTo": "device",
+          "columnsFrom": ["device_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "device_viewer_user_id_app_user_id_fk": {
+          "name": "device_viewer_user_id_app_user_id_fk",
+          "tableFrom": "device_viewer",
+          "tableTo": "app_user",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "device_viewer_device_id_user_id_pk": {
+          "name": "device_viewer_device_id_user_id_pk",
+          "columns": ["device_id", "user_id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.firmware_release": {
+      "name": "firmware_release",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version_code": {
+          "name": "version_code",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel": {
+          "name": "channel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'STABLE'"
+        },
+        "size_bytes": {
+          "name": "size_bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sha256": {
+          "name": "sha256",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "signature": {
+          "name": "signature",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "image_path": {
+          "name": "image_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "firmware_release_version_key": {
+          "name": "firmware_release_version_key",
+          "nullsNotDistinct": false,
+          "columns": ["version"]
+        },
+        "firmware_release_version_code_key": {
+          "name": "firmware_release_version_code_key",
+          "nullsNotDistinct": false,
+          "columns": ["version_code"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "firmware_release_channel_check": {
+          "name": "firmware_release_channel_check",
+          "value": "channel in ('STABLE', 'BETA')"
+        },
+        "firmware_release_size_bytes_check": {
+          "name": "firmware_release_size_bytes_check",
+          "value": "size_bytes > 0"
+        },
+        "firmware_release_sha256_check": {
+          "name": "firmware_release_sha256_check",
+          "value": "octet_length(sha256) = 32"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.firmware_update_attempt": {
+      "name": "firmware_update_attempt",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "device_id": {
+          "name": "device_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "release_id": {
+          "name": "release_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "requested_by": {
+          "name": "requested_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'QUEUED'"
+        },
+        "start_boot_id": {
+          "name": "start_boot_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "window_ends_at": {
+          "name": "window_ends_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "update_outcome",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "running_version": {
+          "name": "running_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "result_boot_id": {
+          "name": "result_boot_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "finished_at": {
+          "name": "finished_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "firmware_update_attempt_device_idx": {
+          "name": "firmware_update_attempt_device_idx",
+          "columns": [
+            {
+              "expression": "device_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "first"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "firmware_update_attempt_one_active": {
+          "name": "firmware_update_attempt_one_active",
+          "columns": [
+            {
+              "expression": "device_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "status in ('QUEUED', 'INSTALLING')",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "firmware_update_attempt_window_idx": {
+          "name": "firmware_update_attempt_window_idx",
+          "columns": [
+            {
+              "expression": "window_ends_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "status = 'INSTALLING'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "firmware_update_attempt_release_id_idx": {
+          "name": "firmware_update_attempt_release_id_idx",
+          "columns": [
+            {
+              "expression": "release_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "firmware_update_attempt_requested_by_idx": {
+          "name": "firmware_update_attempt_requested_by_idx",
+          "columns": [
+            {
+              "expression": "requested_by",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "requested_by is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "firmware_update_attempt_device_id_device_id_fk": {
+          "name": "firmware_update_attempt_device_id_device_id_fk",
+          "tableFrom": "firmware_update_attempt",
+          "tableTo": "device",
+          "columnsFrom": ["device_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "firmware_update_attempt_release_id_firmware_release_id_fk": {
+          "name": "firmware_update_attempt_release_id_firmware_release_id_fk",
+          "tableFrom": "firmware_update_attempt",
+          "tableTo": "firmware_release",
+          "columnsFrom": ["release_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "firmware_update_attempt_requested_by_app_user_id_fk": {
+          "name": "firmware_update_attempt_requested_by_app_user_id_fk",
+          "tableFrom": "firmware_update_attempt",
+          "tableTo": "app_user",
+          "columnsFrom": ["requested_by"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "firmware_update_attempt_status_check": {
+          "name": "firmware_update_attempt_status_check",
+          "value": "status in ('QUEUED', 'INSTALLING', 'FINISHED', 'TIMED_OUT', 'CANCELLED')"
+        },
+        "firmware_update_attempt_started_check": {
+          "name": "firmware_update_attempt_started_check",
+          "value": "status in ('QUEUED', 'CANCELLED') or (started_at is not null and window_ends_at is not null)"
+        },
+        "firmware_update_attempt_queued_check": {
+          "name": "firmware_update_attempt_queued_check",
+          "value": "status <> 'QUEUED' or started_at is null"
+        },
+        "firmware_update_attempt_outcome_check": {
+          "name": "firmware_update_attempt_outcome_check",
+          "value": "(outcome is null) = (finished_at is null)"
+        },
+        "firmware_update_attempt_finished_check": {
+          "name": "firmware_update_attempt_finished_check",
+          "value": "status <> 'FINISHED' or outcome is not null"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.device_boot": {
+      "name": "device_boot",
+      "schema": "",
+      "columns": {
+        "device_id": {
+          "name": "device_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "boot_id": {
+          "name": "boot_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reset_reason": {
+          "name": "reset_reason",
+          "type": "reset_reason",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "wifi_evicted": {
+          "name": "wifi_evicted",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "first_seen_at": {
+          "name": "first_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "device_boot_device_id_device_id_fk": {
+          "name": "device_boot_device_id_device_id_fk",
+          "tableFrom": "device_boot",
+          "tableTo": "device",
+          "columnsFrom": ["device_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "device_boot_device_id_boot_id_pk": {
+          "name": "device_boot_device_id_boot_id_pk",
+          "columns": ["device_id", "boot_id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.device_diagnostic": {
+      "name": "device_diagnostic",
+      "schema": "",
+      "columns": {
+        "device_id": {
+          "name": "device_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "boot_id": {
+          "name": "boot_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "local_id": {
+          "name": "local_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "diagnostic_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "start_uptime_s": {
+          "name": "start_uptime_s",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end_uptime_s": {
+          "name": "end_uptime_s",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ended_at": {
+          "name": "ended_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "received_at": {
+          "name": "received_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "device_diagnostic_device_started_idx": {
+          "name": "device_diagnostic_device_started_idx",
+          "columns": [
+            {
+              "expression": "device_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "started_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "first"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "device_diagnostic_boot_fkey": {
+          "name": "device_diagnostic_boot_fkey",
+          "tableFrom": "device_diagnostic",
+          "tableTo": "device_boot",
+          "columnsFrom": ["device_id", "boot_id"],
+          "columnsTo": ["device_id", "boot_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "device_diagnostic_device_id_boot_id_local_id_pk": {
+          "name": "device_diagnostic_device_id_boot_id_local_id_pk",
+          "columns": ["device_id", "boot_id", "local_id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "device_diagnostic_uptime_check": {
+          "name": "device_diagnostic_uptime_check",
+          "value": "end_uptime_s >= start_uptime_s"
+        },
+        "device_diagnostic_reason_check": {
+          "name": "device_diagnostic_reason_check",
+          "value": "kind = 'WIFI' or reason is null"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.outage": {
+      "name": "outage",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "device_id": {
+          "name": "device_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "outage_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ended_at": {
+          "name": "ended_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "duration_s": {
+          "name": "duration_s",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "generated": {
+            "as": "extract(epoch from ended_at - started_at)::integer",
+            "type": "stored"
+          }
+        },
+        "cause": {
+          "name": "cause",
+          "type": "outage_cause",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "outage_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ota_attempt_id": {
+          "name": "ota_attempt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "off_alert_due_at": {
+          "name": "off_alert_due_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "off_alert_queued_at": {
+          "name": "off_alert_queued_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "outage_device_started_idx": {
+          "name": "outage_device_started_idx",
+          "columns": [
+            {
+              "expression": "device_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "started_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "first"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "first"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "outage_one_open_per_device": {
+          "name": "outage_one_open_per_device",
+          "columns": [
+            {
+              "expression": "device_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "ended_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "outage_off_alert_due_idx": {
+          "name": "outage_off_alert_due_idx",
+          "columns": [
+            {
+              "expression": "off_alert_due_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "ended_at is null and off_alert_queued_at is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "outage_ota_attempt_id_idx": {
+          "name": "outage_ota_attempt_id_idx",
+          "columns": [
+            {
+              "expression": "ota_attempt_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "ota_attempt_id is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "outage_device_id_device_id_fk": {
+          "name": "outage_device_id_device_id_fk",
+          "tableFrom": "outage",
+          "tableTo": "device",
+          "columnsFrom": ["device_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "outage_ota_attempt_id_firmware_update_attempt_id_fk": {
+          "name": "outage_ota_attempt_id_firmware_update_attempt_id_fk",
+          "tableFrom": "outage",
+          "tableTo": "firmware_update_attempt",
+          "columnsFrom": ["ota_attempt_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "outage_ended_check": {
+          "name": "outage_ended_check",
+          "value": "ended_at is null or ended_at >= started_at"
+        },
+        "outage_closed_fields_check": {
+          "name": "outage_closed_fields_check",
+          "value": "(ended_at is null) = (cause is null) and (ended_at is null) = (kind is null)"
+        },
+        "outage_power_blip_check": {
+          "name": "outage_power_blip_check",
+          "value": "type = 'OUTAGE' or (ended_at is not null and off_alert_due_at is null)"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.delivery": {
+      "name": "delivery",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "outage_id": {
+          "name": "outage_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event": {
+          "name": "event",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'QUEUED'"
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "next_attempt_at": {
+          "name": "next_attempt_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "last_attempt_at": {
+          "name": "last_attempt_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sent_at": {
+          "name": "sent_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "delivery_once_per_event": {
+          "name": "delivery_once_per_event",
+          "columns": [
+            {
+              "expression": "outage_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "channel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "event",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "delivery_channel_created_idx": {
+          "name": "delivery_channel_created_idx",
+          "columns": [
+            {
+              "expression": "channel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "first"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "first"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "delivery_due_idx": {
+          "name": "delivery_due_idx",
+          "columns": [
+            {
+              "expression": "next_attempt_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "status in ('QUEUED', 'RETRYING')",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "delivery_outage_id_outage_id_fk": {
+          "name": "delivery_outage_id_outage_id_fk",
+          "tableFrom": "delivery",
+          "tableTo": "outage",
+          "columnsFrom": ["outage_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "delivery_channel_id_notification_channel_id_fk": {
+          "name": "delivery_channel_id_notification_channel_id_fk",
+          "tableFrom": "delivery",
+          "tableTo": "notification_channel",
+          "columnsFrom": ["channel_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "delivery_event_check": {
+          "name": "delivery_event_check",
+          "value": "event in ('device.offline', 'device.online', 'device.power_blip')"
+        },
+        "delivery_status_check": {
+          "name": "delivery_status_check",
+          "value": "status in ('QUEUED', 'SENT', 'RETRYING', 'FAILED')"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.device_channel": {
+      "name": "device_channel",
+      "schema": "",
+      "columns": {
+        "device_id": {
+          "name": "device_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "device_channel_channel_id_idx": {
+          "name": "device_channel_channel_id_idx",
+          "columns": [
+            {
+              "expression": "channel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "device_channel_device_id_device_id_fk": {
+          "name": "device_channel_device_id_device_id_fk",
+          "tableFrom": "device_channel",
+          "tableTo": "device",
+          "columnsFrom": ["device_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "device_channel_channel_id_notification_channel_id_fk": {
+          "name": "device_channel_channel_id_notification_channel_id_fk",
+          "tableFrom": "device_channel",
+          "tableTo": "notification_channel",
+          "columnsFrom": ["channel_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "device_channel_device_id_channel_id_pk": {
+          "name": "device_channel_device_id_channel_id_pk",
+          "columns": ["device_id", "channel_id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.notification_channel": {
+      "name": "notification_channel",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "enabled": {
+          "name": "enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "disabled_reason": {
+          "name": "disabled_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "consecutive_failures": {
+          "name": "consecutive_failures",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "telegram_chat_id": {
+          "name": "telegram_chat_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "telegram_bot_token_enc": {
+          "name": "telegram_bot_token_enc",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "webhook_url": {
+          "name": "webhook_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "webhook_events": {
+          "name": "webhook_events",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "webhook_secret_enc": {
+          "name": "webhook_secret_enc",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "notification_channel_user_id_idx": {
+          "name": "notification_channel_user_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "notification_channel_platform_chat_key": {
+          "name": "notification_channel_platform_chat_key",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "telegram_chat_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "type = 'TELEGRAM_PLATFORM'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "notification_channel_platform_chat_idx": {
+          "name": "notification_channel_platform_chat_idx",
+          "columns": [
+            {
+              "expression": "telegram_chat_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "type = 'TELEGRAM_PLATFORM'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "notification_channel_user_id_app_user_id_fk": {
+          "name": "notification_channel_user_id_app_user_id_fk",
+          "tableFrom": "notification_channel",
+          "tableTo": "app_user",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "notification_channel_type_check": {
+          "name": "notification_channel_type_check",
+          "value": "type in ('TELEGRAM_PLATFORM', 'TELEGRAM_BOT', 'WEBHOOK')"
+        },
+        "notification_channel_disabled_reason_check": {
+          "name": "notification_channel_disabled_reason_check",
+          "value": "disabled_reason in ('USER', 'TOO_MANY_FAILURES')"
+        },
+        "notification_channel_enabled_check": {
+          "name": "notification_channel_enabled_check",
+          "value": "enabled = (disabled_reason is null)"
+        },
+        "notification_channel_type_columns_check": {
+          "name": "notification_channel_type_columns_check",
+          "value": "(type = 'TELEGRAM_PLATFORM'\n          and telegram_chat_id is not null\n          and num_nonnulls(telegram_bot_token_enc, webhook_url, webhook_events, webhook_secret_enc) = 0)\n        or (type = 'TELEGRAM_BOT'\n          and num_nonnulls(telegram_chat_id, telegram_bot_token_enc) = 2\n          and num_nonnulls(webhook_url, webhook_events, webhook_secret_enc) = 0)\n        or (type = 'WEBHOOK'\n          and num_nonnulls(webhook_url, webhook_events, webhook_secret_enc) = 3\n          and num_nonnulls(telegram_chat_id, telegram_bot_token_enc) = 0)"
+        },
+        "notification_channel_webhook_events_check": {
+          "name": "notification_channel_webhook_events_check",
+          "value": "cardinality(webhook_events) > 0\n        and webhook_events <@ array['device.offline', 'device.online', 'device.power_blip']"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.rate_limit_bucket": {
+      "name": "rate_limit_bucket",
+      "schema": "",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "window_start": {
+          "name": "window_start",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "count": {
+          "name": "count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "rate_limit_bucket_window_start_idx": {
+          "name": "rate_limit_bucket_window_start_idx",
+          "columns": [
+            {
+              "expression": "window_start",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.worker_heartbeat": {
+      "name": "worker_heartbeat",
+      "schema": "",
+      "columns": {
+        "worker": {
+          "name": "worker",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "instance_id": {
+          "name": "instance_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "beat_at": {
+          "name": "beat_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    }
+  },
+  "enums": {
+    "public.device_state": {
+      "name": "device_state",
+      "schema": "public",
+      "values": ["PENDING", "ONLINE", "OFFLINE", "UPDATING"]
+    },
+    "public.diagnostic_kind": {
+      "name": "diagnostic_kind",
+      "schema": "public",
+      "values": ["WIFI", "API"]
+    },
+    "public.outage_cause": {
+      "name": "outage_cause",
+      "schema": "public",
+      "values": ["POWER", "NETWORK", "UNKNOWN"]
+    },
+    "public.outage_kind": {
+      "name": "outage_kind",
+      "schema": "public",
+      "values": ["SHORT", "LONG"]
+    },
+    "public.outage_type": {
+      "name": "outage_type",
+      "schema": "public",
+      "values": ["OUTAGE", "POWER_BLIP"]
+    },
+    "public.reset_reason": {
+      "name": "reset_reason",
+      "schema": "public",
+      "values": ["POWER_ON", "BROWNOUT", "SOFTWARE", "WATCHDOG", "PANIC", "UNKNOWN"]
+    },
+    "public.update_outcome": {
+      "name": "update_outcome",
+      "schema": "public",
+      "values": ["SUCCEEDED", "FAILED", "ROLLED_BACK"]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

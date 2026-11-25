@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { boolean, check, index, pgTable, text, uuid } from 'drizzle-orm/pg-core';
+import { bigint, boolean, check, index, pgTable, text, uuid } from 'drizzle-orm/pg-core';
 import { newId } from '../../lib/crypto.ts';
 import { bytea, tstz } from '../types.ts';
 
@@ -7,8 +7,11 @@ export const appUser = pgTable(
   'app_user',
   {
     id: uuid().primaryKey().$defaultFn(newId),
-    email: text().notNull().unique('app_user_email_key'),
+    email: text().unique('app_user_email_key'),
     emailVerifiedAt: tstz(),
+    phone: text().unique('app_user_phone_key'),
+    phoneVerifiedAt: tstz(),
+    telegramUserId: bigint({ mode: 'bigint' }).unique('app_user_telegram_user_id_key'),
     passwordHash: text(),
     googleSub: text().unique('app_user_google_sub_key'),
     name: text().notNull(),
@@ -23,6 +26,7 @@ export const appUser = pgTable(
   },
   () => [
     check('app_user_email_check', sql`email = lower(email)`),
+    check('app_user_identifier_check', sql`email is not null or phone is not null`),
     check('app_user_language_check', sql`language in ('uk', 'en', 'ru')`),
     check(
       'app_user_sign_in_method_check',
@@ -70,6 +74,8 @@ export const oneTimeToken = pgTable(
       .notNull()
       .references(() => appUser.id, { onDelete: 'cascade' }),
     purpose: text().notNull(),
+    phone: text(),
+    telegramUserId: bigint({ mode: 'bigint' }),
     expiresAt: tstz().notNull(),
     usedAt: tstz(),
     createdAt: tstz().notNull().defaultNow(),
@@ -78,8 +84,11 @@ export const oneTimeToken = pgTable(
     check('one_time_token_token_hash_check', sql`octet_length(token_hash) = 32`),
     check(
       'one_time_token_purpose_check',
-      sql`purpose in ('VERIFY_EMAIL', 'RESET_PASSWORD', 'TELEGRAM_LINK')`,
+      sql`purpose in ('VERIFY_EMAIL', 'RESET_PASSWORD', 'TELEGRAM_LINK', 'PHONE_VERIFY', 'PHONE_RECOVER')`,
     ),
     index('one_time_token_user_id_idx').on(t.userId, t.purpose),
+    index('one_time_token_telegram_user_idx')
+      .on(t.telegramUserId)
+      .where(sql`used_at is null`),
   ],
 ).enableRLS();

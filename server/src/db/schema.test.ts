@@ -7,9 +7,11 @@ import {
   device,
   deviceBoot,
   deviceDiagnostic,
+  deviceInvite,
   firmwareRelease,
   firmwareUpdateAttempt,
   notificationChannel,
+  oneTimeToken,
   outage,
   refreshToken,
   session,
@@ -127,6 +129,66 @@ describe('constraints', () => {
       t.db.insert(appUser).values({ email: 'John@Example.com', name: 'John', passwordHash: 'x' }),
       'app_user_email_check',
     );
+  });
+
+  test('a user needs an email or a phone', async () => {
+    await expectViolation(
+      t.db.insert(appUser).values({ name: 'John', passwordHash: 'x' }),
+      'app_user_identifier_check',
+    );
+    const [user] = await t.db
+      .insert(appUser)
+      .values({ phone: '+380501234500', name: 'John', passwordHash: 'x' })
+      .returning();
+    expect(user!.email).toBeNull();
+  });
+
+  test('phones and Telegram users are unique', async () => {
+    const base = { name: 'John', passwordHash: 'x' };
+    await t.db.insert(appUser).values({ ...base, phone: '+380501234501', telegramUserId: 777n });
+    await expectViolation(
+      t.db.insert(appUser).values({ ...base, phone: '+380501234501' }),
+      'app_user_phone_key',
+    );
+    await expectViolation(
+      t.db.insert(appUser).values({ ...base, phone: '+380501234502', telegramUserId: 777n }),
+      'app_user_telegram_user_id_key',
+    );
+  });
+
+  test('an invite has exactly one of email or phone, one pending per phone', async () => {
+    const d = await insertDevice();
+    let seq = 0;
+    const invite = (values: { email?: string; phone?: string; acceptedAt?: Date }) =>
+      t.db.insert(deviceInvite).values({
+        deviceId: d.id,
+        invitedBy: d.ownerId,
+        tokenHash: sha256(`invite-${++seq}`),
+        expiresAt: new Date('2026-12-01T00:00:00Z'),
+        ...values,
+      });
+    await expectViolation(invite({}), 'device_invite_one_identifier_check');
+    await expectViolation(
+      invite({ email: 'john@example.com', phone: '+380501234503' }),
+      'device_invite_one_identifier_check',
+    );
+    await invite({ phone: '+380501234503', acceptedAt: new Date('2026-11-21T10:00:00Z') });
+    await invite({ phone: '+380501234503' });
+    await expectViolation(invite({ phone: '+380501234503' }), 'device_invite_pending_phone_key');
+  });
+
+  test.each(['PHONE_VERIFY', 'PHONE_RECOVER'])('one_time_token accepts %s', async (purpose) => {
+    const user = await insertUser();
+    const values = {
+      tokenHash: sha256(purpose),
+      userId: user.id,
+      purpose,
+      phone: '+380501234567',
+      telegramUserId: 777n,
+      expiresAt: new Date('2026-12-01T00:00:00Z'),
+    };
+    const [stored] = await t.db.insert(oneTimeToken).values(values).returning();
+    expect(stored!.purpose).toBe(purpose);
   });
 
   test('a user needs a sign-in method', async () => {

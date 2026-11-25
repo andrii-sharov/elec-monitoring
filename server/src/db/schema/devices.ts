@@ -107,7 +107,8 @@ export const deviceInvite = pgTable(
     deviceId: uuid()
       .notNull()
       .references(() => device.id, { onDelete: 'cascade' }),
-    email: text().notNull(),
+    email: text(),
+    phone: text(),
     invitedBy: uuid()
       .notNull()
       .references(() => appUser.id, { onDelete: 'cascade' }),
@@ -118,9 +119,13 @@ export const deviceInvite = pgTable(
   },
   (t) => [
     check('device_invite_email_check', sql`email = lower(email)`),
+    check('device_invite_one_identifier_check', sql`num_nonnulls(email, phone) = 1`),
     check('device_invite_token_hash_check', sql`octet_length(token_hash) = 32`),
     uniqueIndex('device_invite_pending_key')
       .on(t.deviceId, t.email)
+      .where(sql`accepted_at is null`),
+    uniqueIndex('device_invite_pending_phone_key')
+      .on(t.deviceId, t.phone)
       .where(sql`accepted_at is null`),
     index('device_invite_device_id_idx').on(t.deviceId),
     index('device_invite_invited_by_idx').on(t.invitedBy),

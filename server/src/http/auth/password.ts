@@ -83,7 +83,7 @@ export function passwordRouter(deps: AppDeps): Router {
     async (req, res) => {
       const { email } = forgotBodySchema.parse(req.body);
       const [user] = await db.select().from(appUser).where(eq(appUser.email, email));
-      if (!user) {
+      if (!user?.email) {
         res.status(204).end();
         return;
       }

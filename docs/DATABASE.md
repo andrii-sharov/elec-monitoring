@@ -123,8 +123,11 @@ erDiagram
 ```sql
 create table app_user (
   id                uuid primary key,
-  email             text not null unique check (email = lower(email)),
+  email             text unique check (email = lower(email)),
   email_verified_at timestamptz,
+  phone             text unique,
+  phone_verified_at timestamptz,
+  telegram_user_id  bigint unique,
   password_hash     text,
   google_sub        text unique,
   name              text not null,
@@ -133,15 +136,21 @@ create table app_user (
   is_admin          boolean not null default false,
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now(),
-  check (password_hash is not null or google_sub is not null)
+  check (password_hash is not null or google_sub is not null),
+  check (email is not null or phone is not null)
 );
 ```
 
 - `password_hash` is argon2id. `null` means a Google-only account.
-- `google_sub` is the Google account ID (OIDC `sub`). The last check stops
-  unlinking the only sign-in method (`DELETE /api/auth/google` → `409`).
-- `has_password`, `google_linked` and `email_verified` in `GET /me` are
-  derived from these columns.
+- Every account has an email or a phone. `phone` is E.164
+  (`+380501234567`), normalized by the server.
+- `telegram_user_id` is the Telegram user who confirmed the phone. The bot
+  writes to that user (a private chat ID equals the user ID).
+- `google_sub` is the Google account ID (OIDC `sub`). The sign-in method
+  check stops unlinking the only sign-in method
+  (`DELETE /api/auth/google` → `409`).
+- `has_password`, `google_linked`, `email_verified` and `phone_verified`
+  in `GET /me` are derived from these columns.
 - `timezone` is an IANA name, validated by the server.
 
 ### `session`
@@ -188,23 +197,32 @@ create index refresh_token_session_id_idx on refresh_token (session_id);
 
 ### `one_time_token`
 
-Email verification, password reset and the platform Telegram link code.
+Email verification, password reset, the platform Telegram link code and
+the phone codes.
 
 ```sql
 create table one_time_token (
-  token_hash bytea primary key check (octet_length(token_hash) = 32),
-  user_id    uuid not null references app_user (id) on delete cascade,
-  purpose    text not null check (purpose in ('VERIFY_EMAIL', 'RESET_PASSWORD', 'TELEGRAM_LINK')),
-  expires_at timestamptz not null,
-  used_at    timestamptz,
-  created_at timestamptz not null default now()
+  token_hash       bytea primary key check (octet_length(token_hash) = 32),
+  user_id          uuid not null references app_user (id) on delete cascade,
+  purpose          text not null check (purpose in
+                     ('VERIFY_EMAIL', 'RESET_PASSWORD', 'TELEGRAM_LINK',
+                      'PHONE_VERIFY', 'PHONE_RECOVER')),
+  phone            text,
+  telegram_user_id bigint,
+  expires_at       timestamptz not null,
+  used_at          timestamptz,
+  created_at       timestamptz not null default now()
 );
 
 create index one_time_token_user_id_idx on one_time_token (user_id, purpose);
+create index one_time_token_telegram_user_idx on one_time_token (telegram_user_id)
+  where used_at is null;
 ```
 
 - Lifetimes: `VERIFY_EMAIL` 24 h, `RESET_PASSWORD` 1 h, `TELEGRAM_LINK`
-  15 min.
+  15 min, `PHONE_VERIFY` 24 h, `PHONE_RECOVER` 1 h.
+- `phone` is the number the token is about. `telegram_user_id` is who
+  opened a phone code in the bot.
 - A used or expired token returns `410 expired`, so rows stay until cleanup
   (§10).
 
@@ -320,15 +338,19 @@ create index device_viewer_user_id_idx on device_viewer (user_id);
 create table device_invite (
   id          uuid primary key,
   device_id   uuid not null references device (id) on delete cascade,
-  email       text not null check (email = lower(email)),
+  email       text check (email = lower(email)),
+  phone       text,
   invited_by  uuid not null references app_user (id) on delete cascade,
   token_hash  bytea not null unique check (octet_length(token_hash) = 32),
   expires_at  timestamptz not null,
   accepted_at timestamptz,
-  created_at  timestamptz not null default now()
+  created_at  timestamptz not null default now(),
+  check (num_nonnulls(email, phone) = 1)
 );
 
 create unique index device_invite_pending_key on device_invite (device_id, email)
+  where accepted_at is null;
+create unique index device_invite_pending_phone_key on device_invite (device_id, phone)
   where accepted_at is null;
 create index device_invite_device_id_idx on device_invite (device_id);
 create index device_invite_invited_by_idx on device_invite (invited_by);

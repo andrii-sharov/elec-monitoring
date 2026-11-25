@@ -33,6 +33,9 @@ export class HttpError extends Error {
 
 function toDetail(issue: core.$ZodIssue): ErrorDetail {
   const detail: ErrorDetail = { path: issue.path.map(String).join('.'), code: issue.code };
+  if (issue.code === 'custom' && typeof issue.params?.reason === 'string') {
+    detail.code = issue.params.reason;
+  }
   if (issue.code === 'too_small') detail.min = Number(issue.minimum);
   if (issue.code === 'too_big') detail.max = Number(issue.maximum);
   return detail;

@@ -1,3 +1,4 @@
+import { identifierSchema } from '@elec/shared/api';
 import request from 'supertest';
 import { describe, expect, test } from 'vitest';
 import { z } from 'zod';
@@ -24,6 +25,9 @@ function appWithRoutes(logger = silentLogger()) {
         });
         app.post('/test/nested', (req, res) => {
           res.json(nestedSchema.parse(req.body));
+        });
+        app.post('/test/phone', (req, res) => {
+          res.json(identifierSchema.parse(req.body));
         });
         app.get('/test/items/:id', (req, res) => {
           res.json({ id: req.params.id });
@@ -59,6 +63,11 @@ describe('error handler', () => {
         details: [{ path: 'ping_interval_s', code: 'too_small', min: 15 }],
       },
     });
+  });
+
+  test('uses the reason of a custom issue as the detail code', async () => {
+    const res = await request(appWithRoutes().app).post('/test/phone').send({ phone: '12' });
+    expect(res.body.error.details).toEqual([{ path: 'phone', code: 'invalid_phone' }]);
   });
 
   test('joins nested paths with dots', async () => {

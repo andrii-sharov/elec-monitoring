@@ -248,7 +248,7 @@ function PendingInvites({
                   variant="outline"
                   size="sm"
                   disabled={resend.isPending}
-                  onClick={() => resend.mutate(invite.email)}
+                  onClick={() => resend.mutate(invite.email ?? '')}
                 >
                   {t('app.members.resend')}
                 </Button>

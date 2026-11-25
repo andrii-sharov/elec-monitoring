@@ -17,7 +17,7 @@ export const membersSchema = z.object({ items: z.array(memberSchema) });
 export const inviteSchema = z
   .object({
     id: z.uuid(),
-    email: z.string(),
+    email: z.string().nullable(),
     expires_at: isoDate,
     created_at: isoDate,
   })
@@ -31,7 +31,7 @@ export const invitePreviewSchema = z
   .object({
     device_name: z.string(),
     inviter_name: z.string(),
-    email: z.string(),
+    email: z.string().nullable(),
     expires_at: isoDate,
     accepted: z.boolean(),
   })

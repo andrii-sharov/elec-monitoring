@@ -103,7 +103,7 @@ export function isExpired(invite: InviteRow, now: Date): boolean {
 
 const gone = () => new HttpError(410, 'expired', 'The invite is invalid or has expired');
 
-type Invitee = { id: string; email: string };
+type Invitee = { id: string; email: string | null };
 
 async function isViewer(tx: Tx, deviceId: string, userId: string): Promise<boolean> {
   const [row] = await tx
@@ -146,7 +146,7 @@ export async function acceptInvite(
     .where(eq(deviceInvite.tokenHash, tokenHash))
     .for('update');
   if (!owner || !invite || isExpired(invite, now)) throw gone();
-  if (invite.email !== user.email.toLowerCase()) {
+  if (invite.email !== user.email?.toLowerCase()) {
     throw new HttpError(403, 'forbidden', 'This invite is for another email address');
   }
   const deviceId = invite.deviceId;
@@ -168,9 +168,11 @@ export async function acceptInvite(
 
 export async function applyPendingInvites(tx: Tx, clock: Clock, user: Invitee): Promise<string[]> {
   const now = clock.now();
+  const email = user.email?.toLowerCase();
+  if (!email) return [];
   const pendingFor = () =>
     and(
-      eq(deviceInvite.email, user.email.toLowerCase()),
+      eq(deviceInvite.email, email),
       isNull(deviceInvite.acceptedAt),
       gt(deviceInvite.expiresAt, now),
       ne(device.ownerId, user.id),

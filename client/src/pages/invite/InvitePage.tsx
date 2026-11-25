@@ -46,8 +46,8 @@ export function InvitePage() {
     return <SignedOut invite={invite} next={here} />;
   }
 
-  if (me.email.toLowerCase() !== invite.email || isApiError(accept.error, 'forbidden')) {
-    return <WrongAccount invite={invite} current={me.email} />;
+  if (me.email?.toLowerCase() !== invite.email || isApiError(accept.error, 'forbidden')) {
+    return <WrongAccount invite={invite} current={me.email ?? ''} />;
   }
 
   return (
@@ -82,16 +82,15 @@ function useAcceptInvite(token: string | null) {
 
 function SignedOut({ invite, next }: { invite: InvitePreview; next: string }) {
   const { t } = useTranslation();
-  const signup = new URLSearchParams({ email: invite.email, invite: '1' });
-  const login = new URLSearchParams({ email: invite.email, next });
+  const email = invite.email ?? '';
+  const signup = new URLSearchParams({ email, invite: '1' });
+  const login = new URLSearchParams({ email, next });
   return (
     <AuthLayout
       title={t('app.invite.title', { inviter: invite.inviter_name, device: invite.device_name })}
       description={t('app.invite.body')}
     >
-      <p className="text-sm text-muted-foreground">
-        {t('app.invite.forEmail', { email: invite.email })}
-      </p>
+      <p className="text-sm text-muted-foreground">{t('app.invite.forEmail', { email })}</p>
       <Link to={`/signup?${signup.toString()}`} className={buttonVariants()}>
         {t('app.invite.createAccount')}
       </Link>

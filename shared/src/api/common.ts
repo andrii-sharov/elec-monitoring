@@ -1,3 +1,4 @@
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { z } from 'zod';
 import { languages } from '../enums.ts';
 
@@ -47,6 +48,34 @@ export function page<T extends z.ZodType>(item: T) {
 }
 
 export const emailSchema = z.string().trim().toLowerCase().pipe(z.email().max(254));
+
+export function normalizePhone(raw: string): string | null {
+  const parsed = parsePhoneNumberFromString(raw.trim(), { defaultCountry: 'UA', extract: false });
+  return parsed?.isValid() && !parsed.ext ? parsed.number : null;
+}
+
+export function telegramPhone(raw: string): string | null {
+  return normalizePhone(/^\d+$/.test(raw) ? `+${raw}` : raw);
+}
+
+export const phoneSchema = z
+  .string()
+  .max(32)
+  .refine((value) => normalizePhone(value) !== null, { params: { reason: 'invalid_phone' } })
+  .transform((value) => normalizePhone(value) ?? value);
+
+export function withIdentifier<S extends z.ZodRawShape>(shape: S) {
+  return z.union([
+    z.strictObject({ email: emailSchema, ...shape }),
+    z.strictObject({ phone: phoneSchema, ...shape }),
+  ]);
+}
+
+export const identifierSchema = withIdentifier({});
+
+export function isEmailInput(value: string): boolean {
+  return value.includes('@');
+}
 
 export const passwordSchema = z.string().min(8).max(128);
 

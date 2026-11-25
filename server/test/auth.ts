@@ -12,9 +12,16 @@ const defaultPasswordHash = hashPassword(TEST_PASSWORD);
 
 export async function createUser(
   db: Db,
-  overrides: Partial<typeof appUser.$inferInsert> & { password?: string } = {},
+  overrides: Partial<typeof appUser.$inferInsert> & {
+    password?: string;
+    phoneVerified?: boolean;
+  } = {},
 ): Promise<User> {
-  const { password, ...columns } = overrides;
+  const { password, phoneVerified = true, ...columns } = overrides;
+  const verifiedAt = new Date('2026-11-01T10:00:00Z');
+  const identifier = columns.phone
+    ? { email: null, phoneVerifiedAt: phoneVerified ? verifiedAt : null }
+    : { email: 'john@example.com', emailVerifiedAt: verifiedAt };
   const passwordHash =
     'passwordHash' in columns
       ? columns.passwordHash
@@ -24,9 +31,8 @@ export async function createUser(
   const [user] = await db
     .insert(appUser)
     .values({
-      email: 'john@example.com',
+      ...identifier,
       name: 'John',
-      emailVerifiedAt: new Date('2026-11-01T10:00:00Z'),
       ...columns,
       passwordHash,
     })

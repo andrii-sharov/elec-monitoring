@@ -330,7 +330,7 @@ confirmed once in the platform Telegram bot.
 A §1, §3, §4 Sharing and Account, §6 · D §3, §4 `device_invite`, §11.
 
 - [x] API tokens removed: table, error codes and spec mentions
-- [ ] Phone numbers in E.164 and the identity columns
+- [x] Phone numbers in E.164 and the identity columns
 - [ ] "Verified" means a verified email or phone
 - [ ] Telegram pushes from the API
 - [ ] Confirm a phone in the bot

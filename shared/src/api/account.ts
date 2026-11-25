@@ -4,7 +4,7 @@ import { languageSchema, nameSchema, timezoneSchema } from './common.ts';
 export const meSchema = z
   .object({
     id: z.string(),
-    email: z.string(),
+    email: z.string().nullable(),
     email_verified: z.boolean(),
     name: z.string(),
     language: languageSchema,
