@@ -285,3 +285,41 @@ test('Google sign-in to a verified account leaves pending invites alone', async 
   await runLogin();
   expect(await viewerRows()).toEqual([]);
 });
+
+async function linkAs(userId: string) {
+  const { refreshToken } = await signIn({ db: t.db, clock, config: testConfig }, userId);
+  const cookie = `em_refresh=${refreshToken}`;
+  const { oauthCookie, state } = await startFlow('app=CLIENT&intent=LINK', cookie);
+  return callback(`code=abc&state=${state}`, oauthCookie);
+}
+
+test('linking Google to a phone account adds the verified email', async () => {
+  const user = await createUser(t.db, { phone: '+380501234567' });
+  const deviceId = await pendingInviteForJohn();
+  const res = await linkAs(user.id);
+  expect(res.headers.location).toBe('https://app.test/auth/google');
+  const [row] = await t.db.select().from(appUser).where(eq(appUser.id, user.id));
+  expect(row).toMatchObject({
+    email: 'john@example.com',
+    emailVerifiedAt: clock.now(),
+    googleSub: 'google-sub-1',
+  });
+  expect(await viewerRows()).toEqual([expect.objectContaining({ deviceId, userId: user.id })]);
+});
+
+test('linking a Google email that another account holds fails', async () => {
+  await createUser(t.db);
+  const user = await createUser(t.db, { phone: '+380501234567' });
+  const res = await linkAs(user.id);
+  expect(res.headers.location).toBe('https://app.test/auth/google?error=google_account_in_use');
+  const [row] = await t.db.select().from(appUser).where(eq(appUser.id, user.id));
+  expect(row).toMatchObject({ email: null, googleSub: null });
+});
+
+test('an unverified phone account cannot link Google', async () => {
+  const user = await createUser(t.db, { phone: '+380501234567', phoneVerified: false });
+  const res = await linkAs(user.id);
+  expect(res.headers.location).toBe('https://app.test/auth/google?error=google_failed');
+  const [row] = await t.db.select().from(appUser).where(eq(appUser.id, user.id));
+  expect(row).toMatchObject({ email: null, googleSub: null });
+});

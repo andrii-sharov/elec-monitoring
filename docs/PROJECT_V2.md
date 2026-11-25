@@ -77,6 +77,26 @@ only sends emails.
   and expires the user's other unused reset links.
 - Rate limits on sign up, log in, reset (per IP and per email).
 
+### Phone + password
+
+- A user picks an email or a mobile phone as the identifier. Phones are
+  stored as E.164; each phone and email belongs to one account at most.
+- Sign up, log in and forgot password work with a phone. The number is
+  confirmed once, by sharing the contact with the platform Telegram bot
+  (§7). No SMS.
+- Sign up and forgot password always answer with a Telegram link, so they
+  don't reveal whether a number has an account. For an existing number the
+  link recovers the account: sharing the matching contact sends a password
+  reset link (valid 1 h).
+- Once a Telegram user is bound, the bot writes on its own: reset links and
+  "someone tried to sign up" notices.
+- Resetting through a phone link verifies the phone and logs out all
+  sessions.
+- A signed-in user can add the missing identifier: a phone to an email
+  account, an email to a phone account (also by linking Google). The account
+  must already be verified. Identifiers can't be changed or removed.
+- Rate limits per phone match those per email.
+
 ### Google sign-in
 
 - OAuth 2.0 / OpenID Connect, authorization code flow with PKCE.

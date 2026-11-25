@@ -3,8 +3,9 @@ import {
   forgotBodySchema,
   languageSchema,
   resetBodySchema,
+  telegramUrlSchema,
 } from '@elec/shared/api';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, type SQL } from 'drizzle-orm';
 import { Router } from 'express';
 import type { ZodOpenApiPathsObject } from 'zod-openapi';
 import {
@@ -13,17 +14,19 @@ import {
   issueOneTimeToken,
 } from '../../auth/oneTimeTokens.ts';
 import { hashPassword, verifyPassword } from '../../auth/password.ts';
+import { phoneCodeUrl } from '../../auth/phone.ts';
 import { revokeUserSessions } from '../../auth/sessions.ts';
 import { appUser } from '../../db/schema/index.ts';
-import { sendInBackground } from '../../email/sender.ts';
-import { renderEmail } from '../../email/templates.ts';
 import { createI18n } from '../../i18n.ts';
+import { randomToken } from '../../lib/crypto.ts';
 import { AUTH_PER_IP, EMAIL_SEND, REAUTH_PER_USER } from '../../rateLimit/limiter.ts';
 import { applyPendingInvites } from '../../sharing/invites.ts';
+import { renderTelegramAuth, sendTelegramInBackground } from '../../telegram/pushes.ts';
 import type { AppDeps } from '../app.ts';
 import { HttpError, errorResponse } from '../errors.ts';
 import { rateLimit } from '../rateLimit.ts';
-import { getAuth, requireUser } from './middleware.ts';
+import { authEmails } from './emails.ts';
+import { getAuth, requireUser, type User } from './middleware.ts';
 
 const rateLimited = errorResponse('Too many requests, with `Retry-After`');
 const validation = errorResponse('Invalid body');
@@ -31,11 +34,16 @@ const validation = errorResponse('Invalid body');
 export const passwordPaths: ZodOpenApiPathsObject = {
   '/api/auth/forgot-password': {
     post: {
-      summary: 'Request a password reset email',
-      description: 'Always answers `204`, whether or not the email is registered.',
+      summary: 'Request a password reset link',
+      description:
+        'Answers the same whether or not the account exists: `204` for an email, `200` with a Telegram link for a phone.',
       requestBody: { content: { 'application/json': { schema: forgotBodySchema } } },
       responses: {
-        '204': { description: 'Accepted' },
+        '200': {
+          description: 'Phone: a Telegram link that recovers the account',
+          content: { 'application/json': { schema: telegramUrlSchema } },
+        },
+        '204': { description: 'Email: accepted' },
         '400': validation,
         '429': rateLimited,
       },
@@ -43,8 +51,8 @@ export const passwordPaths: ZodOpenApiPathsObject = {
   },
   '/api/auth/reset-password': {
     post: {
-      summary: 'Set a new password with the emailed token',
-      description: 'Verifies the email, and ends every session of the user.',
+      summary: 'Set a new password with the reset token',
+      description: 'Verifies the email or phone the link was sent to, and ends every session.',
       requestBody: { content: { 'application/json': { schema: resetBodySchema } } },
       responses: {
         '204': { description: 'Password changed' },
@@ -76,25 +84,45 @@ export function passwordRouter(deps: AppDeps): Router {
   const router = Router();
   const i18n = createI18n();
   const { db, clock, logger, config, rateLimiter } = deps;
+  const emails = authEmails(deps, i18n);
+
+  async function pushResetLink(user: User, phone: string): Promise<void> {
+    if (user.telegramUserId === null) return;
+    const token = await issueOneTimeToken(db, clock, user.id, 'RESET_PASSWORD', { phone });
+    const text = renderTelegramAuth(i18n, 'resetLink', {
+      lang: languageSchema.catch('uk').parse(user.language),
+      link: `${config.urls.client}/reset-password?token=${token}`,
+    });
+    sendTelegramInBackground(deps.telegram, logger, user.telegramUserId, text);
+  }
 
   router.post(
     '/api/auth/forgot-password',
-    rateLimit(rateLimiter, 'forgot-password', { ip: AUTH_PER_IP, email: EMAIL_SEND }),
+    rateLimit(rateLimiter, 'forgot-password', {
+      ip: AUTH_PER_IP,
+      email: EMAIL_SEND,
+      phone: EMAIL_SEND,
+    }),
     async (req, res) => {
-      const { email } = forgotBodySchema.parse(req.body);
-      const [user] = await db.select().from(appUser).where(eq(appUser.email, email));
-      if (!user?.email) {
+      const body = forgotBodySchema.parse(req.body);
+      if ('phone' in body) {
+        const { phone } = body;
+        const [user] = await db.select().from(appUser).where(eq(appUser.phone, phone));
+        const code = user
+          ? await issueOneTimeToken(db, clock, user.id, 'PHONE_RECOVER', { phone })
+          : randomToken();
+        res.json({ telegram_url: phoneCodeUrl(config.telegram.botUsername, code) });
+        if (user) await pushResetLink(user, phone);
+        return;
+      }
+      const [user] = await db.select().from(appUser).where(eq(appUser.email, body.email));
+      if (!user) {
         res.status(204).end();
         return;
       }
       const token = await issueOneTimeToken(db, clock, user.id, 'RESET_PASSWORD');
       res.status(204).end();
-      const rendered = renderEmail(i18n, 'resetPassword', {
-        lang: languageSchema.catch('uk').parse(user.language),
-        name: user.name,
-        link: `${config.urls.client}/reset-password?token=${token}`,
-      });
-      sendInBackground(deps.email, logger, { to: user.email, ...rendered });
+      emails.resetPassword(user, token);
     },
   );
 
@@ -109,15 +137,25 @@ export function passwordRouter(deps: AppDeps): Router {
         if (!consumed) return false;
         const { userId } = consumed;
         const [before] = await tx.select().from(appUser).where(eq(appUser.id, userId));
-        if (before?.email && !before.emailVerifiedAt) {
-          await applyPendingInvites(tx, clock, userId, { email: before.email });
+        if (!before) return false;
+        const now = sql`${clock.now().toISOString()}::timestamptz`;
+        const verified: Partial<Record<'emailVerifiedAt' | 'phoneVerifiedAt', SQL>> = {};
+        if (consumed.phone === null) {
+          if (before.email) {
+            if (!before.emailVerifiedAt) {
+              await applyPendingInvites(tx, clock, userId, { email: before.email });
+            }
+            verified.emailVerifiedAt = sql`coalesce(${appUser.emailVerifiedAt}, ${now})`;
+          }
+        } else if (consumed.phone === before.phone) {
+          if (!before.phoneVerifiedAt) {
+            await applyPendingInvites(tx, clock, userId, { phone: consumed.phone });
+          }
+          verified.phoneVerifiedAt = sql`coalesce(${appUser.phoneVerifiedAt}, ${now})`;
         }
         await tx
           .update(appUser)
-          .set({
-            passwordHash,
-            emailVerifiedAt: sql`coalesce(${appUser.emailVerifiedAt}, ${clock.now().toISOString()}::timestamptz)`,
-          })
+          .set({ passwordHash, ...verified })
           .where(eq(appUser.id, userId));
         await expireOneTimeTokens(tx, clock, userId, 'RESET_PASSWORD');
         await revokeUserSessions(tx, clock, userId);

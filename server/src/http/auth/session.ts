@@ -30,12 +30,12 @@ const sessionOk = {
 export const sessionPaths: ZodOpenApiPathsObject = {
   '/api/auth/login': {
     post: {
-      summary: 'Log in with email and password',
+      summary: 'Log in with an email or a phone, and a password',
       requestBody: { content: { 'application/json': { schema: loginBodySchema } } },
       responses: {
         '200': sessionOk,
         '400': errorResponse('Invalid body'),
-        '401': errorResponse('Wrong email or password (`invalid_credentials`)'),
+        '401': errorResponse('Wrong email, phone or password (`invalid_credentials`)'),
         '429': rateLimited,
       },
     },
@@ -103,10 +103,18 @@ export function sessionRouter(deps: AppDeps): Router {
 
   router.post(
     '/api/auth/login',
-    rateLimit(rateLimiter, 'login', { ip: AUTH_PER_IP, email: LOGIN_PER_EMAIL }),
+    rateLimit(rateLimiter, 'login', {
+      ip: AUTH_PER_IP,
+      email: LOGIN_PER_EMAIL,
+      phone: LOGIN_PER_EMAIL,
+    }),
     async (req, res) => {
-      const { email, password } = loginBodySchema.parse(req.body);
-      const [user] = await db.select().from(appUser).where(eq(appUser.email, email));
+      const body = loginBodySchema.parse(req.body);
+      const { password } = body;
+      const [user] = await db
+        .select()
+        .from(appUser)
+        .where('phone' in body ? eq(appUser.phone, body.phone) : eq(appUser.email, body.email));
       const valid = user?.passwordHash
         ? await verifyPassword(password, user.passwordHash)
         : await verifyDummyPassword(password);

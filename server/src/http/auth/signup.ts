@@ -1,18 +1,25 @@
-import { languageSchema, signupBodySchema, tokenBodySchema } from '@elec/shared/api';
+import {
+  languageSchema,
+  signupBodySchema,
+  telegramUrlSchema,
+  tokenBodySchema,
+} from '@elec/shared/api';
 import { eq, sql } from 'drizzle-orm';
 import { Router } from 'express';
 import type { ZodOpenApiPathsObject } from 'zod-openapi';
 import { consumeOneTimeToken, issueOneTimeToken } from '../../auth/oneTimeTokens.ts';
 import { hashPassword } from '../../auth/password.ts';
+import { phoneCodeUrl } from '../../auth/phone.ts';
 import { appUser } from '../../db/schema/index.ts';
-import { sendInBackground } from '../../email/sender.ts';
-import { renderEmail, type EmailKind } from '../../email/templates.ts';
+import { randomToken } from '../../lib/crypto.ts';
 import { createI18n } from '../../i18n.ts';
 import { applyPendingInvites } from '../../sharing/invites.ts';
+import { renderTelegramAuth, sendTelegramInBackground } from '../../telegram/pushes.ts';
 import { AUTH_PER_IP, EMAIL_SEND } from '../../rateLimit/limiter.ts';
 import type { AppDeps } from '../app.ts';
 import { HttpError, errorResponse } from '../errors.ts';
 import { rateLimit } from '../rateLimit.ts';
+import { authEmails } from './emails.ts';
 import { getAuth, requireUser } from './middleware.ts';
 
 const rateLimited = errorResponse('Too many requests, with `Retry-After`');
@@ -21,12 +28,15 @@ const validation = errorResponse('Invalid body');
 export const signupPaths: ZodOpenApiPathsObject = {
   '/api/auth/signup': {
     post: {
-      summary: 'Sign up with email and password',
+      summary: 'Sign up with an email or a phone, and a password',
       description:
-        'Always answers `201` with no body, whether or not the email is already registered. The user must verify the email, then log in.',
+        'Always answers `201`, whether or not the account exists. With an email there is no body and the user must verify it. With a phone the body holds a Telegram link that confirms the number or recovers the account.',
       requestBody: { content: { 'application/json': { schema: signupBodySchema } } },
       responses: {
-        '201': { description: 'Verification email queued (or an account-exists email)' },
+        '201': {
+          description: 'Email: no body. Phone: a Telegram link',
+          content: { 'application/json': { schema: telegramUrlSchema } },
+        },
         '400': validation,
         '429': rateLimited,
       },
@@ -57,51 +67,72 @@ export const signupPaths: ZodOpenApiPathsObject = {
   },
 };
 
+type Profile = {
+  passwordHash: string;
+  name: string;
+  language: string;
+  timezone: string;
+};
+
 export function signupRouter(deps: AppDeps): Router {
   const router = Router();
   const i18n = createI18n();
   const { db, clock, logger, config, rateLimiter } = deps;
-  const link = (path: string, token?: string) =>
-    `${config.urls.client}${path}${token ? `?token=${token}` : ''}`;
+  const emails = authEmails(deps, i18n);
 
-  function send(
-    kind: EmailKind,
-    user: { email: string | null; name: string; language: string },
-    url: string,
-  ) {
-    if (!user.email) return;
-    const lang = languageSchema.catch('uk').parse(user.language);
-    const rendered = renderEmail(i18n, kind, { lang, name: user.name, link: url });
-    sendInBackground(deps.email, logger, { to: user.email, ...rendered });
+  async function signUpWithPhone(phone: string, profile: Profile): Promise<string> {
+    const [created] = await db
+      .insert(appUser)
+      .values({ phone, ...profile })
+      .onConflictDoNothing({ target: appUser.phone })
+      .returning();
+    if (created) {
+      return issueOneTimeToken(db, clock, created.id, 'PHONE_VERIFY', { phone });
+    }
+    const [existing] = await db.select().from(appUser).where(eq(appUser.phone, phone));
+    if (!existing) return randomToken();
+    const token = await issueOneTimeToken(db, clock, existing.id, 'PHONE_RECOVER', { phone });
+    if (existing.telegramUserId !== null) {
+      const text = renderTelegramAuth(i18n, 'signupAttempt', {
+        lang: languageSchema.catch('uk').parse(existing.language),
+        link: `${config.urls.client}/login`,
+      });
+      sendTelegramInBackground(deps.telegram, logger, existing.telegramUserId, text);
+    }
+    return token;
   }
 
   router.post(
     '/api/auth/signup',
-    rateLimit(rateLimiter, 'signup', { ip: AUTH_PER_IP, email: EMAIL_SEND }),
+    rateLimit(rateLimiter, 'signup', { ip: AUTH_PER_IP, email: EMAIL_SEND, phone: EMAIL_SEND }),
     async (req, res) => {
       const body = signupBodySchema.parse(req.body);
-      const passwordHash = await hashPassword(body.password);
+      const profile = {
+        passwordHash: await hashPassword(body.password),
+        name: body.name,
+        language: body.language,
+        timezone: body.timezone,
+      };
+      if ('phone' in body) {
+        const token = await signUpWithPhone(body.phone, profile);
+        res.status(201).json({ telegram_url: phoneCodeUrl(config.telegram.botUsername, token) });
+        return;
+      }
       const [created] = await db
         .insert(appUser)
-        .values({
-          email: body.email,
-          passwordHash,
-          name: body.name,
-          language: body.language,
-          timezone: body.timezone,
-        })
+        .values({ email: body.email, ...profile })
         .onConflictDoNothing({ target: appUser.email })
         .returning();
 
       if (created) {
         const token = await issueOneTimeToken(db, clock, created.id, 'VERIFY_EMAIL');
         res.status(201).end();
-        send('verifyEmail', created, link('/verify-email', token));
+        emails.verifyEmail(created, token);
         return;
       }
       const [existing] = await db.select().from(appUser).where(eq(appUser.email, body.email));
       res.status(201).end();
-      if (existing) send('accountExists', existing, link('/login'));
+      if (existing) emails.accountExists(existing);
     },
   );
 
@@ -137,13 +168,13 @@ export function signupRouter(deps: AppDeps): Router {
     rateLimit(rateLimiter, 'resend-verification', { ip: AUTH_PER_IP, user: EMAIL_SEND }),
     async (_req, res) => {
       const { user } = getAuth(res);
-      if (user.emailVerifiedAt) {
+      if (user.emailVerifiedAt || !user.email) {
         res.status(204).end();
         return;
       }
       const token = await issueOneTimeToken(db, clock, user.id, 'VERIFY_EMAIL');
       res.status(204).end();
-      send('verifyEmail', user, link('/verify-email', token));
+      emails.verifyEmail(user, token);
     },
   );
 

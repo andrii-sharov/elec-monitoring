@@ -1,10 +1,10 @@
-import { loginBodySchema } from '@elec/shared/api';
+import { emailSchema } from '@elec/shared/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
-import type { z } from 'zod';
+import { z } from 'zod';
 import { login } from '@/api/endpoints';
 import { useSession } from '@/api/session';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -15,8 +15,9 @@ import { safeNext } from '@/lib/safeNext';
 import { AuthLayout } from './AuthLayout';
 import { GoogleButton } from './GoogleButton';
 
-type Input = z.input<typeof loginBodySchema>;
-type Output = z.output<typeof loginBodySchema>;
+const formSchema = z.object({ email: emailSchema, password: z.string().min(1).max(128) });
+type Input = z.input<typeof formSchema>;
+type Output = z.output<typeof formSchema>;
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -28,7 +29,7 @@ export function LoginPage() {
     handleSubmit,
     formState: { errors },
   } = useForm<Input, unknown, Output>({
-    resolver: zodResolver(loginBodySchema),
+    resolver: zodResolver(formSchema),
     defaultValues: { email: params.get('email') ?? '', password: '' },
   });
   const mutation = useMutation({

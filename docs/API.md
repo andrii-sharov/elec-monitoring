@@ -79,17 +79,19 @@ Validation errors add `details`:
 
 ### Rate limits
 
-| Who                             | Limit                 |
-| ------------------------------- | --------------------- |
-| Device check-in                 | 6 / min per device    |
-| Client app JWT                  | 120 / min per user    |
-| Auth / claim                    | 10 / min per IP       |
-| Firmware image download         | 20 / min per IP       |
-| Log in                          | 10 / 15 min per email |
-| Sign up, forgot password        | 3 / h per email       |
-| Resend verification             | 3 / h per user        |
-| Device invites                  | 10 / h per user       |
-| Change password, delete account | 10 / 15 min per user  |
+| Who                             | Limit                          |
+| ------------------------------- | ------------------------------ |
+| Device check-in                 | 6 / min per device             |
+| Client app JWT                  | 120 / min per user             |
+| Auth / claim                    | 10 / min per IP                |
+| Firmware image download         | 20 / min per IP                |
+| Log in                          | 10 / 15 min per email or phone |
+| Sign up, forgot password        | 3 / h per email or phone       |
+| Add phone                       | 3 / h per phone                |
+| Add email                       | 3 / h per user and per email   |
+| Resend verification             | 3 / h per user                 |
+| Device invites                  | 10 / h per user                |
+| Change password, delete account | 10 / 15 min per user           |
 
 Responses include `Retry-After` on `429`; CORS exposes it to the app origins.
 
@@ -330,21 +332,28 @@ Successful sign-in responses set the refresh cookie and return:
 { "access_token": "<jwt>", "expires_in": 900, "user": { "...": "see GET /me" } }
 ```
 
-| Method | Path                            | Body                                                | Success                                                                                                                                                                               |
-| ------ | ------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| POST   | `/api/auth/signup`              | `email`, `password`, `name`, `language`, `timezone` | `201` with no body; it does not sign in. Sends a verification email. Existing email → the same `201` and an email to the existing account (no enumeration)                            |
-| POST   | `/api/auth/verify-email`        | `token`                                             | `204`. Unknown, used, expired or wrong-purpose token → `410 expired`                                                                                                                  |
-| POST   | `/api/auth/resend-verification` | — (signed in)                                       | `204`. A verified account gets `204` and no email                                                                                                                                     |
-| POST   | `/api/auth/login`               | `email`, `password`                                 | `200` session. Wrong credentials → `401 invalid_credentials`                                                                                                                          |
-| GET    | `/api/auth/google`              | query `app=CLIENT\|ADMIN`, `intent=LOGIN\|LINK`     | `302` to Google with PKCE and `state`                                                                                                                                                 |
-| GET    | `/api/auth/google/callback`     | from Google                                         | `302` to `<app origin>/auth/google`, with the refresh cookie set on `LOGIN`. The app then calls `refresh`. On failure the redirect adds `?error=` (see below)                         |
-| POST   | `/api/auth/refresh`             | cookie                                              | `200` session, rotates the cookie. Token reused within 10 s → `409 conflict` (the parallel request already set the new cookie; retry once). Reused after 10 s → revoke session, `401` |
-| POST   | `/api/auth/logout`              | cookie                                              | `204`, clears the cookie                                                                                                                                                              |
-| POST   | `/api/auth/logout-all`          | signed in                                           | `204`, revokes all refresh tokens                                                                                                                                                     |
-| POST   | `/api/auth/forgot-password`     | `email`                                             | Always `204`                                                                                                                                                                          |
-| POST   | `/api/auth/reset-password`      | `token`, `password`                                 | `204`, verifies the email, logs out all sessions. Unknown, used, expired or superseded token → `410`                                                                                  |
-| POST   | `/api/auth/change-password`     | `current_password`, `new_password` (signed in)      | `204`. Revokes other sessions. Wrong current password → `403 invalid_credentials`. Account without a password → `409 conflict`                                                        |
-| DELETE | `/api/auth/google`              | signed in                                           | `204`. `409` if it is the only sign-in method                                                                                                                                         |
+| Method | Path                            | Body                                                           | Success                                                                                                                                                                                                                                                                                                                                                                  |
+| ------ | ------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| POST   | `/api/auth/signup`              | `email` or `phone`, `password`, `name`, `language`, `timezone` | Does not sign in. Email: `201` with no body and a verification email; an existing email gets the same `201` and an email to that account. Phone: always `201 { "telegram_url" }`; a new number creates the account (unverified) and the link confirms it, an existing number creates nothing, the link recovers the account and the bot warns its owner (no enumeration) |
+| POST   | `/api/auth/verify-email`        | `token`                                                        | `204`. Unknown, used, expired or wrong-purpose token → `410 expired`                                                                                                                                                                                                                                                                                                     |
+| POST   | `/api/auth/resend-verification` | — (signed in)                                                  | `204`. A verified email, or an account without one, gets `204` and no email                                                                                                                                                                                                                                                                                              |
+| POST   | `/api/auth/login`               | `email` or `phone`, `password`                                 | `200` session. Wrong credentials → `401 invalid_credentials`                                                                                                                                                                                                                                                                                                             |
+| GET    | `/api/auth/google`              | query `app=CLIENT\|ADMIN`, `intent=LOGIN\|LINK`                | `302` to Google with PKCE and `state`                                                                                                                                                                                                                                                                                                                                    |
+| GET    | `/api/auth/google/callback`     | from Google                                                    | `302` to `<app origin>/auth/google`, with the refresh cookie set on `LOGIN`. The app then calls `refresh`. On failure the redirect adds `?error=` (see below)                                                                                                                                                                                                            |
+| POST   | `/api/auth/refresh`             | cookie                                                         | `200` session, rotates the cookie. Token reused within 10 s → `409 conflict` (the parallel request already set the new cookie; retry once). Reused after 10 s → revoke session, `401`                                                                                                                                                                                    |
+| POST   | `/api/auth/logout`              | cookie                                                         | `204`, clears the cookie                                                                                                                                                                                                                                                                                                                                                 |
+| POST   | `/api/auth/logout-all`          | signed in                                                      | `204`, revokes all refresh tokens                                                                                                                                                                                                                                                                                                                                        |
+| POST   | `/api/auth/forgot-password`     | `email` or `phone`                                             | Email: always `204`. Phone: always `200 { "telegram_url" }`; an account with a bound Telegram user also gets the reset link there at once                                                                                                                                                                                                                                |
+| POST   | `/api/auth/reset-password`      | `token`, `password`                                            | `204`, verifies the email or phone the link was sent to, logs out all sessions. Unknown, used, expired or superseded token → `410`                                                                                                                                                                                                                                       |
+| POST   | `/api/auth/change-password`     | `current_password`, `new_password` (signed in)                 | `204`. Revokes other sessions. Wrong current password → `403 invalid_credentials`. Account without a password → `409 conflict`                                                                                                                                                                                                                                           |
+| POST   | `/api/auth/phone`               | `phone` (signed in)                                            | `200 { "telegram_url" }` to confirm the number; also the resend for an unverified phone account. Another account's number → `409` with detail `phone` / `already_in_use`; the account already has a verified or different phone → `409`; a new number on an unverified account → `403 not_verified`                                                                      |
+| POST   | `/api/auth/email`               | `email` (signed in, verified)                                  | `204`. A free email is set (unverified) and gets the verification email; a taken one is not set and its owner gets the "account exists" email. Account already has an email → `409`                                                                                                                                                                                      |
+| DELETE | `/api/auth/google`              | signed in                                                      | `204`. `409` if it is the only sign-in method                                                                                                                                                                                                                                                                                                                            |
+
+Bodies with `email` or `phone` take exactly one of them. A phone is
+accepted in any common format (default country UA) and stored as E.164; an
+invalid one is a `400` with detail `phone` / `invalid_phone`.
+`telegram_url` is `https://t.me/<bot>?start=p_<code>` (§6).
 
 Email links open the client app: `${CLIENT_URL}/verify-email?token=…` and
 `${CLIENT_URL}/reset-password?token=…`. Every bad token (unknown, used,
@@ -353,8 +362,11 @@ expired, wrong purpose) answers `410 expired`.
 Google callback `error` values: `google_failed` (missing or expired state
 cookie, state mismatch, consent denied, token exchange failed, or `LINK`
 without a signed-in session), `google_email_unverified`,
-`google_account_in_use` (the Google account belongs to another user) and
+`google_account_in_use` (the Google account, or its email when linking to
+an account without one, belongs to another user) and
 `google_already_linked` (the user already has a different Google account).
+`LINK` on an account without an email sets the Google email as verified; an
+unverified account gets `google_failed`.
 The callback never answers with JSON or a `500` page for these cases. `LINK`
 finds the user from the refresh cookie, which the browser sends on the
 top-level `GET` because the cookie path is `/api/auth`.

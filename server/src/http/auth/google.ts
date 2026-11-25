@@ -19,7 +19,7 @@ import {
 } from '../cookies.ts';
 import { HttpError, errorResponse } from '../errors.ts';
 import { rateLimit } from '../rateLimit.ts';
-import { getAuth, requireUser } from './middleware.ts';
+import { getAuth, isVerified, requireUser } from './middleware.ts';
 
 const startQuerySchema = z.object({ app: z.enum(appTargets), intent: z.enum(googleIntents) });
 
@@ -126,8 +126,24 @@ export function googleRouter(deps: AppDeps): Router {
     if (user.googleSub) return { error: 'google_already_linked' };
     const [owner] = await db.select().from(appUser).where(eq(appUser.googleSub, identity.sub));
     if (owner) return { error: 'google_account_in_use' };
-    await db.update(appUser).set({ googleSub: identity.sub }).where(eq(appUser.id, userId));
-    return {};
+    if (user.email) {
+      await db.update(appUser).set({ googleSub: identity.sub }).where(eq(appUser.id, userId));
+      return {};
+    }
+    if (!isVerified(user)) return { error: 'google_failed' };
+    return db.transaction(async (tx): Promise<Outcome> => {
+      const [emailOwner] = await tx
+        .select({ id: appUser.id })
+        .from(appUser)
+        .where(eq(appUser.email, identity.email));
+      if (emailOwner) return { error: 'google_account_in_use' };
+      await applyPendingInvites(tx, clock, userId, { email: identity.email });
+      await tx
+        .update(appUser)
+        .set({ googleSub: identity.sub, email: identity.email, emailVerifiedAt: clock.now() })
+        .where(eq(appUser.id, userId));
+      return {};
+    });
   }
 
   router.get(

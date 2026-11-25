@@ -1,4 +1,4 @@
-import { signupBodySchema } from '@elec/shared/api';
+import { emailSchema, nameSchema, passwordSchema } from '@elec/shared/api';
 import { languages, type Language } from '@elec/shared';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
-import type { z } from 'zod';
+import { z } from 'zod';
 import { signup } from '@/api/endpoints';
 import { isApiError } from '@/api/errors';
 import { useSession } from '@/api/session';
@@ -18,7 +18,7 @@ import { applyServerErrors } from '@/forms/zodErrors';
 import { AuthLayout } from './AuthLayout';
 import { GoogleButton } from './GoogleButton';
 
-const formSchema = signupBodySchema.pick({ email: true, password: true, name: true });
+const formSchema = z.object({ email: emailSchema, password: passwordSchema, name: nameSchema });
 type Input = z.input<typeof formSchema>;
 type Output = z.output<typeof formSchema>;
 

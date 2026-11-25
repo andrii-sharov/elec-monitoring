@@ -16,6 +16,7 @@ import { healthPaths, healthRouter } from './health.ts';
 import { mePaths, meRouter } from './account/me.ts';
 import { googlePaths, googleRouter } from './auth/google.ts';
 import { passwordPaths, passwordRouter } from './auth/password.ts';
+import { phonePaths, phoneRouter } from './auth/phone.ts';
 import { sessionPaths, sessionRouter } from './auth/session.ts';
 import { signupPaths, signupRouter } from './auth/signup.ts';
 import { channelsPaths, channelsRouter } from './channels/channels.ts';
@@ -47,7 +48,7 @@ export function apiDocument(): OpenApiDocument {
     {
       tag: 'Auth',
       description: 'Sign-up, sessions, passwords and Google sign-in',
-      paths: [signupPaths, sessionPaths, passwordPaths, googlePaths],
+      paths: [signupPaths, sessionPaths, passwordPaths, phonePaths, googlePaths],
     },
     { tag: 'Account', description: 'Profile of the signed-in user', paths: [mePaths] },
     { tag: 'Devices', description: 'Device management and settings', paths: [devicesPaths] },
@@ -91,6 +92,7 @@ export function createApp(deps: AppDeps, extraRoutes?: (app: Express) => void): 
   app.use(signupRouter(deps));
   app.use(sessionRouter(deps));
   app.use(passwordRouter(deps));
+  app.use(phoneRouter(deps));
   app.use(googleRouter(deps));
   app.use(meRouter(deps));
   app.use(devicesRouter(deps));

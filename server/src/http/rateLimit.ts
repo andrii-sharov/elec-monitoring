@@ -1,14 +1,26 @@
+import { normalizePhone } from '@elec/shared/api';
 import type { RequestHandler } from 'express';
 import { rateLimitKey, type RateLimiter, type RateRule } from '../rateLimit/limiter.ts';
 import { getAuth } from './auth/middleware.ts';
 import { getDeviceAuth } from './device/auth.ts';
 import { HttpError } from './errors.ts';
 
-type Rules = { ip?: RateRule; email?: RateRule; user?: RateRule; device?: RateRule };
+type Rules = {
+  ip?: RateRule;
+  email?: RateRule;
+  phone?: RateRule;
+  user?: RateRule;
+  device?: RateRule;
+};
 
 function bodyEmail(body: unknown): string | undefined {
   if (typeof body !== 'object' || body === null || !('email' in body)) return undefined;
   return typeof body.email === 'string' ? body.email.trim().toLowerCase() : undefined;
+}
+
+function bodyPhone(body: unknown): string | undefined {
+  if (typeof body !== 'object' || body === null || !('phone' in body)) return undefined;
+  return typeof body.phone === 'string' ? (normalizePhone(body.phone) ?? undefined) : undefined;
 }
 
 export function rateLimit(limiter: RateLimiter, name: string, rules: Rules): RequestHandler {
@@ -19,6 +31,9 @@ export function rateLimit(limiter: RateLimiter, name: string, rules: Rules): Req
     const email = bodyEmail(req.body);
     if (rules.email && email)
       checks.push({ key: rateLimitKey(name, 'email', email), rule: rules.email });
+    const phone = bodyPhone(req.body);
+    if (rules.phone && phone)
+      checks.push({ key: rateLimitKey(name, 'phone', phone), rule: rules.phone });
     if (rules.user) {
       const userId = getAuth(res).user.id;
       checks.push({ key: rateLimitKey(name, 'user', userId), rule: rules.user });

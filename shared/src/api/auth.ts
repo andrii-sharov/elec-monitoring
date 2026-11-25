@@ -2,16 +2,18 @@ import { z } from 'zod';
 import { meSchema } from './account.ts';
 import {
   emailSchema,
+  identifierSchema,
   languageSchema,
   nameSchema,
   passwordSchema,
+  phoneSchema,
   timezoneSchema,
+  withIdentifier,
 } from './common.ts';
 
 export const ACCESS_TOKEN_TTL_S = 900;
 
-export const signupBodySchema = z.object({
-  email: emailSchema,
+export const signupBodySchema = withIdentifier({
   password: passwordSchema,
   name: nameSchema,
   language: languageSchema,
@@ -20,12 +22,17 @@ export const signupBodySchema = z.object({
 
 export const tokenBodySchema = z.object({ token: z.string().min(1).max(200) });
 
-export const loginBodySchema = z.object({
-  email: emailSchema,
-  password: z.string().min(1).max(128),
-});
+export const loginBodySchema = withIdentifier({ password: z.string().min(1).max(128) });
 
-export const forgotBodySchema = z.object({ email: emailSchema });
+export const forgotBodySchema = identifierSchema;
+
+export const telegramUrlSchema = z.object({ telegram_url: z.string() }).meta({ id: 'TelegramUrl' });
+
+export type TelegramUrl = z.infer<typeof telegramUrlSchema>;
+
+export const addPhoneBodySchema = z.strictObject({ phone: phoneSchema });
+
+export const addEmailBodySchema = z.strictObject({ email: emailSchema });
 
 export const resetBodySchema = z.object({
   token: z.string().min(1).max(200),

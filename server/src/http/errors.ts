@@ -41,6 +41,15 @@ function toDetail(issue: core.$ZodIssue): ErrorDetail {
   return detail;
 }
 
+function closestBranch(issue: core.$ZodIssue): core.$ZodIssue[] {
+  if (issue.code !== 'invalid_union') return [issue];
+  const [closest] = issue.errors.toSorted((a, b) => a.length - b.length);
+  if (!closest) return [issue];
+  return closest.flatMap((inner) =>
+    closestBranch({ ...inner, path: [...issue.path, ...inner.path] }),
+  );
+}
+
 function isClientError(err: unknown): boolean {
   if (typeof err !== 'object' || err === null || !('status' in err)) return false;
   return typeof err.status === 'number' && err.status >= 400 && err.status < 500;
@@ -49,7 +58,12 @@ function isClientError(err: unknown): boolean {
 function toHttpError(err: unknown): HttpError | undefined {
   if (err instanceof HttpError) return err;
   if (err instanceof ZodError) {
-    return new HttpError(400, 'validation_error', 'Invalid request', err.issues.map(toDetail));
+    return new HttpError(
+      400,
+      'validation_error',
+      'Invalid request',
+      err.issues.flatMap(closestBranch).map(toDetail),
+    );
   }
   if (isClientError(err)) return new HttpError(400, 'validation_error', 'Invalid request');
   return undefined;

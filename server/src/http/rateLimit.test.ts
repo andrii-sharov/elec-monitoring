@@ -62,6 +62,12 @@ test('normalizes the email before counting', async () => {
   expect((await request(app).post('/test').send({ email: 'a@b.c' })).status).toBe(429);
 });
 
+test('counts every format of a phone as one number', async () => {
+  const app = appWith({ phone: { limit: 1, windowS: 60 } });
+  expect((await request(app).post('/test').send({ phone: '050 123 45 67' })).status).toBe(204);
+  expect((await request(app).post('/test').send({ phone: '+380501234567' })).status).toBe(429);
+});
+
 test('without an email field only the IP rule applies', async () => {
   const app = appWith({ ip: { limit: 2, windowS: 60 }, email: { limit: 1, windowS: 60 } });
   expect((await request(app).post('/test').send({})).status).toBe(204);

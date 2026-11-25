@@ -96,8 +96,8 @@
     },
     "/api/auth/signup": {
       "post": {
-        "summary": "Sign up with email and password",
-        "description": "Always answers `201` with no body, whether or not the email is already registered. The user must verify the email, then log in.",
+        "summary": "Sign up with an email or a phone, and a password",
+        "description": "Always answers `201`, whether or not the account exists. With an email there is no body and the user must verify it. With a phone the body holds a Telegram link that confirms the number or recovers the account.",
         "tags": [
           "Auth"
         ],
@@ -105,39 +105,82 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "email": {
-                    "type": "string"
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string"
+                      },
+                      "password": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      "language": {
+                        "type": "string",
+                        "enum": [
+                          "uk",
+                          "en",
+                          "ru"
+                        ]
+                      },
+                      "timezone": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "email",
+                      "password",
+                      "name",
+                      "language",
+                      "timezone"
+                    ],
+                    "additionalProperties": false
                   },
-                  "password": {
-                    "type": "string",
-                    "minLength": 8,
-                    "maxLength": 128
-                  },
-                  "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 100
-                  },
-                  "language": {
-                    "type": "string",
-                    "enum": [
-                      "uk",
-                      "en",
-                      "ru"
-                    ]
-                  },
-                  "timezone": {
-                    "type": "string"
+                  {
+                    "type": "object",
+                    "properties": {
+                      "phone": {
+                        "type": "string",
+                        "maxLength": 32
+                      },
+                      "password": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 128
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      "language": {
+                        "type": "string",
+                        "enum": [
+                          "uk",
+                          "en",
+                          "ru"
+                        ]
+                      },
+                      "timezone": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "phone",
+                      "password",
+                      "name",
+                      "language",
+                      "timezone"
+                    ],
+                    "additionalProperties": false
                   }
-                },
-                "required": [
-                  "email",
-                  "password",
-                  "name",
-                  "language",
-                  "timezone"
                 ]
               }
             }
@@ -145,7 +188,14 @@
         },
         "responses": {
           "201": {
-            "description": "Verification email queued (or an account-exists email)"
+            "description": "Email: no body. Phone: a Telegram link",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramUrl"
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid body",
@@ -272,7 +322,7 @@
     },
     "/api/auth/login": {
       "post": {
-        "summary": "Log in with email and password",
+        "summary": "Log in with an email or a phone, and a password",
         "tags": [
           "Auth"
         ],
@@ -280,20 +330,44 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "email": {
-                    "type": "string"
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string"
+                      },
+                      "password": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      }
+                    },
+                    "required": [
+                      "email",
+                      "password"
+                    ],
+                    "additionalProperties": false
                   },
-                  "password": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 128
+                  {
+                    "type": "object",
+                    "properties": {
+                      "phone": {
+                        "type": "string",
+                        "maxLength": 32
+                      },
+                      "password": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      }
+                    },
+                    "required": [
+                      "phone",
+                      "password"
+                    ],
+                    "additionalProperties": false
                   }
-                },
-                "required": [
-                  "email",
-                  "password"
                 ]
               }
             }
@@ -321,7 +395,7 @@
             }
           },
           "401": {
-            "description": "Wrong email or password (`invalid_credentials`)",
+            "description": "Wrong email, phone or password (`invalid_credentials`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -477,8 +551,8 @@
     },
     "/api/auth/forgot-password": {
       "post": {
-        "summary": "Request a password reset email",
-        "description": "Always answers `204`, whether or not the email is registered.",
+        "summary": "Request a password reset link",
+        "description": "Answers the same whether or not the account exists: `204` for an email, `200` with a Telegram link for a phone.",
         "tags": [
           "Auth"
         ],
@@ -486,22 +560,50 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "email": {
-                    "type": "string"
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "email"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "phone": {
+                        "type": "string",
+                        "maxLength": 32
+                      }
+                    },
+                    "required": [
+                      "phone"
+                    ],
+                    "additionalProperties": false
                   }
-                },
-                "required": [
-                  "email"
                 ]
               }
             }
           }
         },
         "responses": {
+          "200": {
+            "description": "Phone: a Telegram link that recovers the account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramUrl"
+                }
+              }
+            }
+          },
           "204": {
-            "description": "Accepted"
+            "description": "Email: accepted"
           },
           "400": {
             "description": "Invalid body",
@@ -528,8 +630,8 @@
     },
     "/api/auth/reset-password": {
       "post": {
-        "summary": "Set a new password with the emailed token",
-        "description": "Verifies the email, and ends every session of the user.",
+        "summary": "Set a new password with the reset token",
+        "description": "Verifies the email or phone the link was sent to, and ends every session.",
         "tags": [
           "Auth"
         ],
@@ -668,6 +770,187 @@
           },
           "409": {
             "description": "The account has no password",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests, with `Retry-After`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/phone": {
+      "post": {
+        "summary": "Add a phone number, or resend its confirmation link",
+        "description": "Returns a Telegram link. The number is set on the account once it is confirmed in the bot.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "maxLength": 32
+                  }
+                },
+                "required": [
+                  "phone"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Open the link in Telegram",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramUrl"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`not_verified`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The number belongs to another account (`already_in_use`), or this account already has a phone",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests, with `Retry-After`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/email": {
+      "post": {
+        "summary": "Add an email address to a phone account",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "email"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Verification email queued (or an account-exists email)"
+          },
+          "400": {
+            "description": "Invalid body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`not_verified`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The account already has an email",
             "content": {
               "application/json": {
                 "schema": {
@@ -3229,6 +3512,18 @@
   },
   "components": {
     "schemas": {
+      "TelegramUrl": {
+        "type": "object",
+        "properties": {
+          "telegram_url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "telegram_url"
+        ],
+        "additionalProperties": false
+      },
       "Session": {
         "type": "object",
         "properties": {

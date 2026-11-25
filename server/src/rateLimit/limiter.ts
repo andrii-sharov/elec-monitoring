@@ -23,7 +23,7 @@ export const FIRMWARE_DOWNLOAD_PER_IP: RateRule = { limit: 20, windowS: 60 };
 
 export function rateLimitKey(
   name: string,
-  scope: 'ip' | 'email' | 'user' | 'device',
+  scope: 'ip' | 'email' | 'phone' | 'user' | 'device',
   value: string,
 ): string {
   return `${name}:${scope}:${createHash('sha256').update(value).digest('hex')}`;
