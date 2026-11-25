@@ -2,9 +2,9 @@ import { useQueries, QueryClient } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { delay, http, HttpResponse } from 'msw';
-import { StrictMode } from 'react';
+import { act, StrictMode } from 'react';
 import { createMemoryRouter, Outlet, RouterProvider, type RouteObject } from 'react-router';
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 import { AppProviders } from '../app/providers.tsx';
 import { createClientI18n } from '../lib/i18n.ts';
 import { meFixture, sessionFixture } from '../../test/fixtures.ts';
@@ -21,6 +21,10 @@ function unauthorized() {
     { error: { code: 'unauthorized', message: 'Unauthorized' } },
     { status: 401 },
   );
+}
+
+function unavailable() {
+  return HttpResponse.json({ error: { code: 'internal', message: 'down' } }, { status: 503 });
 }
 
 function refreshHandler(answers: (() => Response | Promise<Response>)[]) {
@@ -142,6 +146,47 @@ test('on load a refresh 409 then 200 signs in without a second session', async (
     expect(screen.getByTestId('probe')).toHaveTextContent('authenticated:Johnny'),
   );
   expect(refresh.count).toBe(2);
+});
+
+test('on load a network error is retried and signs in', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  try {
+    const refresh = refreshHandler([() => HttpResponse.error(), () => HttpResponse.json(session)]);
+    mount([{ path: '*', Component: Probe }], '/');
+
+    await act(() => vi.advanceTimersByTimeAsync(5000));
+    expect(screen.getByTestId('probe')).toHaveTextContent('authenticated:Johnny');
+    expect(refresh.count).toBe(2);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test('RequireAuth shows a retry screen, not login, while the server stays unreachable', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  try {
+    const refresh = refreshHandler([unavailable, unavailable, unavailable, unavailable]);
+    const { router } = mount(
+      [
+        { path: 'login', element: <p>login page</p> },
+        { Component: RequireAuth, children: [{ path: 'devices', element: <p>device page</p> }] },
+      ],
+      '/devices',
+    );
+
+    await act(() => vi.advanceTimersByTimeAsync(10_000));
+    expect(screen.getByText("Can't reach the server")).toBeInTheDocument();
+    expect(location(router)).toBe('/devices');
+    expect(refresh.count).toBe(3);
+
+    server.use(http.post(`${base}/api/auth/refresh`, () => HttpResponse.json(session)));
+    await userEvent
+      .setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) })
+      .click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText('device page')).toBeInTheDocument();
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 test('RequireAuth shows a loading state, then redirects anonymous users with next', async () => {

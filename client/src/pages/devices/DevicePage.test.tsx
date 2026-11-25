@@ -53,17 +53,17 @@ test('last seen and uptime tick every second while online', async () => {
         deviceFixture({
           state: 'ONLINE',
           last_seen_at: '2026-11-21T18:41:50Z',
-          telemetry: { rssi: -61, uptime_s: 100, reset_reason: 'POWER_ON' },
+          telemetry: { rssi: -61, uptime_s: 30, reset_reason: 'POWER_ON' },
         }),
       ),
     ),
   );
   renderRoute(`/devices/${id}`, { me: meFixture() });
   expect(await screen.findByText('Last seen 21 Nov 20:41 · 10 s')).toBeInTheDocument();
-  expect(screen.getByText('Uptime 1 min 50 s')).toBeInTheDocument();
+  expect(screen.getByText('Uptime 40 s')).toBeInTheDocument();
   await act(() => vi.advanceTimersByTimeAsync(1000));
   expect(screen.getByText('Last seen 21 Nov 20:41 · 11 s')).toBeInTheDocument();
-  expect(screen.getByText('Uptime 1 min 51 s')).toBeInTheDocument();
+  expect(screen.getByText('Uptime 41 s')).toBeInTheDocument();
 });
 
 test('an offline device keeps the last reported uptime', async () => {
@@ -79,7 +79,7 @@ test('an offline device keeps the last reported uptime', async () => {
     ),
   );
   renderRoute(`/devices/${id}`, { me: meFixture() });
-  expect(await screen.findByText('Uptime 1 min 40 s')).toBeInTheDocument();
+  expect(await screen.findByText('Uptime 1 min')).toBeInTheDocument();
 });
 
 test('an offline device shows the open outage start', async () => {
@@ -121,13 +121,15 @@ test('a failed background poll keeps the page and unsaved settings', async () =>
   );
   const { user } = renderRoute(`/devices/${id}`, { me: meFixture() });
   await screen.findByRole('heading', { name: /Home/ });
+  await user.click(screen.getByRole('button', { name: 'Settings' }));
   const name = await screen.findByLabelText('Name');
   await user.type(name, ' edited');
   await act(async () => {
     await vi.advanceTimersByTimeAsync(15_000);
   });
   expect(calls).toBeGreaterThan(1);
-  expect(screen.getByRole('heading', { name: /Home/ })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /Home/, hidden: true })).toBeInTheDocument();
+  expect(screen.getByRole('dialog', { name: 'Settings' })).toBeInTheDocument();
   expect(screen.getByLabelText('Name')).toHaveValue('Home edited');
 });
 

@@ -9,16 +9,20 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage } from '@/forms/errorMessage';
 import { DeviceChannels } from './DeviceChannels';
-import { DeviceDangerZone } from './DeviceDangerZone';
-import { DeviceSettingsForm } from './DeviceSettingsForm';
+import { DeviceSettingsDialog } from './DeviceSettingsDialog';
 import { DeviceSetup } from './DeviceSetup';
 import { OutageTimeline } from './OutageTimeline';
 
 export function DevicePage() {
   const { t } = useTranslation();
+  const { id = '' } = useParams();
+  const { data } = useDevice(id);
   return (
     <div className="flex flex-col gap-4">
-      <BackLink to="/devices" label={t('app.device.backToList')} />
+      <div className="flex min-h-8 items-center justify-between gap-2">
+        <BackLink to="/devices" label={t('app.device.backToList')} />
+        {data?.role === 'OWNER' ? <DeviceSettingsDialog device={data} /> : null}
+      </div>
       <DeviceContent />
     </div>
   );
@@ -74,7 +78,9 @@ function DeviceContent() {
   const { data } = device;
   return (
     <div className="flex flex-col gap-6">
-      <DeviceHero device={data} />
+      <div data-motion="enter">
+        <DeviceHero device={data} />
+      </div>
       {data.role === 'OWNER' && data.state === 'PENDING' ? (
         <SetupSection deviceId={data.id} />
       ) : null}
@@ -85,12 +91,6 @@ function DeviceContent() {
         <OutageTimeline deviceId={id} />
       </section>
       <DeviceChannels deviceId={id} />
-      {data.role === 'OWNER' ? (
-        <>
-          <DeviceSettingsForm device={data} />
-          <DeviceDangerZone deviceId={data.id} />
-        </>
-      ) : null}
     </div>
   );
 }

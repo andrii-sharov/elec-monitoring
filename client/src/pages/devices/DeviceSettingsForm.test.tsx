@@ -43,6 +43,7 @@ function capturePatch(response: () => Response = () => HttpResponse.json(deviceF
 
 async function renderOwner() {
   const view = renderRoute(`/devices/${id}`, { me: meFixture() });
+  await view.user.click(await screen.findByRole('button', { name: 'Settings' }));
   await screen.findByLabelText('Ping interval (s)');
   return view;
 }
@@ -153,6 +154,7 @@ test('a viewer sees neither the settings form nor the danger zone', async () => 
   serveDevice({ role: 'VIEWER' });
   renderRoute(`/devices/${id}`, { me: meFixture() });
   await screen.findByRole('heading', { name: /Home/ });
+  expect(screen.queryByRole('button', { name: 'Settings' })).not.toBeInTheDocument();
   expect(screen.queryByLabelText('Ping interval (s)')).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Delete device' })).not.toBeInTheDocument();
 });

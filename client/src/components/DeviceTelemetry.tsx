@@ -28,9 +28,7 @@ export function DeviceTelemetry({ device, className }: { device: Device; classNa
       </span>
       {rssi === null ? null : <span>{t('app.device.rssi', { value: rssi })}</span>}
       {uptime === null ? null : (
-        <span>
-          {t('app.device.uptime', { duration: format.duration(uptime, { withSeconds: true }) })}
-        </span>
+        <span>{t('app.device.uptime', { duration: format.duration(uptime) })}</span>
       )}
     </div>
   );

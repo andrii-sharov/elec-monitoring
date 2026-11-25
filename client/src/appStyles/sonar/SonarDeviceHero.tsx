@@ -8,6 +8,7 @@ export function SonarDeviceHero({ device }: DeviceHeroProps) {
   return (
     <header
       data-app-style-slot="sonar"
+      data-state={device.state}
       className="sonar-hero flex flex-col gap-4 rounded-(--radius) bg-card p-5 text-card-foreground sm:p-6"
     >
       <div className="flex items-center gap-4">
@@ -16,7 +17,7 @@ export function SonarDeviceHero({ device }: DeviceHeroProps) {
           <StateDuration
             state={device.state}
             since={device.state_since}
-            className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl"
+            className="sonar-headline font-heading text-2xl font-semibold tracking-tight sm:text-3xl"
           />
           <h1 className="truncate text-base text-muted-foreground">{device.name}</h1>
         </div>

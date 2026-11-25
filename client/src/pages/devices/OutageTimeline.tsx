@@ -1,14 +1,29 @@
 import type { OutageItem } from '@elec/shared/api';
 import { PlugZap, RotateCw, Zap } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useOutages } from '@/api/queries';
 import { Button } from '@/components/ui/button';
+import { useLiveDuration } from '@/components/StateDuration';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage } from '@/forms/errorMessage';
 import { useFormatters } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
-function OutageRow({ outage }: { outage: OutageItem }) {
+function LiveDuration({ since }: { since: string }) {
+  const duration = useLiveDuration(since);
+  return (
+    <span className="flex items-center gap-1.5 font-medium text-status-offline">
+      <span aria-hidden="true" data-motion="ambient" className="relative flex size-2">
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-status-offline opacity-60" />
+        <span className="relative inline-flex size-2 rounded-full bg-status-offline" />
+      </span>
+      {duration}
+    </span>
+  );
+}
+
+function OutageRow({ outage, index }: { outage: OutageItem; index: number }) {
   const { t } = useTranslation();
   const format = useFormatters();
   const open = outage.ended_at === null;
@@ -16,17 +31,25 @@ function OutageRow({ outage }: { outage: OutageItem }) {
   const accent = open ? 'text-status-offline' : blip ? 'text-warning' : 'text-muted-foreground';
   const Icon = blip ? Zap : PlugZap;
   return (
-    <li className="relative">
+    <li data-motion="enter" style={{ '--i': index } as CSSProperties} className="relative">
       <span
         aria-hidden="true"
         className={cn(
-          'absolute top-3 -left-8 flex size-6 items-center justify-center rounded-full border border-border bg-card',
+          'absolute top-3 -left-8 flex size-6 items-center justify-center rounded-full border bg-card',
+          open ? 'border-status-offline/50' : 'border-border',
           accent,
         )}
       >
         <Icon className="size-3.5" />
       </span>
-      <div className="flex flex-col gap-1 rounded-lg border border-border bg-card p-3 text-card-foreground">
+      <div
+        className={cn(
+          'flex flex-col gap-1 rounded-lg border p-3 text-card-foreground',
+          open
+            ? 'border-status-offline/40 bg-[color-mix(in_oklab,var(--card)_92%,var(--status-offline))]'
+            : 'border-border bg-card',
+        )}
+      >
         <span className={cn('font-medium', open || blip ? accent : null)}>
           {t(`app.outage.type.${outage.type}`)}
         </span>
@@ -37,7 +60,7 @@ function OutageRow({ outage }: { outage: OutageItem }) {
         </span>
         <span className="flex flex-wrap gap-x-3 text-sm text-muted-foreground">
           {outage.duration_s === null ? (
-            <span>{t('app.outage.ongoing')}</span>
+            <LiveDuration since={outage.started_at} />
           ) : (
             <span>{format.duration(outage.duration_s)}</span>
           )}
@@ -79,8 +102,8 @@ export function OutageTimeline({ deviceId }: { deviceId: string }) {
   return (
     <div className="flex flex-col gap-3">
       <ol className="relative flex flex-col gap-3 pl-8 before:absolute before:top-3 before:bottom-3 before:left-[calc(0.75rem-0.5px)] before:w-px before:bg-border">
-        {items.map((outage) => (
-          <OutageRow key={outage.id} outage={outage} />
+        {items.map((outage, index) => (
+          <OutageRow key={outage.id} outage={outage} index={index} />
         ))}
       </ol>
       {outages.hasNextPage ? (

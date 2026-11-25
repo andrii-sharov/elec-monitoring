@@ -10,8 +10,10 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { CloudOff, RotateCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiUrl } from '@/lib/config';
 import { rememberLanguage } from '@/lib/i18n';
@@ -20,7 +22,7 @@ import { createApiClient, type ApiClient } from './client.ts';
 import { getMe, logout } from './endpoints.ts';
 import { queryKeys } from './queries.ts';
 
-export type SessionStatus = 'loading' | 'anonymous' | 'authenticated';
+export type SessionStatus = 'loading' | 'anonymous' | 'authenticated' | 'unreachable';
 
 export type SessionValue = {
   status: SessionStatus;
@@ -29,6 +31,7 @@ export type SessionValue = {
   signOut(): Promise<void>;
   endSession(): void;
   departed: boolean;
+  retryConnection(): void;
   api: ApiClient;
 };
 
@@ -51,11 +54,30 @@ function loginPath(next: string): string {
   return `/login?next=${encodeURIComponent(next)}`;
 }
 
+const startupRetryDelaysMs = [1000, 3000];
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function refreshWithRetry(api: ApiClient, isActive: () => boolean): Promise<Session | null> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await api.refresh();
+    } catch (error) {
+      const delay = startupRetryDelaysMs[attempt];
+      if (delay === undefined || !isActive()) throw error;
+      await wait(delay);
+    }
+  }
+}
+
 export function SessionProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const location = useLocation();
   const [status, setStatus] = useState<SessionStatus>('loading');
   const [departed, setDeparted] = useState(false);
+  const connection = useRef(0);
   const [lost, setLost] = useState<{ key: string; from: string } | null>(null);
   const [{ api, events }] = useState(() => {
     const target = new EventTarget();
@@ -77,22 +99,33 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => events.removeEventListener(sessionLostEvent, onLost);
   }, [events, location.key, currentPath]);
 
-  useEffect(() => {
-    let active = true;
-    api.refresh().then(
+  const connect = useCallback(() => {
+    connection.current += 1;
+    const id = connection.current;
+    const isActive = () => connection.current === id;
+    refreshWithRetry(api, isActive).then(
       (session) => {
-        if (!active) return;
+        if (!isActive()) return;
         if (session) queryClient.setQueryData(queryKeys.me, session.user);
         setStatus(session ? 'authenticated' : 'anonymous');
       },
       () => {
-        if (active) setStatus('anonymous');
+        if (isActive()) setStatus('unreachable');
       },
     );
-    return () => {
-      active = false;
-    };
   }, [api, queryClient]);
+
+  useEffect(() => {
+    connect();
+    return () => {
+      connection.current += 1;
+    };
+  }, [connect]);
+
+  const retryConnection = useCallback(() => {
+    setStatus('loading');
+    connect();
+  }, [connect]);
 
   const signedIn = useCallback(
     (session: Session) => {
@@ -140,9 +173,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       signOut,
       endSession,
       departed,
+      retryConnection,
       api,
     }),
-    [status, me, signedIn, signOut, endSession, departed, api],
+    [status, me, signedIn, signOut, endSession, departed, retryConnection, api],
   );
 
   return (
@@ -172,10 +206,30 @@ function SessionLoading() {
   );
 }
 
+function SessionUnreachable() {
+  const { t } = useTranslation();
+  const { retryConnection } = useSession();
+  return (
+    <div
+      role="alert"
+      className="mx-auto flex w-full max-w-md flex-col items-center gap-3 p-6 pt-16 text-center"
+    >
+      <CloudOff aria-hidden="true" className="size-8 text-muted-foreground" />
+      <h1 className="font-heading text-xl font-semibold">{t('app.common.unreachableTitle')}</h1>
+      <p className="text-muted-foreground">{t('app.common.unreachableBody')}</p>
+      <Button onClick={retryConnection}>
+        <RotateCw aria-hidden="true" />
+        {t('app.common.retry')}
+      </Button>
+    </div>
+  );
+}
+
 export function RequireAuth() {
   const { status, departed } = useSession();
   const location = useLocation();
   if (status === 'loading') return <SessionLoading />;
+  if (status === 'unreachable') return <SessionUnreachable />;
   if (status === 'anonymous') {
     if (departed) return <Redirect to="/login" />;
     return <Redirect to={loginPath(location.pathname + location.search)} />;
@@ -187,6 +241,7 @@ export function RequireAnon() {
   const { status } = useSession();
   const [params] = useSearchParams();
   if (status === 'loading') return <SessionLoading />;
+  if (status === 'unreachable') return <SessionUnreachable />;
   if (status === 'authenticated') return <Redirect to={safeNext(params.get('next'))} />;
   return <Outlet />;
 }

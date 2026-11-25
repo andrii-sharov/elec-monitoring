@@ -78,9 +78,11 @@ the `:root` defaults.
   (`.sonar-…`), so a preview of one style inside another stays clean.
 - Status is never shown by color or motion alone: every `StatusMark` keeps
   the translated state text, visible or `sr-only`.
-- Motion follows an action or a real state change from a poll. Sonar's
-  slow ring on an `ONLINE` dot and the devices list entrance are the only
-  exceptions. `prefers-reduced-motion: reduce` sets the motion tokens to
+- Motion follows an action or a real state change from a poll. The
+  exceptions: Sonar's slow ring on an `ONLINE` dot, Sonar's searching arc
+  and inward echo on the device page while `OFFLINE`, the live dot next to
+  an open outage in the timeline, and the entrance of the devices list,
+  device hero and timeline items. `prefers-reduced-motion: reduce` sets the motion tokens to
   `0ms` and turns off animation on every `[data-motion]` element.
 
 ### Adding a style

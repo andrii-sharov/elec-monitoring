@@ -112,6 +112,11 @@ only sends emails.
   reuse of an old refresh token revokes the whole session. A token reused
   within 10 s of its first use answers `409 conflict` and revokes nothing:
   two tabs refreshing at the same moment, the second one retries once.
+- On page load the client refreshes once to restore the session. Only a
+  `401` (or a second `409`) counts as signed out. A network error, `429`
+  or `5xx` is retried after 1 s and 3 s; if it still fails, signed-in
+  pages show "Can't reach the server" with a retry button instead of the
+  login page.
 - "Log out everywhere" in account settings.
 - Use HTTPS custom domains under a shared parent domain for the apps and
   API (see §12). The refresh cookie stays scoped to the API host. Both apps
@@ -601,7 +606,9 @@ status markers (Telegram messages keep theirs).
 
 The signed-in header has the logo, Devices and Notifications on the left
 and an account menu on the right (the name's initial, then the name on
-wider screens) with Account, API docs (new tab) and Sign out. The
+wider screens) with Account, API docs (new tab) and Sign out. On phones
+(below the `sm` breakpoint) Devices and Notifications move to a tab bar
+fixed at the bottom of the screen, icon above label. The
 language switcher shows only on signed-out pages; signed-in users change
 language in Account. Route changes crossfade with the View Transitions
 API where the browser supports it.
@@ -612,8 +619,9 @@ connect every 3 s until a new channel appears or the link expires.
 
 Live times tick every second between polls: how long the state has lasted,
 last seen and uptime (an `ONLINE` device adds the time since its last
-check-in to the reported uptime). Under an hour they show seconds
-(`12 min 5 s`).
+check-in to the reported uptime). Only under a minute do they show
+seconds (`45 s`); from a minute on they use the usual floored form
+(`12 min`, `2 h 15 min`).
 
 Pages below the top navigation (Device, Add device, Flash firmware) have a
 back link at the top: Device and Add device go to Devices, Flash firmware
@@ -636,7 +644,8 @@ Pages:
   "No contact for 25 min", "Waiting for the first check-in", "Updating"),
   and in Sonar and Switchboard a 7-day power strip built from the loaded
   outages (time before the oldest loaded outage is unknown while more
-  pages exist). Then status, timeline of outages, stats (day / week / month),
+  pages exist). Then status, timeline of outages (an open outage shows a
+  live duration that ticks every second), stats (day / week / month),
   settings and their applied status, firmware version, update availability,
   Install button, automatic update setting, queued and running updates,
   update result, members & invites, channels, "re-pair", "rotate token",
@@ -679,6 +688,9 @@ Pages:
   online device opens its setup Wi-Fi by itself at its next check-in.
   Rotate token in the danger zone asks for confirmation, rotates, then
   opens the same dialog with a new code.
+- Settings and the danger zone (re-pair, rotate token, delete) live in a
+  Settings dialog, opened from a button at the top right of the device
+  page, next to the back link.
 - Settings, re-pair, rotate token and delete render only for the device's
   owner. The timeline and the device's channel choice show for every role.
   The server still enforces access.

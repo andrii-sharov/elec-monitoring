@@ -28,6 +28,7 @@ afterEach(() => {
 
 async function renderOwner() {
   const view = renderRoute(`/devices/${id}`, { me: meFixture() });
+  await view.user.click(await screen.findByRole('button', { name: 'Settings' }));
   await screen.findByRole('button', { name: 'Delete device' });
   return view;
 }

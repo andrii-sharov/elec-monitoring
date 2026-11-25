@@ -14,7 +14,7 @@ export const liveTickMs = 1000;
 export function useLiveDuration(since: string): string {
   const format = useFormatters();
   const now = useNow(liveTickMs);
-  return format.duration((now - new Date(since).getTime()) / 1000, { withSeconds: true });
+  return format.duration((now - new Date(since).getTime()) / 1000);
 }
 
 function useStateDurationText(state: DeviceState, since: string): string {

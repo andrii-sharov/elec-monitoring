@@ -171,10 +171,7 @@ export function DeviceSettingsForm({ device }: { device: Device }) {
   });
 
   return (
-    <section aria-labelledby="settings-title" className="flex max-w-xl flex-col gap-3">
-      <h2 id="settings-title" className="font-heading text-lg font-medium">
-        {t('app.settings.title')}
-      </h2>
+    <div className="flex flex-col gap-3">
       {device.settings_sync.pending ? (
         <output className="text-sm text-warning">{t('app.settings.pending')}</output>
       ) : null}
@@ -243,7 +240,7 @@ export function DeviceSettingsForm({ device }: { device: Device }) {
           {t('app.settings.save')}
         </Button>
       </form>
-    </section>
+    </div>
   );
 }
 

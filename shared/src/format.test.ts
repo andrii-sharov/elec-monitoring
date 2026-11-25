@@ -28,20 +28,6 @@ describe('formatDuration', () => {
   });
 });
 
-describe('formatDuration with seconds', () => {
-  test.each([
-    [25, '25 s'],
-    [60, '1 min'],
-    [61, '1 min 1 s'],
-    [749, '12 min 29 s'],
-    [3599, '59 min 59 s'],
-    [3600, '1 h'],
-    [8100, '2 h 15 min'],
-  ])('%i s is %s', (seconds, expected) => {
-    expect(formatDuration(seconds, t, { withSeconds: true })).toBe(expected);
-  });
-});
-
 describe('formatMoment', () => {
   const at = new Date('2026-11-21T16:42:00Z');
 

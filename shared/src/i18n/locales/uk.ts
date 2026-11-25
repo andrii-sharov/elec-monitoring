@@ -109,6 +109,8 @@ export const uk: Dictionary = {
     common: {
       loading: 'Завантаження…',
       retry: 'Спробувати ще раз',
+      unreachableTitle: 'Не вдається звʼязатися із сервером',
+      unreachableBody: 'Перевірте зʼєднання і спробуйте ще раз. Ви залишаєтеся в системі.',
       save: 'Зберегти',
       cancel: 'Скасувати',
       close: 'Закрити',
@@ -451,7 +453,6 @@ export const uk: Dictionary = {
       },
       kind: { SHORT: 'Коротке', LONG: 'Тривале' },
       ongoingSince: 'Триває з {{moment}}',
-      ongoing: 'триває',
       empty: 'Відключень ще не було',
       showMore: 'Показати більше',
     },

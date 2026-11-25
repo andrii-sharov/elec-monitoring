@@ -16,7 +16,25 @@
 .sonar-row,
 .sonar-hero {
   box-shadow: var(--app-surface-shadow);
-  transition: transform var(--app-motion-duration) var(--app-motion-ease);
+  transition:
+    transform var(--app-motion-duration) var(--app-motion-ease),
+    background-color var(--app-motion-duration) var(--app-motion-ease),
+    box-shadow var(--app-motion-duration) var(--app-motion-ease);
+}
+
+.sonar-hero[data-state='OFFLINE'] {
+  background-color: color-mix(in oklab, var(--card) 90%, var(--status-offline));
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--status-offline) 30%, transparent),
+    0 14px 36px -14px color-mix(in oklab, var(--status-offline) 45%, transparent);
+}
+
+.sonar-headline {
+  transition: color var(--app-motion-duration) var(--app-motion-ease);
+}
+
+.sonar-hero[data-state='OFFLINE'] .sonar-headline {
+  color: var(--status-offline);
 }
 
 .sonar-row:hover {
@@ -74,6 +92,19 @@
   animation: sonar-idle 4s var(--app-motion-ease) infinite;
 }
 
+.sonar-dot[data-state='OFFLINE'][data-size='lg']::after {
+  inset: -0.375rem;
+  border-color: transparent;
+  border-top-color: currentColor;
+  border-right-color: color-mix(in oklab, currentColor 40%, transparent);
+  opacity: 0.8;
+  animation: sonar-search 2.4s linear infinite;
+}
+
+.sonar-dot[data-state='OFFLINE'][data-size='lg']:not([data-pulse])::before {
+  animation: sonar-echo 3.2s var(--app-motion-ease) infinite;
+}
+
 .sonar-dot[data-pulse]::before {
   animation: sonar-pulse calc(var(--app-motion-duration) * 2) var(--app-motion-ease);
 }
@@ -100,5 +131,25 @@
     opacity: 0;
     transform: scale(3.2);
     border-width: 1px;
+  }
+}
+
+@keyframes sonar-search {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes sonar-echo {
+  0% {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+  60% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
   }
 }

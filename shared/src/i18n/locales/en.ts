@@ -105,6 +105,8 @@ export const en = {
     common: {
       loading: 'Loading…',
       retry: 'Try again',
+      unreachableTitle: "Can't reach the server",
+      unreachableBody: 'Check your connection and try again. You stay signed in.',
       save: 'Save',
       cancel: 'Cancel',
       close: 'Close',
@@ -433,7 +435,6 @@ export const en = {
       cause: { POWER: 'Power outage', NETWORK: 'Network outage', UNKNOWN: 'Unknown cause' },
       kind: { SHORT: 'Short', LONG: 'Long' },
       ongoingSince: 'Ongoing since {{moment}}',
-      ongoing: 'ongoing',
       empty: 'No outages yet',
       showMore: 'Show more',
     },

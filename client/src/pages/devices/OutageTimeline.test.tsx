@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react';
+import { act } from 'react';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { deviceFixture, meFixture, outageFixture } from '../../../test/fixtures.ts';
@@ -70,6 +71,32 @@ test('an open outage is ongoing and a blip is labelled', async () => {
   renderRoute(`/devices/${id}`, { me: meFixture() });
   expect(await screen.findByText(/Ongoing since 21 Nov 18:42/)).toBeInTheDocument();
   expect(screen.getByText('Power blip')).toBeInTheDocument();
+});
+
+test('an open outage shows a live duration instead of a placeholder', async () => {
+  server.use(
+    http.get(`${base}/api/v1/devices/${id}/outages`, () =>
+      HttpResponse.json({
+        items: [
+          outageFixture({
+            id: 'open',
+            started_at: '2026-11-21T20:59:30Z',
+            ended_at: null,
+            duration_s: null,
+            cause: null,
+            kind: null,
+          }),
+        ],
+        next_cursor: null,
+      }),
+    ),
+  );
+  renderRoute(`/devices/${id}`, { me: meFixture() });
+  const item = (await screen.findByText(/Ongoing since/)).closest('li') as HTMLElement;
+  expect(within(item).getByText('30 s')).toBeInTheDocument();
+  expect(within(item).queryByText('ongoing')).toBeNull();
+  await act(() => vi.advanceTimersByTimeAsync(1000));
+  expect(within(item).getByText('31 s')).toBeInTheDocument();
 });
 
 test('Show more fetches the next page with the cursor and hides at the end', async () => {

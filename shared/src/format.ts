@@ -36,19 +36,11 @@ export function momentParts(at: Date, locale: string, timezone: string) {
   };
 }
 
-export function formatDuration(
-  seconds: number,
-  t: Translate,
-  { withSeconds = false }: { withSeconds?: boolean } = {},
-): string {
+export function formatDuration(seconds: number, t: Translate): string {
   const total = Math.max(0, Math.floor(seconds));
   if (total < 60) return t('common.duration.seconds', { value: total });
   const minutes = Math.floor(total / 60);
-  if (total < 3600) {
-    const m = t('common.duration.minutes', { value: minutes });
-    const rest = total - minutes * 60;
-    return withSeconds && rest > 0 ? `${m} ${t('common.duration.seconds', { value: rest })}` : m;
-  }
+  if (total < 3600) return t('common.duration.minutes', { value: minutes });
   const hours = Math.floor(total / 3600);
   if (total < 86_400) {
     const rest = minutes - hours * 60;

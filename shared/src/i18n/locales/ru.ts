@@ -112,6 +112,8 @@ export const ru: Dictionary = {
     common: {
       loading: 'Загрузка…',
       retry: 'Попробовать снова',
+      unreachableTitle: 'Не удаётся связаться с сервером',
+      unreachableBody: 'Проверьте соединение и попробуйте снова. Вы остаётесь в системе.',
       save: 'Сохранить',
       cancel: 'Отмена',
       close: 'Закрыть',
@@ -454,7 +456,6 @@ export const ru: Dictionary = {
       },
       kind: { SHORT: 'Короткое', LONG: 'Длительное' },
       ongoingSince: 'Длится с {{moment}}',
-      ongoing: 'длится',
       empty: 'Отключений ещё не было',
       showMore: 'Показать ещё',
     },
