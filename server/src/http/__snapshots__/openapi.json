@@ -1004,6 +1004,7 @@
     "/api/v1/devices": {
       "get": {
         "summary": "List devices",
+        "description": "Owned and shared devices with the caller role, oldest first.",
         "security": [
           {
             "bearerAuth": []
@@ -1014,7 +1015,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Own devices, oldest first",
+            "description": "Owned and shared devices, oldest first",
             "content": {
               "application/json": {
                 "schema": {
@@ -1332,6 +1333,16 @@
               }
             }
           },
+          "403": {
+            "description": "`forbidden`: only the device owner can do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Device not found or not accessible",
             "content": {
@@ -1373,6 +1384,16 @@
           },
           "401": {
             "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: only the device owner can do this",
             "content": {
               "application/json": {
                 "schema": {
@@ -1454,6 +1475,16 @@
               }
             }
           },
+          "403": {
+            "description": "`forbidden`: only the device owner can do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Device not found or not accessible",
             "content": {
@@ -1497,6 +1528,16 @@
           },
           "401": {
             "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: only the device owner can do this",
             "content": {
               "application/json": {
                 "schema": {
@@ -2092,6 +2133,16 @@
           },
           "401": {
             "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: only the device owner can do this",
             "content": {
               "application/json": {
                 "schema": {

@@ -374,7 +374,9 @@ Google callback redirect targets come from an allowlist
 ## 4. Client and public REST API (`/api/v1`)
 
 Scope column: `read`, `write`, or "JWT" (JWT only). Role: who may call
-it for a given device.
+it for a given device. A viewer calling an owner-only endpoint gets
+`403 forbidden`. A user who is neither owner nor viewer gets
+`404 not_found`.
 
 ### Devices
 
@@ -443,8 +445,10 @@ Device object (`GET /devices/:id`, items of `GET /devices`):
 - `firmware`, `settings_sync` and `telemetry` are hidden in `GET /devices`
   list items to keep it small. The client polls `GET /devices/:id` in
   the add-device wizard until `state` leaves `PENDING`.
-- `GET /devices` returns `{ "items": [...] }`, oldest first. It is not
-  paginated: the 20-device cap keeps it small.
+- `GET /devices` returns `{ "items": [...] }`: owned and shared devices
+  together, each with the caller's `role` (`OWNER` | `VIEWER`), oldest
+  first by device creation. It is not paginated. The 20-device cap counts
+  owned devices only.
 - `open_outage` is an outage item (the shape of `GET /devices/:id/outages`
   items) or `null`.
 - `telemetry.reset_reason` is the reset reason of the current boot.

@@ -17,7 +17,7 @@ import type { AppDeps } from '../app.ts';
 import { getAuth, requireUser } from '../auth/middleware.ts';
 import { HttpError, errorResponse } from '../errors.ts';
 import { decodeCursor, encodeCursor } from '../pagination.ts';
-import { bearer, deviceIdParam, deviceNotFound, unauthorized } from './devices.ts';
+import { bearer, deviceIdParam, deviceNotFound, ownerOnly, unauthorized } from './devices.ts';
 import { toOutageItem } from './views.ts';
 
 type Range = { from?: string; to?: string };
@@ -96,6 +96,7 @@ export const historyPaths: ZodOpenApiPathsObject = {
         },
         '400': errorResponse('Invalid query or cursor'),
         '401': unauthorized,
+        '403': ownerOnly,
         '404': deviceNotFound,
       },
     },

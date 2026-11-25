@@ -30,6 +30,7 @@ export function deviceIdParam(req: Request): string {
 export const bearer = [{ bearerAuth: [] }];
 export const unauthorized = errorResponse('Missing or invalid access token');
 export const deviceNotFound = errorResponse('Device not found or not accessible');
+export const ownerOnly = errorResponse('`forbidden`: only the device owner can do this');
 const json = (schema: z.ZodType) => ({ 'application/json': { schema } });
 
 export function newPairingCodeFields(now: Date) {
@@ -46,10 +47,11 @@ export const devicesPaths: ZodOpenApiPathsObject = {
   '/api/v1/devices': {
     get: {
       summary: 'List devices',
+      description: 'Owned and shared devices with the caller role, oldest first.',
       security: bearer,
       responses: {
         '200': {
-          description: 'Own devices, oldest first',
+          description: 'Owned and shared devices, oldest first',
           content: json(deviceListSchema),
         },
         '401': unauthorized,
@@ -94,6 +96,7 @@ export const devicesPaths: ZodOpenApiPathsObject = {
         '200': { description: 'The updated device', content: json(deviceSchema) },
         '400': errorResponse('Invalid body'),
         '401': unauthorized,
+        '403': ownerOnly,
         '404': deviceNotFound,
       },
     },
@@ -102,7 +105,12 @@ export const devicesPaths: ZodOpenApiPathsObject = {
       description: 'Removes its outages, diagnostics, memberships and queued notifications.',
       security: bearer,
       requestParams: { path: deviceParamsSchema },
-      responses: { '204': { description: 'Deleted' }, '401': unauthorized, '404': deviceNotFound },
+      responses: {
+        '204': { description: 'Deleted' },
+        '401': unauthorized,
+        '403': ownerOnly,
+        '404': deviceNotFound,
+      },
     },
   },
   '/api/v1/devices/{id}/pairing-code': {
@@ -115,6 +123,7 @@ export const devicesPaths: ZodOpenApiPathsObject = {
       responses: {
         '201': { description: 'The new pairing code', content: json(pairingCodeSchema) },
         '401': unauthorized,
+        '403': ownerOnly,
         '404': deviceNotFound,
       },
     },
@@ -128,6 +137,7 @@ export const devicesPaths: ZodOpenApiPathsObject = {
       responses: {
         '204': { description: 'Token invalidated' },
         '401': unauthorized,
+        '403': ownerOnly,
         '404': deviceNotFound,
       },
     },
