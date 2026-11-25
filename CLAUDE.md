@@ -26,6 +26,14 @@ changing behaviour, and update the spec if a decision changes.
 - [DEVICE_STATUS.md](docs/DEVICE_STATUS.md) covers LED states and serial log
   messages. Update it when firmware LED or log behaviour changes.
 
+## Environment variables
+
+- When code starts reading a new env variable, add it in the same change to
+  `server/.env.example` (local value) and `deploy/staging.env.example`
+  (placeholder) when staging needs it, and to the config list in
+  [PROJECT_V2.md §12](docs/PROJECT_V2.md). Keep `server/.env.example` valid:
+  the API must start with it as-is.
+
 ## v2 design
 
 - `server/` contains the Node.js/Express API and the background worker.

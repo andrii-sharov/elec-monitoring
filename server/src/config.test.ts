@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { parseEnv } from 'node:util';
 import { expect, test } from 'vitest';
 import {
   ConfigError,
@@ -271,4 +273,10 @@ test('the firmware release script needs only the database and the store', () => 
 test('SUPABASE_URL keeps only the origin', () => {
   const config = loadConfig({ ...validEnv, SUPABASE_URL: 'https://proj.supabase.co/rest/v1/' });
   expect(config.firmware).toMatchObject({ url: 'https://proj.supabase.co' });
+});
+
+test('.env.example is a valid API and worker config', () => {
+  const env = parseEnv(readFileSync(new URL('../.env.example', import.meta.url), 'utf8'));
+  expect(() => loadConfig(env)).not.toThrow();
+  expect(() => loadWorkerConfig(env)).not.toThrow();
 });
