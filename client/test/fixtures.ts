@@ -1,5 +1,6 @@
 import type {
   Channel,
+  DeliveryItem,
   Device,
   Invite,
   InvitePreview,
@@ -80,6 +81,33 @@ export function channelFixture(overrides: Partial<Channel> = {}): Channel {
     created_at: '2026-11-21T16:42:00Z',
     device_ids: [],
     failures: 0,
+    ...overrides,
+  };
+}
+
+export function webhookFixture(overrides: Partial<Channel> = {}): Channel {
+  return channelFixture({
+    id: '7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c09',
+    type: 'WEBHOOK',
+    name: 'Automation',
+    config: {
+      url: 'https://hooks.example.com/elec',
+      events: ['device.offline', 'device.online'],
+    },
+    ...overrides,
+  });
+}
+
+export function deliveryFixture(overrides: Partial<DeliveryItem> = {}): DeliveryItem {
+  return {
+    id: '1f2e3d4c-5b6a-4978-8a9b-0c1d2e3f4a01',
+    event: 'device.offline',
+    device_id: '4c0f6a1e-2b3d-4e5f-9a8b-7c6d5e4f3a01',
+    status: 'SENT',
+    attempts: 1,
+    last_attempt_at: '2026-11-21T16:42:05Z',
+    last_error: null,
+    created_at: '2026-11-21T16:42:00Z',
     ...overrides,
   };
 }

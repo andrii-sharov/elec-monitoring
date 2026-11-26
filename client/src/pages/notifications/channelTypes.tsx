@@ -18,7 +18,14 @@ export const channelTypeInfo: Record<ChannelType, ChannelTypeInfo> = {
         ? t('app.notifications.chatId', { id: channel.config.chat_id })
         : null,
   },
-  WEBHOOK: { icon: Webhook, available: false, summary: () => null },
+  WEBHOOK: {
+    icon: Webhook,
+    available: true,
+    summary: (channel) =>
+      'url' in channel.config
+        ? `${new URL(channel.config.url).host} · ${channel.config.events.join(', ')}`
+        : null,
+  },
 };
 
 export const addableTypes: ChannelType[] = ['TELEGRAM_PLATFORM', 'WEBHOOK'];

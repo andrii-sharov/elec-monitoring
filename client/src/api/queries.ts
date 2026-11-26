@@ -9,6 +9,7 @@ import {
 import {
   getAllOutages,
   getChannels,
+  getDeliveries,
   getDevice,
   getDeviceChannels,
   getDevices,
@@ -29,6 +30,7 @@ export const queryKeys = {
   outageRange: (id: string, from: string, to: string) => ['outages', id, 'range', from, to],
   channels: ['channels'],
   deviceChannels: (id: string) => ['deviceChannels', id],
+  deliveries: (id: string) => ['deliveries', id],
   members: (id: string) => ['members', id],
   invites: (id: string) => ['invites', id],
   invitePreview: (token: string) => ['invitePreview', token],
@@ -109,6 +111,17 @@ export function useDeviceChannels(id: string) {
   return useQuery({
     queryKey: queryKeys.deviceChannels(id),
     queryFn: () => getDeviceChannels(api, id),
+  });
+}
+
+export function useDeliveries(id: string) {
+  const { api } = useSession();
+  return useInfiniteQuery({
+    queryKey: queryKeys.deliveries(id),
+    queryFn: ({ pageParam }) => getDeliveries(api, id, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.next_cursor ?? undefined,
+    refetchInterval: pollMs.device,
   });
 }
 

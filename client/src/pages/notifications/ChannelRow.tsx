@@ -1,11 +1,11 @@
 import type { Channel, DeviceListItem } from '@elec/shared/api';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, CircleAlert, CirclePause, CircleCheck } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
+import { ChevronDown, CircleAlert, CirclePause, CircleCheck, TriangleAlert } from 'lucide-react';
 import { useId, useState, type CSSProperties, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { deleteChannel, patchChannel, testChannel } from '@/api/endpoints';
-import { queryKeys } from '@/api/queries';
+import { deleteChannel, patchChannel, rotateSecret, testChannel } from '@/api/endpoints';
+import { isApiError } from '@/api/errors';
 import { useSession } from '@/api/session';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Tag } from '@/components/OutageTags';
@@ -17,7 +17,10 @@ import { errorMessage } from '@/forms/errorMessage';
 import { cn } from '@/lib/utils';
 import { channelStatus } from './channelFilters';
 import { channelTypeInfo } from './channelTypes';
+import { DeliveryLog } from './DeliveryLog';
 import { EditDevicesDialog } from './EditDevicesDialog';
+import { useChannelRefresh } from './useChannelRefresh';
+import { WebhookForm } from './WebhookForm';
 
 const statusTag = {
   active: { icon: CircleCheck, look: 'fill-primary' },
@@ -25,31 +28,27 @@ const statusTag = {
   failing: { icon: CircleAlert, look: 'fill-offline' },
 } as const;
 
-export function useChannelRefresh() {
-  const queryClient = useQueryClient();
-  return () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.channels }),
-      queryClient.invalidateQueries({ queryKey: ['deviceChannels'] }),
-    ]);
-}
-
 type Props = {
   channel: Channel;
   devices: DeviceListItem[];
   selected: boolean;
   onSelect: (selected: boolean) => void;
   index: number;
+  onSecret: (secret: string) => void;
 };
 
-export function ChannelRow({ channel, devices, selected, onSelect, index }: Props) {
+export function ChannelRow({ channel, devices, selected, onSelect, index, onSecret }: Props) {
   const { t } = useTranslation();
   const { api } = useSession();
   const refresh = useChannelRefresh();
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(channel.name);
+  const [editing, setEditing] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
   const panelId = useId();
+  const logId = useId();
+  const webhook = channel.type === 'WEBHOOK';
   const info = channelTypeInfo[channel.type];
   const Icon = info.icon;
   const status = channelStatus(channel);
@@ -78,6 +77,19 @@ export function ChannelRow({ channel, devices, selected, onSelect, index }: Prop
       toast.success(t('app.notifications.testSent'));
       await refresh();
     },
+    onError: (error) => {
+      if (webhook && isApiError(error, 'conflict')) {
+        toast.error(t('app.notifications.webhook.testFailed'));
+      } else {
+        fail(error);
+      }
+    },
+  });
+  const rotate = useMutation({
+    mutationFn: async () => {
+      const { secret } = await rotateSecret(api, channel.id);
+      onSecret(secret);
+    },
     onError: fail,
   });
   const remove = useMutation({
@@ -92,132 +104,170 @@ export function ChannelRow({ channel, devices, selected, onSelect, index }: Prop
   }
 
   return (
-    <li
-      data-motion="enter"
-      style={{ '--i': index } as CSSProperties}
-      className={cn(
-        'rounded-lg border bg-card transition-colors',
-        selected ? 'border-primary/60' : 'border-border',
-      )}
-    >
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 p-3">
-        <Checkbox
-          checked={selected}
-          onCheckedChange={(value) => onSelect(value)}
-          aria-label={t('app.notifications.select', { name: channel.name })}
-        />
-        <Icon aria-hidden="true" className="size-4 text-muted-foreground" />
-        <span className="font-medium">{channel.name}</span>
-        <Tag {...statusTag[status]}>{t(`app.notifications.status.${status}`)}</Tag>
-        <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-          {names.length === 0 ? (
-            t('app.notifications.noDevices')
-          ) : (
-            <>
-              {names.slice(0, 3).map((device) => (
-                <span key={device} className="rounded-full bg-secondary px-2 py-0.5">
-                  {device}
-                </span>
-              ))}
-              {names.length > 3 ? (
-                <span>{t('app.notifications.moreDevices', { count: names.length - 3 })}</span>
-              ) : null}
-            </>
-          )}
-        </span>
-        <span className="ms-auto flex items-center gap-2">
-          <Switch
-            checked={channel.enabled}
-            disabled={toggle.isPending || status === 'failing'}
-            onCheckedChange={(value) => toggle.mutate(value)}
-            aria-label={t('app.notifications.sendAlerts', { name: channel.name })}
+    <li className="flex flex-col gap-2">
+      <div
+        data-motion="enter"
+        style={{ '--i': index } as CSSProperties}
+        className={cn(
+          'rounded-lg border bg-card transition-colors',
+          selected ? 'border-primary/60' : 'border-border',
+        )}
+      >
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 p-3">
+          <Checkbox
+            checked={selected}
+            onCheckedChange={(value) => onSelect(value)}
+            aria-label={t('app.notifications.select', { name: channel.name })}
           />
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-expanded={open}
-            aria-controls={panelId}
-            aria-label={t('app.notifications.details', { name: channel.name })}
-            onClick={() => setOpen(!open)}
-          >
-            <ChevronDown
-              aria-hidden="true"
-              className={cn(
-                'transition-transform duration-(--app-motion-duration)',
-                open && 'rotate-180',
-              )}
+          <Icon aria-hidden="true" className="size-4 text-muted-foreground" />
+          <span className="font-medium">{channel.name}</span>
+          <Tag {...statusTag[status]}>{t(`app.notifications.status.${status}`)}</Tag>
+          {webhook && channel.failures > 0 ? (
+            <Tag icon={TriangleAlert} look="outline-offline">
+              {t('app.notifications.webhook.failures', { failures: channel.failures })}
+            </Tag>
+          ) : null}
+          <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+            {names.length === 0 ? (
+              t('app.notifications.noDevices')
+            ) : (
+              <>
+                {names.slice(0, 3).map((device) => (
+                  <span key={device} className="rounded-full bg-secondary px-2 py-0.5">
+                    {device}
+                  </span>
+                ))}
+                {names.length > 3 ? (
+                  <span>{t('app.notifications.moreDevices', { count: names.length - 3 })}</span>
+                ) : null}
+              </>
+            )}
+          </span>
+          <span className="ms-auto flex items-center gap-2">
+            <Switch
+              checked={channel.enabled}
+              disabled={toggle.isPending || status === 'failing'}
+              onCheckedChange={(value) => toggle.mutate(value)}
+              aria-label={t('app.notifications.sendAlerts', { name: channel.name })}
             />
-          </Button>
-        </span>
-      </div>
-      {open ? (
-        <div
-          id={panelId}
-          data-motion="panel"
-          className="flex flex-col gap-3 border-t border-border p-3 text-sm"
-        >
-          {info.summary(channel, t) ? (
-            <p className="text-muted-foreground">{info.summary(channel, t)}</p>
-          ) : null}
-          {status === 'failing' ? (
-            <p className="text-status-offline">{t('app.notifications.failingHint')}</p>
-          ) : null}
-          {names.length > 0 ? (
-            <ul className="flex flex-wrap gap-1">
-              {names.map((device) => (
-                <li key={device} className="rounded-full bg-secondary px-2 py-0.5 text-xs">
-                  {device}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          {renaming ? (
-            <form onSubmit={submitName} className="flex flex-wrap items-center gap-2">
-              <Input
-                aria-label={t('app.notifications.name')}
-                value={name}
-                maxLength={64}
-                onChange={(event) => setName(event.target.value)}
-                className="w-56"
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-expanded={open}
+              aria-controls={panelId}
+              aria-label={t('app.notifications.details', { name: channel.name })}
+              onClick={() => setOpen(!open)}
+            >
+              <ChevronDown
+                aria-hidden="true"
+                className={cn(
+                  'transition-transform duration-(--app-motion-duration)',
+                  open && 'rotate-180',
+                )}
               />
-              <Button type="submit" size="sm" disabled={rename.isPending || !name.trim()}>
-                {t('app.common.save')}
-              </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={() => setRenaming(false)}>
-                {t('app.common.cancel')}
-              </Button>
-            </form>
-          ) : null}
-          <div className="flex flex-wrap gap-2">
-            <EditDevicesDialog channel={channel} devices={devices} />
-            {info.available ? (
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={test.isPending}
-                onClick={() => test.mutate()}
-              >
-                {t('app.notifications.test')}
-              </Button>
-            ) : null}
-            <Button variant="outline" size="sm" onClick={() => setRenaming(true)}>
-              {t('app.notifications.rename')}
             </Button>
-            <ConfirmDialog
-              trigger={
-                <Button variant="outline" size="sm">
-                  {t('app.notifications.remove')}
-                </Button>
-              }
-              title={t('app.notifications.removeTitle')}
-              body={t('app.notifications.removeBody')}
-              confirmLabel={t('app.notifications.remove')}
-              destructive
-              onConfirm={() => remove.mutate()}
-            />
-          </div>
+          </span>
         </div>
+        {open ? (
+          <div
+            id={panelId}
+            data-motion="panel"
+            className="flex flex-col gap-3 border-t border-border p-3 text-sm"
+          >
+            {info.summary(channel, t) ? (
+              <p className="text-muted-foreground">{info.summary(channel, t)}</p>
+            ) : null}
+            {status === 'failing' ? (
+              <p className="text-status-offline">{t('app.notifications.failingHint')}</p>
+            ) : null}
+            {names.length > 0 ? (
+              <ul className="flex flex-wrap gap-1">
+                {names.map((device) => (
+                  <li key={device} className="rounded-full bg-secondary px-2 py-0.5 text-xs">
+                    {device}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {renaming ? (
+              <form onSubmit={submitName} className="flex flex-wrap items-center gap-2">
+                <Input
+                  aria-label={t('app.notifications.name')}
+                  value={name}
+                  maxLength={64}
+                  onChange={(event) => setName(event.target.value)}
+                  className="w-56"
+                />
+                <Button type="submit" size="sm" disabled={rename.isPending || !name.trim()}>
+                  {t('app.common.save')}
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setRenaming(false)}>
+                  {t('app.common.cancel')}
+                </Button>
+              </form>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
+              <EditDevicesDialog channel={channel} devices={devices} />
+              {webhook ? (
+                <>
+                  <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                    {t('app.notifications.webhook.edit')}
+                  </Button>
+                  <ConfirmDialog
+                    trigger={
+                      <Button variant="outline" size="sm" disabled={rotate.isPending}>
+                        {t('app.notifications.webhook.rotate')}
+                      </Button>
+                    }
+                    title={t('app.notifications.webhook.rotateTitle')}
+                    body={t('app.notifications.webhook.rotateBody')}
+                    confirmLabel={t('app.notifications.webhook.rotate')}
+                    onConfirm={() => rotate.mutate()}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-expanded={logOpen}
+                    aria-controls={logId}
+                    onClick={() => setLogOpen(!logOpen)}
+                  >
+                    {t('app.notifications.webhook.log')}
+                  </Button>
+                </>
+              ) : null}
+              {info.available ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={test.isPending}
+                  onClick={() => test.mutate()}
+                >
+                  {t('app.notifications.test')}
+                </Button>
+              ) : null}
+              <Button variant="outline" size="sm" onClick={() => setRenaming(true)}>
+                {t('app.notifications.rename')}
+              </Button>
+              <ConfirmDialog
+                trigger={
+                  <Button variant="outline" size="sm">
+                    {t('app.notifications.remove')}
+                  </Button>
+                }
+                title={t('app.notifications.removeTitle')}
+                body={t('app.notifications.removeBody')}
+                confirmLabel={t('app.notifications.remove')}
+                destructive
+                onConfirm={() => remove.mutate()}
+              />
+            </div>
+          </div>
+        ) : null}
+      </div>
+      {webhook && open && logOpen ? (
+        <DeliveryLog id={logId} channel={channel} devices={devices} />
       ) : null}
+      {webhook ? <WebhookForm channel={channel} open={editing} onOpenChange={setEditing} /> : null}
     </li>
   );
 }

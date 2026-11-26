@@ -1,0 +1,155 @@
+import type { DeliveryStatus } from '@elec/shared';
+import type { Channel, DeliveryItem, DeviceListItem } from '@elec/shared/api';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { CircleAlert, CircleCheck, Clock, RotateCw } from 'lucide-react';
+import type { CSSProperties } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
+import { redeliver } from '@/api/endpoints';
+import { isApiError } from '@/api/errors';
+import { queryKeys, useDeliveries } from '@/api/queries';
+import { useSession } from '@/api/session';
+import { Tag } from '@/components/OutageTags';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { errorMessage } from '@/forms/errorMessage';
+import { FormAlert } from '@/forms/FormAlert';
+import { useFormatters } from '@/lib/format';
+
+const statusTag = {
+  QUEUED: { icon: Clock, look: 'dashed' },
+  SENT: { icon: CircleCheck, look: 'fill-primary' },
+  RETRYING: { icon: RotateCw, look: 'outline-warning' },
+  FAILED: { icon: CircleAlert, look: 'fill-offline' },
+} as const;
+
+const redeliverable: DeliveryStatus[] = ['SENT', 'FAILED'];
+
+type RowProps = {
+  channel: Channel;
+  delivery: DeliveryItem;
+  deviceName: string;
+  index: number;
+};
+
+function DeliveryRow({ channel, delivery, deviceName, index }: RowProps) {
+  const { t } = useTranslation();
+  const { api } = useSession();
+  const queryClient = useQueryClient();
+  const format = useFormatters();
+  const at = delivery.last_attempt_at ?? delivery.created_at;
+  const again = useMutation({
+    mutationFn: () => redeliver(api, delivery.id),
+    onSuccess: () => toast.success(t('app.notifications.webhook.redelivered')),
+    onError: (error) => {
+      if (!isApiError(error, 'conflict')) toast.error(errorMessage(t, error));
+      else if (channel.enabled) toast.error(t('app.notifications.webhook.inProgress'));
+      else toast.error(t('app.notifications.webhook.turnOnFirst'));
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.deliveries(channel.id) }),
+  });
+
+  return (
+    <li
+      data-motion="enter"
+      style={{ '--i': index } as CSSProperties}
+      className="flex flex-col gap-1 border-t border-border pt-2"
+    >
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <code className="font-mono text-xs">{delivery.event}</code>
+        <span>{deviceName}</span>
+        <Tag {...statusTag[delivery.status]}>
+          {t(`app.notifications.webhook.status.${delivery.status}`)}
+        </Tag>
+        <span className="text-xs text-muted-foreground">
+          {t('app.notifications.webhook.attempts', { attempts: delivery.attempts })}
+        </span>
+        <time dateTime={at} className="text-xs text-muted-foreground">
+          {format.moment(at)}
+        </time>
+        {redeliverable.includes(delivery.status) ? (
+          <Button
+            variant="outline"
+            size="xs"
+            className="ms-auto"
+            disabled={!channel.enabled || again.isPending}
+            onClick={() => again.mutate()}
+          >
+            {t('app.notifications.webhook.redeliver')}
+          </Button>
+        ) : null}
+      </div>
+      {delivery.last_error ? (
+        <p className="text-xs break-all text-status-offline">{delivery.last_error}</p>
+      ) : null}
+    </li>
+  );
+}
+
+type Props = { id: string; channel: Channel; devices: DeviceListItem[] };
+
+export function DeliveryLog({ id, channel, devices }: Props) {
+  const { t } = useTranslation();
+  const log = useDeliveries(channel.id);
+  const pages = log.data?.pages ?? [];
+  const empty = pages.every((page) => page.items.length === 0);
+
+  return (
+    <section
+      id={id}
+      data-motion="panel"
+      aria-label={t('app.notifications.webhook.log')}
+      className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3 text-sm"
+    >
+      <h3 className="font-medium">{t('app.notifications.webhook.log')}</h3>
+      {log.isPending ? (
+        <output aria-label={t('app.common.loading')}>
+          <Skeleton className="h-10" />
+        </output>
+      ) : log.isError && !log.data ? (
+        <div role="alert" className="flex flex-wrap items-center gap-2 text-danger">
+          <span>{errorMessage(t, log.error)}</span>
+          <Button variant="outline" size="sm" onClick={() => void log.refetch()}>
+            {t('app.common.retry')}
+          </Button>
+        </div>
+      ) : empty ? (
+        <p className="text-muted-foreground">{t('app.notifications.webhook.empty')}</p>
+      ) : (
+        <>
+          {channel.enabled ? null : (
+            <p className="text-muted-foreground">{t('app.notifications.webhook.disabledHint')}</p>
+          )}
+          <ul className="flex flex-col gap-2">
+            {pages.flatMap((page) =>
+              page.items.map((delivery, index) => (
+                <DeliveryRow
+                  key={delivery.id}
+                  channel={channel}
+                  delivery={delivery}
+                  index={index}
+                  deviceName={
+                    devices.find((device) => device.id === delivery.device_id)?.name ??
+                    t('app.notifications.webhook.unknownDevice')
+                  }
+                />
+              )),
+            )}
+          </ul>
+        </>
+      )}
+      <FormAlert message={log.isFetchNextPageError ? errorMessage(t, log.error) : null} />
+      {log.hasNextPage ? (
+        <Button
+          variant="outline"
+          size="sm"
+          className="self-start"
+          disabled={log.isFetchingNextPage}
+          onClick={() => void log.fetchNextPage()}
+        >
+          {t('app.notifications.webhook.loadMore')}
+        </Button>
+      ) : null}
+    </section>
+  );
+}

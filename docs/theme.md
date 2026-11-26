@@ -83,7 +83,9 @@ the `:root` defaults.
   and inward echo on the device page while `OFFLINE`, the live dot next to
   an open outage in the timeline, the looping promo video on auth pages,
   and the entrance (`data-motion="enter"`, staggered by `--i`) of lists,
-  the device hero, history rows, channel rows and member rows.
+  the device hero, history rows, channel rows, delivery log rows and
+  member rows. The delivery log is a panel below its channel row, outside
+  that row's entrance.
   The tab indicator slides with the motion tokens, and so does the
   `SegmentedControl` indicator.
 - Base controls look and move the same on every page. All dropdown

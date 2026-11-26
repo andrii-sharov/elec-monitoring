@@ -5,6 +5,10 @@ import {
   channelListSchema,
   channelPatchSchema,
   channelSchema,
+  channelWithSecretSchema,
+  createWebhookSchema,
+  deliveryItemSchema,
+  deliveryListSchema,
   deviceIdsSchema,
   createDeviceBodySchema,
   createDeviceResponseSchema,
@@ -167,6 +171,35 @@ export async function getAllOutages(api: ApiClient, id: string, range: OutageRan
 
 export function getChannels(api: ApiClient) {
   return api.request('/api/v1/channels', { schema: channelListSchema });
+}
+
+export function createWebhook(api: ApiClient, body: Body<typeof createWebhookSchema>) {
+  return api.request('/api/v1/channels', {
+    method: 'POST',
+    body,
+    schema: channelWithSecretSchema,
+  });
+}
+
+export function rotateSecret(api: ApiClient, id: string) {
+  return api.request(`/api/v1/channels/${encodeURIComponent(id)}/rotate-secret`, {
+    method: 'POST',
+    schema: channelWithSecretSchema,
+  });
+}
+
+export function getDeliveries(api: ApiClient, id: string, cursor?: string) {
+  return api.request(`/api/v1/channels/${encodeURIComponent(id)}/deliveries`, {
+    query: { limit: 20, cursor },
+    schema: deliveryListSchema,
+  });
+}
+
+export function redeliver(api: ApiClient, deliveryId: string) {
+  return api.request(`/api/v1/deliveries/${encodeURIComponent(deliveryId)}/redeliver`, {
+    method: 'POST',
+    schema: deliveryItemSchema,
+  });
 }
 
 export function createTelegramLink(api: ApiClient) {

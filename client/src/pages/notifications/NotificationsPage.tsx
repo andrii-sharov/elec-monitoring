@@ -1,4 +1,5 @@
 import type { ChannelType } from '@elec/shared';
+import type { Channel } from '@elec/shared/api';
 import { useMutation } from '@tanstack/react-query';
 import { BellRing, Plus, RotateCw, Search } from 'lucide-react';
 import { useState } from 'react';
@@ -17,6 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -27,10 +29,14 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage } from '@/forms/errorMessage';
-import { ChannelRow, useChannelRefresh } from './ChannelRow';
+import { ChannelRow } from './ChannelRow';
 import { filterChannels, filterParams, readFilters, sorts, statuses } from './channelFilters';
 import { addableTypes, channelTypeInfo } from './channelTypes';
+import { DevicesDialogContent } from './EditDevicesDialog';
 import { TelegramConnect } from './TelegramConnect';
+import { useChannelRefresh } from './useChannelRefresh';
+import { WebhookForm } from './WebhookForm';
+import { WebhookSecretDialog } from './WebhookSecretDialog';
 import { EmptyState } from '@/components/Illustration';
 
 type Option = { value: string; label: string };
@@ -104,6 +110,18 @@ export function NotificationsPage() {
   const filters = readFilters(params);
   const [adding, setAdding] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
+  const [addingWebhook, setAddingWebhook] = useState(false);
+  const [reveal, setReveal] = useState<{ secret: string; created?: Channel } | null>(null);
+  const [picking, setPicking] = useState<Channel | null>(null);
+
+  const add = (type: ChannelType) => {
+    setAdding(type === 'TELEGRAM_PLATFORM');
+    setAddingWebhook(type === 'WEBHOOK');
+  };
+  const closeSecret = () => {
+    if (reveal?.created) setPicking(reveal.created);
+    setReveal(null);
+  };
 
   const setFilter = (changes: Record<string, string>) =>
     setParams(
@@ -149,7 +167,7 @@ export function NotificationsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-heading text-2xl font-semibold">{t('app.notifications.title')}</h1>
-        <AddChannelMenu onAdd={(type) => setAdding(type === 'TELEGRAM_PLATFORM')} />
+        <AddChannelMenu onAdd={add} />
       </div>
       {showConnect ? (
         <section
@@ -304,6 +322,7 @@ export function NotificationsPage() {
                     channel={channel}
                     devices={deviceList}
                     index={index}
+                    onSecret={(secret) => setReveal({ secret })}
                     selected={selected.includes(channel.id)}
                     onSelect={(value) =>
                       setSelected(
@@ -319,6 +338,21 @@ export function NotificationsPage() {
           </>
         )}
       </section>
+      <WebhookForm
+        open={addingWebhook}
+        onOpenChange={setAddingWebhook}
+        onCreated={(created, secret) => setReveal({ secret, created })}
+      />
+      <WebhookSecretDialog secret={reveal?.secret ?? null} onClose={closeSecret} />
+      <Dialog open={picking !== null} onOpenChange={(open) => !open && setPicking(null)}>
+        {picking ? (
+          <DevicesDialogContent
+            channel={picking}
+            devices={deviceList}
+            onSaved={() => setPicking(null)}
+          />
+        ) : null}
+      </Dialog>
     </div>
   );
 }

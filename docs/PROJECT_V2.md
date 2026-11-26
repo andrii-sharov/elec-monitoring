@@ -781,8 +781,14 @@ Pages:
   search, filters by type, device and status, sorting, all kept in the URL.
   Each channel is a compact row (type icon, name, status tag, device chips,
   on/off switch) that expands to rename, edit devices, send a test message
-  and delete. Bulk select turns channels on or off or deletes them. Webhook
-  rows add the delivery log in M8.
+  and delete. Bulk select turns channels on or off or deletes them. A
+  webhook row also shows its failed attempts in a row (when there are any),
+  and when expanded the URL host and events, with edit, new secret (after a
+  confirmation) and the delivery log (event, device, status, attempts, last
+  error, time; load more; redeliver for `SENT` and `FAILED` while the
+  webhook is on). The signing secret is shown once, in a dialog, after
+  create or a new secret, and the client doesn't store it. After create the
+  device picker opens for the new webhook.
 - **API docs** — Swagger UI backed by the generated OpenAPI document.
 - **Account** — tabs kept in `?tab=`: Profile (name, timezone, language),
   Appearance, Sign-in & security (emails and phones, linked Google,

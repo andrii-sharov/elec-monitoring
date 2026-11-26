@@ -1,7 +1,12 @@
 import { screen, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
-import { channelFixture, deviceFixture, meFixture } from '../../../test/fixtures.ts';
+import {
+  channelFixture,
+  deviceFixture,
+  meFixture,
+  webhookFixture,
+} from '../../../test/fixtures.ts';
 import { renderRoute } from '../../../test/render.tsx';
 import { server } from '../../../test/server.ts';
 
@@ -293,11 +298,47 @@ test('bulk select turns several channels off', async () => {
   expect(await screen.findByText('Channels updated')).toBeInTheDocument();
 });
 
-test('webhooks are listed as coming soon', async () => {
-  server.use(http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items: [home] })));
+test('a webhook row shows the host, the events and the failures', async () => {
+  server.use(
+    http.get(`${base}/api/v1/channels`, () =>
+      HttpResponse.json({ items: [home, webhookFixture({ failures: 3 })] }),
+    ),
+  );
   const { user } = renderRoute('/notifications', { me: meFixture() });
-  await user.click(await screen.findByRole('button', { name: 'Add channel' }));
-  const webhook = await screen.findByRole('menuitem', { name: /Webhook/ });
-  expect(webhook).toHaveAttribute('aria-disabled', 'true');
-  expect(webhook).toHaveTextContent('Coming soon');
+  const row = (await screen.findByText('Automation')).closest('li') as HTMLElement;
+  expect(within(row).getByText('Failures in a row: 3')).toBeInTheDocument();
+  await expand(user, 'Automation');
+  expect(
+    within(row).getByText('hooks.example.com · device.offline, device.online'),
+  ).toBeInTheDocument();
+  expect(within(row).getByRole('button', { name: 'Send test' })).toBeInTheDocument();
+  const telegram = screen.getByText('Home chat').closest('li') as HTMLElement;
+  expect(within(telegram).queryByText(/Failures in a row/)).toBeNull();
+  await expand(user, 'Home chat');
+  expect(within(telegram).queryByRole('button', { name: 'Delivery log' })).toBeNull();
+  expect(within(telegram).queryByRole('button', { name: 'New secret' })).toBeNull();
+});
+
+test('a healthy webhook has no failure tag', async () => {
+  server.use(
+    http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items: [webhookFixture()] })),
+  );
+  renderRoute('/notifications', { me: meFixture() });
+  await screen.findByText('Automation');
+  expect(screen.queryByText(/Failures in a row/)).toBeNull();
+});
+
+test('a failed webhook test says the receiver did not accept it', async () => {
+  const hook = webhookFixture({ enabled: false, disabled_reason: 'TOO_MANY_FAILURES' });
+  server.use(
+    http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items: [hook] })),
+    http.post(`${base}/api/v1/channels/${hook.id}/test`, () =>
+      HttpResponse.json({ error: { code: 'conflict', message: 'x' } }, { status: 409 }),
+    ),
+  );
+  const { user } = renderRoute('/notifications', { me: meFixture() });
+  await expand(user, 'Automation');
+  expect(screen.getByText(/Send a test message to turn it back on/)).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Send test' }));
+  expect(await screen.findByText('The receiver did not accept the test.')).toBeInTheDocument();
 });
