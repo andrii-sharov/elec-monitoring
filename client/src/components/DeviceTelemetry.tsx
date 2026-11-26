@@ -8,6 +8,7 @@ import { stateStart } from '@/lib/stateStart';
 import { useNow } from '@/lib/useNow';
 import { cn } from '@/lib/utils';
 import { liveTickMs } from './StateDuration';
+import { Duration, Moment } from './Moment';
 
 const detailsPreference = createPreference({
   key: 'em.deviceDetails',
@@ -40,9 +41,13 @@ function Details({ device, now }: { device: Device; now: number }) {
   return (
     <>
       <Detail label={t('app.device.details.lastSeen')}>
-        {device.last_seen_at
-          ? format.since(device.last_seen_at, new Date(now))
-          : t('app.device.never')}
+        {device.last_seen_at ? (
+          <Moment iso={device.last_seen_at}>
+            {format.since(device.last_seen_at, new Date(now))}
+          </Moment>
+        ) : (
+          t('app.device.never')
+        )}
       </Detail>
       {rssi === null ? null : (
         <Detail label={t('app.device.details.signal')}>
@@ -50,7 +55,9 @@ function Details({ device, now }: { device: Device; now: number }) {
         </Detail>
       )}
       {uptime === null ? null : (
-        <Detail label={t('app.device.details.uptime')}>{format.duration(uptime)}</Detail>
+        <Detail label={t('app.device.details.uptime')}>
+          <Duration seconds={uptime} />
+        </Detail>
       )}
       {resetReason === null ? null : (
         <Detail label={t('app.device.details.resetReason')}>
@@ -76,9 +83,9 @@ export function DeviceTelemetry({ device, className }: { device: Device; classNa
   const panelId = useId();
   return (
     <div className={cn('flex flex-col gap-2 text-sm text-muted-foreground', className)}>
-      <span>
+      <Moment iso={stateStart(device)} className="w-fit">
         {t('app.device.since', { moment: format.since(stateStart(device), new Date(now)) })}
-      </span>
+      </Moment>
       <button
         type="button"
         aria-expanded={open}

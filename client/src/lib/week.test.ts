@@ -95,3 +95,35 @@ test('groups outages by the local day they start, clamped to the week', () => {
   expect(groups.get('2026-11-25')?.map((o) => o.id)).toEqual(['late']);
   expect(groups.get('2026-11-23')?.map((o) => o.id)).toEqual(['carried']);
 });
+
+test('finds outages and blips that touch an hour', async () => {
+  const { outagesIn } = await import('./week.ts');
+  const slot = {
+    start: Date.parse('2026-11-23T10:00:00Z'),
+    end: Date.parse('2026-11-23T11:00:00Z'),
+  };
+  const items = [
+    outageFixture({
+      id: 'over',
+      started_at: '2026-11-23T09:30:00Z',
+      ended_at: '2026-11-23T10:10:00Z',
+    }),
+    outageFixture({
+      id: 'before',
+      started_at: '2026-11-23T09:00:00Z',
+      ended_at: '2026-11-23T10:00:00Z',
+    }),
+    outageFixture({
+      id: 'blip',
+      type: 'POWER_BLIP',
+      started_at: '2026-11-23T10:30:00Z',
+      ended_at: '2026-11-23T10:30:00Z',
+    }),
+    outageFixture({ id: 'open', started_at: '2026-11-23T10:50:00Z', ended_at: null }),
+  ];
+  expect(outagesIn(slot, items, Date.parse('2026-11-23T12:00:00Z')).map((o) => o.id)).toEqual([
+    'over',
+    'blip',
+    'open',
+  ]);
+});

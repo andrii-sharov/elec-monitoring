@@ -4,6 +4,7 @@ import { DeviceTelemetry } from '@/components/DeviceTelemetry';
 import { useFormatters } from '@/lib/format';
 import { ClassicStatusMark } from './ClassicStatusMark';
 import type { DeviceHeroProps } from '../slots';
+import { Moment } from '@/components/Moment';
 
 export function ClassicDeviceHero({ device }: DeviceHeroProps) {
   const { t } = useTranslation();
@@ -18,7 +19,9 @@ export function ClassicDeviceHero({ device }: DeviceHeroProps) {
       {device.open_outage ? (
         <p className="flex items-center gap-1.5 font-medium text-status-offline">
           <PlugZap aria-hidden="true" className="size-4" />
-          {t('app.device.offlineSince', { moment: format.moment(device.open_outage.started_at) })}
+          <Moment iso={device.open_outage.started_at}>
+            {t('app.device.offlineSince', { moment: format.moment(device.open_outage.started_at) })}
+          </Moment>
         </p>
       ) : null}
     </header>

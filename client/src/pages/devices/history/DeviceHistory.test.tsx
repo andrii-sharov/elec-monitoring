@@ -131,12 +131,33 @@ test('the grid shows time without power per hour', async () => {
   const { user } = renderRoute(`/devices/${id}`, { me: meFixture() });
   await screen.findByText('Power outage');
   await user.click(screen.getByRole('tab', { name: 'Grid' }));
-  const table = await screen.findByRole('table');
-  expect(within(table).getAllByRole('row')).toHaveLength(8);
-  expect(within(table).getByText('Sat 21 18:00–19:00 · 18 min without power')).toBeInTheDocument();
-  expect(within(table).getByText('Sat 21 19:00–20:00 · 1 h without power')).toBeInTheDocument();
-  expect(within(table).getByText('Sat 21 23:00–24:00 · Not yet')).toBeInTheDocument();
+  const grid = await screen.findByRole('table', { name: 'Grid' });
+  expect(within(grid).getAllByRole('row')).toHaveLength(8);
+  const cell = (name: string) => within(grid).getByRole('button', { name });
+  expect(cell('Sat 21 18:00–19:00 · 18 min without power')).toBeInTheDocument();
+  expect(cell('Sat 21 19:00–20:00 · 1 h without power')).toBeInTheDocument();
+  expect(cell('Sat 21 23:00–24:00 · Not yet')).toBeInTheDocument();
   expect(localStorage.getItem('em.historyView')).toBe('grid');
+});
+
+test('a grid cell opens a card with its outages and arrow keys move between cells', async () => {
+  serveOutages([outageFixture()]);
+  const { user } = renderRoute(`/devices/${id}?view=grid`, { me: meFixture() });
+  const grid = await screen.findByRole('table', { name: 'Grid' });
+  const first = within(grid).getByRole('button', { name: /^Mon 16 00:00–01:00/ });
+  expect(first).toHaveAttribute('tabindex', '0');
+  first.focus();
+  await user.keyboard('{ArrowDown}{ArrowRight}');
+  expect(document.activeElement).toBe(
+    within(grid).getByRole('button', { name: /^Tue 17 01:00–02:00/ }),
+  );
+  await user.click(within(grid).getByRole('button', { name: /^Sat 21 19:00–20:00/ }));
+  const card = await screen.findByRole('dialog');
+  expect(within(card).getByText('Without power')).toBeInTheDocument();
+  expect(within(card).getByText(/18:42 → 20:57/)).toBeInTheDocument();
+  expect(within(card).getByText('Long')).toBeInTheDocument();
+  await user.click(within(card).getByRole('button', { name: 'Show this day in the timeline' }));
+  expect(await screen.findByRole('tab', { name: 'Timeline', selected: true })).toBeInTheDocument();
 });
 
 test('the table lists outages and the choice is remembered', async () => {

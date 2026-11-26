@@ -517,6 +517,13 @@ export const en = {
       updating: '{{name}} is updating',
     },
     history: {
+      cell: {
+        withoutPower: 'Without power',
+        withPower: 'With power',
+        blipAt: 'Power blip at {{time}}',
+        none: 'No outages this hour',
+        showInTimeline: 'Show this day in the timeline',
+      },
       view: 'View',
       views: { timeline: 'Timeline', grid: 'Grid', table: 'Table' },
       previous: 'Previous week',

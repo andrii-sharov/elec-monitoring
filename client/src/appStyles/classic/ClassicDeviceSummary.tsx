@@ -8,6 +8,7 @@ import { useNow } from '@/lib/useNow';
 import { ClassicStatusMark } from './ClassicStatusMark';
 import type { DeviceSummaryProps } from '../slots';
 import { stateStart } from '@/lib/stateStart';
+import { Moment } from '@/components/Moment';
 
 export function ClassicDeviceSummary({ device }: DeviceSummaryProps) {
   const { t } = useTranslation();
@@ -30,12 +31,16 @@ export function ClassicDeviceSummary({ device }: DeviceSummaryProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-1 text-sm text-muted-foreground">
-          <span>{t('app.devices.since', { moment: format.since(stateStart(device), at) })}</span>
-          <span>
-            {device.last_seen_at
-              ? t('app.devices.lastSeen', { moment: format.since(device.last_seen_at, at) })
-              : t('app.devices.never')}
-          </span>
+          <Moment iso={stateStart(device)} className="w-fit">
+            {t('app.devices.since', { moment: format.since(stateStart(device), at) })}
+          </Moment>
+          {device.last_seen_at ? (
+            <Moment iso={device.last_seen_at} className="w-fit">
+              {t('app.devices.lastSeen', { moment: format.since(device.last_seen_at, at) })}
+            </Moment>
+          ) : (
+            <span>{t('app.devices.never')}</span>
+          )}
         </CardContent>
       </Card>
     </Link>

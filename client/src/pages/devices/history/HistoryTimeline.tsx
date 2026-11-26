@@ -1,12 +1,12 @@
 import type { OutageItem } from '@elec/shared/api';
-import type { CSSProperties } from 'react';
+import { useEffect, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormatters } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { groupByDay, type Day } from '@/lib/week';
 import { OutageRail, OutageRow } from './OutageRow';
 
-type Props = { days: Day[]; outages: OutageItem[]; now: number };
+type Props = { days: Day[]; outages: OutageItem[]; now: number; focusDay?: string | null };
 
 function scrollToDay(date: string) {
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -15,11 +15,14 @@ function scrollToDay(date: string) {
     ?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
 }
 
-export function HistoryTimeline({ days, outages, now }: Props) {
+export function HistoryTimeline({ days, outages, now, focusDay = null }: Props) {
   const { t } = useTranslation();
   const format = useFormatters();
   const groups = groupByDay(days, outages);
   const filled = days.filter((day) => groups.has(day.date)).toReversed();
+  useEffect(() => {
+    if (focusDay) scrollToDay(focusDay);
+  }, [focusDay]);
 
   return (
     <div className="flex flex-col gap-4">

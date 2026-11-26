@@ -25,6 +25,7 @@ import { useFormatters } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { identifierErrors, identifierValueSchema, toIdentifier } from '../auth/identifier';
 import { IdentifierField } from '../auth/IdentifierField';
+import { Moment } from '@/components/Moment';
 
 export const MAX_MEMBERS = 10;
 
@@ -308,9 +309,9 @@ function PendingInvites({
               {expired ? (
                 <Badge variant="outline">{t('app.members.expired')}</Badge>
               ) : (
-                <span className="text-sm text-muted-foreground">
+                <Moment iso={invite.expires_at} className="text-sm text-muted-foreground">
                   {t('app.members.expires', { moment: format.moment(invite.expires_at) })}
-                </span>
+                </Moment>
               )}
               <span className="ms-auto flex gap-2">
                 <Button

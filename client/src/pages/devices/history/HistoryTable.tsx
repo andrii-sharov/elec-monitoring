@@ -3,15 +3,14 @@ import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OutageTags } from '@/components/OutageTags';
 import { Badge } from '@/components/ui/badge';
-import { useFormatters } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { LiveDuration } from './OutageRow';
+import { Duration, Moment } from '@/components/Moment';
 
 const columns = ['start', 'end', 'duration', 'details'] as const;
 
 export function HistoryTable({ outages }: { outages: OutageItem[] }) {
   const { t } = useTranslation();
-  const format = useFormatters();
   if (outages.length === 0) {
     return <p className="text-muted-foreground">{t('app.history.empty')}</p>;
   }
@@ -40,10 +39,12 @@ export function HistoryTable({ outages }: { outages: OutageItem[] }) {
                   open && 'bg-[color-mix(in_oklab,var(--card)_92%,var(--status-offline))]',
                 )}
               >
-                <td className="px-3 py-2 whitespace-nowrap">{format.moment(outage.started_at)}</td>
+                <td className="px-3 py-2 whitespace-nowrap">
+                  <Moment iso={outage.started_at} />
+                </td>
                 <td className="px-3 py-2 whitespace-nowrap">
                   {outage.ended_at ? (
-                    format.moment(outage.ended_at)
+                    <Moment iso={outage.ended_at} />
                   ) : (
                     <Badge
                       variant="outline"
@@ -57,7 +58,7 @@ export function HistoryTable({ outages }: { outages: OutageItem[] }) {
                   {outage.duration_s === null ? (
                     <LiveDuration since={outage.started_at} />
                   ) : (
-                    format.duration(outage.duration_s)
+                    <Duration seconds={outage.duration_s} />
                   )}
                 </td>
                 <td className="px-3 py-2">

@@ -148,3 +148,10 @@ export function groupByDay(days: Day[], outages: OutageItem[]): Map<LocalDate, O
   }
   return groups;
 }
+
+export function outagesIn(slot: Slot, outages: OutageItem[], now: number): OutageItem[] {
+  return outages.filter((outage) => {
+    const span = outageSlot(outage, now);
+    return span.start < slot.end && (span.end > slot.start || span.start >= slot.start);
+  });
+}

@@ -20,6 +20,7 @@ function matchMedia(query: string): MediaQueryList {
 
 beforeAll(() => {
   vi.stubGlobal('matchMedia', matchMedia);
+  Element.prototype.scrollIntoView = noop;
   server.listen({ onUnhandledFrame: 'error' });
 });
 

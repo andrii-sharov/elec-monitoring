@@ -526,6 +526,13 @@ export const uk: Dictionary = {
       updating: '{{name}}: оновлюється',
     },
     history: {
+      cell: {
+        withoutPower: 'Без світла',
+        withPower: 'Зі світлом',
+        blipAt: 'Короткий збій о {{time}}',
+        none: 'Цієї години відключень не було',
+        showInTimeline: 'Показати цей день у стрічці',
+      },
       view: 'Вигляд',
       views: { timeline: 'Стрічка', grid: 'Сітка', table: 'Таблиця' },
       previous: 'Попередній тиждень',

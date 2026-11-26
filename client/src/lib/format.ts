@@ -19,6 +19,8 @@ export type Formatters = {
   time(iso: string): string;
   day(date: string, options: Intl.DateTimeFormatOptions): string;
   days(from: string, to: string): string;
+  full(iso: string): string;
+  exactDuration(seconds: number): string;
   timezone: string;
 };
 
@@ -53,6 +55,26 @@ export function useFormatters(): Formatters {
         year: 'numeric',
         timeZone: 'UTC',
       }).formatRange(Date.parse(from), Date.parse(to)),
+    full: (iso) =>
+      `${new Intl.DateTimeFormat(LOCALES[language], {
+        dateStyle: 'full',
+        timeStyle: 'medium',
+        hourCycle: 'h23',
+        timeZone: timezone,
+      }).format(new Date(iso))} (${timezone})`,
+    exactDuration: (seconds) => {
+      const total = Math.max(0, Math.floor(seconds));
+      const parts: [number, 'days' | 'hours' | 'minutes' | 'seconds'][] = [
+        [Math.floor(total / 86_400), 'days'],
+        [Math.floor((total % 86_400) / 3600), 'hours'],
+        [Math.floor((total % 3600) / 60), 'minutes'],
+        [total % 60, 'seconds'],
+      ];
+      const shown = parts.filter(([value]) => value > 0);
+      return (shown.length > 0 ? shown : [[0, 'seconds'] as const])
+        .map(([value, unit]) => t(`common.duration.${unit}`, { value, lng: language }))
+        .join(' ');
+    },
     timezone,
   };
 }

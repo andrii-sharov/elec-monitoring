@@ -6,6 +6,7 @@ import { OutageTags } from '@/components/OutageTags';
 import { useLiveDuration } from '@/components/StateDuration';
 import { useFormatters } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { Duration, Moment, MomentRange } from '@/components/Moment';
 
 export function LiveDuration({ since }: { since: string }) {
   const duration = useLiveDuration(since);
@@ -51,15 +52,19 @@ export function OutageRow({ outage, index }: { outage: OutageItem; index: number
           {t(`app.outage.type.${outage.type}`)}
         </span>
         <span>
-          {outage.ended_at
-            ? format.range(outage.started_at, outage.ended_at)
-            : t('app.outage.ongoingSince', { moment: format.moment(outage.started_at) })}
+          {outage.ended_at ? (
+            <MomentRange from={outage.started_at} to={outage.ended_at} />
+          ) : (
+            <Moment iso={outage.started_at}>
+              {t('app.outage.ongoingSince', { moment: format.moment(outage.started_at) })}
+            </Moment>
+          )}
         </span>
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-muted-foreground">
           {outage.duration_s === null ? (
             <LiveDuration since={outage.started_at} />
           ) : (
-            <span>{format.duration(outage.duration_s)}</span>
+            <Duration seconds={outage.duration_s} />
           )}
           <OutageTags outage={outage} showType={false} />
         </span>

@@ -530,6 +530,13 @@ export const ru: Dictionary = {
       updating: '{{name}}: обновляется',
     },
     history: {
+      cell: {
+        withoutPower: 'Без света',
+        withPower: 'Со светом',
+        blipAt: 'Короткий сбой в {{time}}',
+        none: 'В этот час отключений не было',
+        showInTimeline: 'Показать этот день в ленте',
+      },
       view: 'Вид',
       views: { timeline: 'Лента', grid: 'Сетка', table: 'Таблица' },
       previous: 'Предыдущая неделя',

@@ -4,9 +4,15 @@ import type { CSSProperties, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormatters } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { hourCells, type Day, type HourCell } from '@/lib/week';
+import { hourCells, type Day } from '@/lib/week';
+import { GridCell, onTint } from './GridCell';
 
-type Props = { days: Day[]; outages: OutageItem[]; now: number };
+type Props = {
+  days: Day[];
+  outages: OutageItem[];
+  now: number;
+  onShowDay?: (date: string) => void;
+};
 
 const hours = Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0'));
 
@@ -24,62 +30,16 @@ function Swatch({ className, children }: { className?: string; children?: ReactN
   );
 }
 
-function Cell({ cell, label, now }: { cell: HourCell; label: string; now: number }) {
-  const { t } = useTranslation();
-  const format = useFormatters();
-  const length = cell.end - cell.start;
-  const share = length > 0 ? cell.offMs / length : 0;
-  const full = share >= 0.999;
-  const current = cell.start <= now && now < cell.end;
-  const state = cell.future
-    ? t('app.history.legend.future')
-    : cell.offMs > 0
-      ? t('app.history.off', { duration: format.duration(cell.offMs / 1000) })
-      : t('app.history.legend.on');
-  const text = [label, state, cell.blips > 0 ? t('app.history.blips', { count: cell.blips }) : null]
-    .filter(Boolean)
-    .join(' · ');
-  return (
-    <td className="p-0.5">
-      <div
-        title={text}
-        className={cn(
-          'relative flex h-8 min-w-6 items-center justify-center overflow-hidden rounded-sm border',
-          cell.future
-            ? 'border-dashed border-border bg-transparent'
-            : 'border-border bg-[color-mix(in_oklab,var(--card)_85%,var(--status-online))]',
-          current && 'ring-2 ring-primary',
-        )}
-      >
-        {cell.offMs > 0 ? (
-          <span
-            aria-hidden="true"
-            className="absolute inset-x-0 bottom-0 bg-status-offline"
-            style={{ height: `${Math.max(12, share * 100)}%` }}
-          />
-        ) : null}
-        {full ? (
-          <ZapOff aria-hidden="true" className="relative size-3.5 text-danger-foreground" />
-        ) : null}
-        {cell.blips > 0 ? (
-          <span
-            aria-hidden="true"
-            className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-warning"
-          />
-        ) : null}
-        <span className="sr-only">{text}</span>
-      </div>
-    </td>
-  );
-}
-
-export function HistoryGrid({ days, outages, now }: Props) {
+export function HistoryGrid({ days, outages, now, onShowDay }: Props) {
   const { t } = useTranslation();
   const format = useFormatters();
   return (
     <div className="flex flex-col gap-3">
       <div className="overflow-x-auto rounded-lg border border-border bg-card">
-        <table className="w-full min-w-176 border-separate border-spacing-0 text-xs">
+        <table
+          aria-label={t('app.history.views.grid')}
+          className="w-full min-w-176 border-separate border-spacing-0 text-xs"
+        >
           <thead>
             <tr>
               <th
@@ -111,12 +71,20 @@ export function HistoryGrid({ days, outages, now }: Props) {
                     {weekday}
                   </th>
                   {hourCells(day, outages, now).map((cell, hour) => (
-                    <Cell
-                      key={hours[hour]}
-                      cell={cell}
-                      now={now}
-                      label={`${weekday} ${hours[hour]}:00–${hour === 23 ? '24' : hours[hour + 1]}:00`}
-                    />
+                    <td key={hours[hour]} className="p-0.5">
+                      <GridCell
+                        cell={cell}
+                        now={now}
+                        outages={outages}
+                        row={index}
+                        col={hour}
+                        rows={days.length}
+                        cols={24}
+                        focusable={index === 0 && hour === 0}
+                        onShowDay={onShowDay ? () => onShowDay(day.date) : undefined}
+                        label={`${weekday} ${hours[hour]}:00–${hour === 23 ? '24' : hours[hour + 1]}:00`}
+                      />
+                    </td>
                   ))}
                 </tr>
               );
@@ -126,11 +94,11 @@ export function HistoryGrid({ days, outages, now }: Props) {
       </div>
       <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground">
         <li className="flex items-center gap-2">
-          <Swatch className="bg-[color-mix(in_oklab,var(--card)_85%,var(--status-online))]" />
+          <Swatch className={onTint} />
           {t('app.history.legend.on')}
         </li>
         <li className="flex items-center gap-2">
-          <Swatch className="bg-[color-mix(in_oklab,var(--card)_85%,var(--status-online))]">
+          <Swatch className={onTint}>
             <span className="absolute inset-x-0 bottom-0 h-1/2 bg-status-offline" />
           </Swatch>
           {t('app.history.legend.partial')}

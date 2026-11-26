@@ -1,6 +1,6 @@
 import type { OutageItem } from '@elec/shared/api';
 import { ChevronLeft, ChevronRight, Grid3x3, List, RotateCw, Table2 } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { useOutageRange } from '@/api/queries';
@@ -68,6 +68,11 @@ export function DeviceHistory({ deviceId }: { deviceId: string }) {
   };
   const live = monday === current;
   const outages = useOutageRange(deviceId, range, live);
+  const [focusDay, setFocusDay] = useState<string | null>(null);
+  const showDay = (date: string) => {
+    setFocusDay(date);
+    setView('timeline');
+  };
 
   return (
     <Tabs value={view} onValueChange={(value) => setView(value as View)} className="gap-3">
@@ -138,9 +143,9 @@ export function DeviceHistory({ deviceId }: { deviceId: string }) {
           {views.map((choice) => (
             <TabsPanel key={choice} value={choice}>
               {choice === 'timeline' ? (
-                <HistoryTimeline days={days} outages={outages.data} now={now} />
+                <HistoryTimeline days={days} outages={outages.data} now={now} focusDay={focusDay} />
               ) : choice === 'grid' ? (
-                <HistoryGrid days={days} outages={outages.data} now={now} />
+                <HistoryGrid days={days} outages={outages.data} now={now} onShowDay={showDay} />
               ) : (
                 <HistoryTable outages={outages.data} />
               )}
