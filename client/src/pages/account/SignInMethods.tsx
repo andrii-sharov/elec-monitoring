@@ -43,7 +43,7 @@ export function SignInMethods({ me }: { me: Me }) {
             {t('app.account.unlink')}
           </Button>
         ) : me.email_verified || me.phone_verified ? (
-          <Button variant="outline" onClick={() => startGoogle('LINK', '/account')}>
+          <Button variant="outline" onClick={() => startGoogle('LINK', '/account?tab=security')}>
             {t('app.account.link')}
           </Button>
         ) : null}

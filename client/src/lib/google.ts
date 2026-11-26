@@ -4,7 +4,10 @@ import { safeNext } from './safeNext.ts';
 
 const storageKey = 'em.google';
 
-const defaultNext: Record<GoogleIntent, string> = { LOGIN: '/devices', LINK: '/account' };
+const defaultNext: Record<GoogleIntent, string> = {
+  LOGIN: '/devices',
+  LINK: '/account?tab=security',
+};
 
 type GoogleState = { intent: GoogleIntent; next: string };
 

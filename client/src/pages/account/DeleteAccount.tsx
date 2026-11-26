@@ -101,7 +101,7 @@ export function DeleteAccount({ me }: { me: Me }) {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => startGoogle('LOGIN', '/account?confirmDelete=1')}
+                  onClick={() => startGoogle('LOGIN', '/account?tab=danger&confirmDelete=1')}
                 >
                   {t('app.account.signInGoogleAgain')}
                 </Button>

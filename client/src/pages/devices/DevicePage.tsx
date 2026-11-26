@@ -1,7 +1,7 @@
 import type { Device } from '@elec/shared/api';
 import { BellRing, History, RotateCw, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useParams, useSearchParams } from 'react-router';
+import { useParams } from 'react-router';
 import { useDevice } from '@/api/queries';
 import { isApiError } from '@/api/errors';
 import { useAppStyle } from '@/appStyles/AppStyleProvider';
@@ -9,6 +9,7 @@ import { BackLink } from '@/components/BackLink';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@/components/ui/tabs';
+import { useTabParam } from '@/lib/useTabParam';
 import { errorMessage } from '@/forms/errorMessage';
 import { DeviceChannels } from './DeviceChannels';
 import { DeviceMembers } from './DeviceMembers';
@@ -101,18 +102,10 @@ type Section = (typeof sections)[number]['value'];
 
 function DeviceSections({ device }: { device: Device }) {
   const { t } = useTranslation();
-  const [params, setParams] = useSearchParams();
-  const tab: Section = sections.find((s) => s.value === params.get('tab'))?.value ?? 'history';
-  const select = (value: Section) =>
-    setParams(
-      (previous) => {
-        const next = new URLSearchParams(previous);
-        if (value === 'history') next.delete('tab');
-        else next.set('tab', value);
-        return next;
-      },
-      { replace: true },
-    );
+  const [tab, select] = useTabParam(
+    sections.map((section) => section.value),
+    'history',
+  );
   return (
     <Tabs value={tab} onValueChange={(value) => select(value as Section)}>
       <TabsList aria-label={t('app.device.tabs.label')}>

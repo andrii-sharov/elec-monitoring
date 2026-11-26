@@ -14,7 +14,7 @@ const phoneOnly = meFixture({
 });
 
 async function renderSection(me: ReturnType<typeof meFixture>) {
-  const view = renderRoute('/account', { me });
+  const view = renderRoute('/account?tab=security', { me });
   const region = await screen.findByRole('region', { name: 'Email and phone' });
   return { ...view, section: within(region) };
 }

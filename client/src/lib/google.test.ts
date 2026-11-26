@@ -23,7 +23,7 @@ test('startGoogle stores the state and navigates to the API', () => {
 
 test('takeGoogleState consumes the state', () => {
   startGoogle('LINK');
-  expect(takeGoogleState()).toEqual({ intent: 'LINK', next: '/account' });
+  expect(takeGoogleState()).toEqual({ intent: 'LINK', next: '/account?tab=security' });
   expect(takeGoogleState()).toBeNull();
 });
 

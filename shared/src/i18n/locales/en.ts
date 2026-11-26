@@ -431,6 +431,13 @@ export const en = {
       deleteBody: 'Its outage history and links to notification channels are removed for good.',
     },
     account: {
+      tabs: {
+        label: 'Account sections',
+        profile: 'Profile',
+        appearance: 'Appearance',
+        security: 'Sign-in & security',
+        danger: 'Danger zone',
+      },
       identifiers: {
         title: 'Email and phone',
         email: 'Email',

@@ -159,11 +159,12 @@ test('an incomplete email is caught before sending', async () => {
   expect(spy).not.toHaveBeenCalled();
 });
 
+const words = () => document.querySelector('[data-kind]');
+const active = () => words()?.querySelector('[data-active]')?.textContent;
+
 test('the label lights up Email or Phone as the field recognises the value', async () => {
   const { user } = renderRoute('/login');
   const field = await screen.findByLabelText('Email or phone');
-  const words = () => document.querySelector('[data-kind]');
-  const active = () => words()?.querySelector('[data-active]')?.textContent;
   expect(words()).toHaveAttribute('data-kind', 'empty');
   expect(active()).toBeUndefined();
   await user.type(field, 'johnny@');

@@ -440,6 +440,13 @@ export const uk: Dictionary = {
       deleteBody: 'Його історію відключень і зв’язки з каналами сповіщень буде видалено назавжди.',
     },
     account: {
+      tabs: {
+        label: 'Розділи облікового запису',
+        profile: 'Профіль',
+        appearance: 'Вигляд',
+        security: 'Вхід і безпека',
+        danger: 'Небезпечна зона',
+      },
       identifiers: {
         title: 'Email і телефон',
         email: 'Email',

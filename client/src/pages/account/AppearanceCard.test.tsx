@@ -4,7 +4,7 @@ import { meFixture } from '../../../test/fixtures.ts';
 import { renderRoute } from '../../../test/render.tsx';
 
 async function renderAccount() {
-  const view = renderRoute('/account', { me: meFixture() });
+  const view = renderRoute('/account?tab=appearance', { me: meFixture() });
   await screen.findByRole('heading', { level: 1 });
   return view;
 }
@@ -48,7 +48,8 @@ test('choosing Dark applies the theme without a request', async () => {
 });
 
 test('the profile form has no theme field and Save waits for a profile change', async () => {
-  const { user } = await renderAccount();
+  const { user } = renderRoute('/account', { me: meFixture() });
+  await screen.findByRole('heading', { level: 1 });
   const profile = screen.getByRole('region', { name: 'Profile' });
   expect(within(profile).queryByRole('combobox', { name: 'Theme' })).toBeNull();
   const save = within(profile).getByRole('button', { name: 'Save' });

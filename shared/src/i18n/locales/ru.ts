@@ -444,6 +444,13 @@ export const ru: Dictionary = {
       deleteBody: 'Его история отключений и связи с каналами уведомлений будут удалены навсегда.',
     },
     account: {
+      tabs: {
+        label: 'Разделы аккаунта',
+        profile: 'Профиль',
+        appearance: 'Внешний вид',
+        security: 'Вход и безопасность',
+        danger: 'Опасная зона',
+      },
       identifiers: {
         title: 'Email и телефон',
         email: 'Email',

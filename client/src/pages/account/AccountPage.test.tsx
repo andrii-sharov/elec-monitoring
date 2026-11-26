@@ -73,37 +73,40 @@ test('timezone search finds Europe/Kyiv and saves it', async () => {
 
 test('unlink Google with 409 explains to add a password first', async () => {
   server.use(http.delete(`${base}/api/auth/google`, () => problem('conflict', 409)));
-  const { user } = await renderAccount(meFixture({ google_linked: true }));
+  const { user } = await renderAccount(meFixture({ google_linked: true }), '/account?tab=security');
   await user.click(screen.getByRole('button', { name: 'Unlink Google' }));
   expect(await screen.findByText('Add a password first: use Forgot password.')).toBeInTheDocument();
 });
 
 test('unlink Google success switches to Link Google', async () => {
   server.use(http.delete(`${base}/api/auth/google`, () => new HttpResponse(null, { status: 204 })));
-  const { user } = await renderAccount(meFixture({ google_linked: true }));
+  const { user } = await renderAccount(meFixture({ google_linked: true }), '/account?tab=security');
   await user.click(screen.getByRole('button', { name: 'Unlink Google' }));
   expect(await screen.findByRole('button', { name: 'Link Google' })).toBeInTheDocument();
 });
 
 test('Link Google stores the intent and navigates to the API', async () => {
-  const { user } = await renderAccount();
+  const { user } = await renderAccount(meFixture(), '/account?tab=security');
   await user.click(screen.getByRole('button', { name: 'Link Google' }));
   expect(JSON.parse(sessionStorage.getItem('em.google') ?? 'null')).toEqual({
     intent: 'LINK',
-    next: '/account',
+    next: '/account?tab=security',
   });
   expect(assign).toHaveBeenCalledWith(`${base}/api/auth/google?app=CLIENT&intent=LINK`);
 });
 
 test('an unverified account is not offered Link Google', async () => {
-  await renderAccount(meFixture({ email_verified: false, phone_verified: false }));
+  await renderAccount(
+    meFixture({ email_verified: false, phone_verified: false }),
+    '/account?tab=security',
+  );
   expect(screen.getByText('Google account not linked')).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Link Google' })).not.toBeInTheDocument();
 });
 
 test('change password: mismatch shows an inline error and sends nothing', async () => {
   const bodies = captureBody('/api/auth/change-password', 'post');
-  const { user } = await renderAccount();
+  const { user } = await renderAccount(meFixture(), '/account?tab=security');
   await user.type(screen.getByLabelText('Current password'), 'old-password');
   await user.type(screen.getByLabelText('New password'), 'new-password-1');
   await user.type(screen.getByLabelText('Repeat the new password'), 'new-password-2');
@@ -116,7 +119,7 @@ test('change password: 403 puts the error on the current password field', async 
   server.use(
     http.post(`${base}/api/auth/change-password`, () => problem('invalid_credentials', 403)),
   );
-  const { user } = await renderAccount();
+  const { user } = await renderAccount(meFixture(), '/account?tab=security');
   await user.type(screen.getByLabelText('Current password'), 'wrong-password');
   await user.type(screen.getByLabelText('New password'), 'new-password-1');
   await user.type(screen.getByLabelText('Repeat the new password'), 'new-password-1');
@@ -127,7 +130,7 @@ test('change password: 403 puts the error on the current password field', async 
 
 test('change password: success toasts that other sessions were signed out', async () => {
   const bodies = captureBody('/api/auth/change-password', 'post');
-  const { user } = await renderAccount();
+  const { user } = await renderAccount(meFixture(), '/account?tab=security');
   await user.type(screen.getByLabelText('Current password'), 'old-password');
   await user.type(screen.getByLabelText('New password'), 'new-password-1');
   await user.type(screen.getByLabelText('Repeat the new password'), 'new-password-1');
@@ -139,7 +142,10 @@ test('change password: success toasts that other sessions were signed out', asyn
 });
 
 test('the password form is hidden for a Google-only account', async () => {
-  await renderAccount(meFixture({ has_password: false, google_linked: true }));
+  await renderAccount(
+    meFixture({ has_password: false, google_linked: true }),
+    '/account?tab=security',
+  );
   expect(screen.queryByLabelText('Current password')).not.toBeInTheDocument();
 });
 
@@ -151,7 +157,7 @@ test('Log out signs out and lands on plain /login', async () => {
       return new HttpResponse(null, { status: 204 });
     }),
   );
-  const { user, router } = await renderAccount();
+  const { user, router } = await renderAccount(meFixture(), '/account?tab=security');
   await user.click(screen.getByRole('button', { name: 'Log out' }));
   await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
   expect(router.state.location.search).toBe('');
@@ -166,7 +172,7 @@ test('Log out everywhere sends logout-all then lands on plain /login', async () 
       return new HttpResponse(null, { status: 204 });
     }),
   );
-  const { user, router } = await renderAccount();
+  const { user, router } = await renderAccount(meFixture(), '/account?tab=security');
   await user.click(screen.getByRole('button', { name: 'Log out everywhere' }));
   await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
   expect(router.state.location.search).toBe('');
@@ -175,7 +181,7 @@ test('Log out everywhere sends logout-all then lands on plain /login', async () 
 
 test('delete with a wrong password shows an error and stays signed in', async () => {
   server.use(http.delete(`${base}/api/v1/me`, () => problem('invalid_credentials', 403)));
-  const { user, router } = await renderAccount();
+  const { user, router } = await renderAccount(meFixture(), '/account?tab=danger');
   await user.click(screen.getByRole('button', { name: 'Delete account' }));
   const dialog = await screen.findByRole('dialog');
   await user.type(within(dialog).getByLabelText('Enter your password to confirm'), 'wrong');
@@ -186,7 +192,7 @@ test('delete with a wrong password shows an error and stays signed in', async ()
 
 test('delete with the password sends it and goes to /login with a toast', async () => {
   const bodies = captureBody('/api/v1/me', 'delete');
-  const { user, router } = await renderAccount();
+  const { user, router } = await renderAccount(meFixture(), '/account?tab=danger');
   await user.click(screen.getByRole('button', { name: 'Delete account' }));
   const dialog = await screen.findByRole('dialog');
   await user.type(within(dialog).getByLabelText('Enter your password to confirm'), 'secret-pass');
@@ -199,7 +205,10 @@ test('delete with the password sends it and goes to /login with a toast', async 
 
 test('Google-only delete asks to sign in again on reauth_required', async () => {
   server.use(http.delete(`${base}/api/v1/me`, () => problem('reauth_required', 403)));
-  const { user } = await renderAccount(meFixture({ has_password: false, google_linked: true }));
+  const { user } = await renderAccount(
+    meFixture({ has_password: false, google_linked: true }),
+    '/account?tab=danger',
+  );
   await user.click(screen.getByRole('button', { name: 'Delete account' }));
   const dialog = await screen.findByRole('dialog');
   expect(within(dialog).queryByLabelText('Enter your password to confirm')).not.toBeInTheDocument();
@@ -209,7 +218,7 @@ test('Google-only delete asks to sign in again on reauth_required', async () => 
   );
   expect(JSON.parse(sessionStorage.getItem('em.google') ?? 'null')).toEqual({
     intent: 'LOGIN',
-    next: '/account?confirmDelete=1',
+    next: '/account?tab=danger&confirmDelete=1',
   });
   expect(assign).toHaveBeenCalledWith(`${base}/api/auth/google?app=CLIENT&intent=LOGIN`);
 });
@@ -221,7 +230,7 @@ test('?confirmDelete=1 opens the delete dialog', async () => {
 
 test('closing and reopening the delete dialog clears the password and the error', async () => {
   server.use(http.delete(`${base}/api/v1/me`, () => problem('invalid_credentials', 403)));
-  const { user } = await renderAccount();
+  const { user } = await renderAccount(meFixture(), '/account?tab=danger');
   await user.click(screen.getByRole('button', { name: 'Delete account' }));
   const dialog = await screen.findByRole('dialog');
   await user.type(within(dialog).getByLabelText('Enter your password to confirm'), 'wrong');
@@ -233,4 +242,14 @@ test('closing and reopening the delete dialog clears the password and the error'
   const reopened = await screen.findByRole('dialog');
   expect(within(reopened).getByLabelText('Enter your password to confirm')).toHaveValue('');
   expect(within(reopened).queryByText('Wrong password')).not.toBeInTheDocument();
+});
+
+test('tabs split the account page and keep the choice in the URL', async () => {
+  const { user, router } = await renderAccount();
+  expect(screen.getByRole('tab', { name: 'Profile' })).toHaveAttribute('aria-selected', 'true');
+  expect(screen.queryByRole('button', { name: 'Log out everywhere' })).toBeNull();
+  await user.click(screen.getByRole('tab', { name: 'Sign-in & security' }));
+  expect(router.state.location.search).toBe('?tab=security');
+  await user.click(screen.getByRole('tab', { name: 'Danger zone' }));
+  expect(await screen.findByRole('button', { name: 'Delete account' })).toBeInTheDocument();
 });
