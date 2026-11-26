@@ -1,12 +1,18 @@
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
-import { testApp } from '../../test/app.ts';
+import { testApp, testConfig } from '../../test/app.ts';
 import { createUser } from '../../test/auth.ts';
 import { createPlatformChannel, linkChannel } from '../../test/channels.ts';
 import { createTestDb, type TestDb } from '../../test/db.ts';
 import { pairDevice } from '../../test/devices.ts';
-import { FakeClock, FakeTelegramClient, silentLogger } from '../../test/fakes.ts';
+import {
+  FakeClock,
+  FakeEmailSender,
+  FakeTelegramClient,
+  FakeWebhookSender,
+  silentLogger,
+} from '../../test/fakes.ts';
 import { appUser, delivery, device, deviceChannel, outage } from '../db/schema/index.ts';
 import { createI18n } from '../i18n.ts';
 import { checkOffline, queueDueOffAlerts } from '../monitoring/offline.ts';
@@ -62,6 +68,10 @@ async function tick(pacer: { take(): Promise<void> } = pacerOn()) {
       clock,
       logger,
       telegram,
+      webhooks: new FakeWebhookSender(),
+      email: new FakeEmailSender(),
+      encryptionKey: testConfig.encryptionKey,
+      clientUrl: 'https://app.test',
       i18n: createI18n(),
       pacer,
     });

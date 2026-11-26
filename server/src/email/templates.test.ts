@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest';
 import { createI18n } from '../i18n.ts';
 import { renderEmail, renderInviteEmail, type EmailKind } from './templates.ts';
 
-const kinds: EmailKind[] = ['verifyEmail', 'resetPassword', 'accountExists'];
+const kinds: EmailKind[] = ['verifyEmail', 'resetPassword', 'accountExists', 'webhookDisabled'];
 const link = 'https://app.test/verify-email?token=abc&x=1';
 const i18n = createI18n();
 
@@ -14,6 +14,25 @@ describe.each(kinds)('%s', (kind) => {
     expect(email.text).toContain(link);
     expect(email.text).toContain('John');
     expect(email.html).toContain('href="https://app.test/verify-email?token=abc&amp;x=1"');
+  });
+});
+
+describe('webhookDisabled', () => {
+  const email = renderEmail(i18n, 'webhookDisabled', {
+    lang: 'en',
+    name: 'John',
+    link: 'https://app.test/notifications?type=WEBHOOK',
+    channelName: '<Office> hook',
+  });
+
+  test('names the webhook, offers the notifications page and has no expiry note', () => {
+    expect(email.subject).toBe('Your webhook was turned off');
+    expect(email.text).toContain('<Office> hook');
+    expect(email.text).toContain(
+      'Open notifications:\nhttps://app.test/notifications?type=WEBHOOK',
+    );
+    expect(email.text).not.toContain('valid for');
+    expect(email.html).toContain('&lt;Office&gt; hook');
   });
 });
 

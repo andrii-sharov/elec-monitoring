@@ -590,9 +590,9 @@ create index notification_channel_platform_chat_idx on notification_channel (tel
 - Telegram chat IDs fit in `bigint`. The API shows them as strings.
 - The platform bot finds the linked users for `/status`, `/stats` and
   `/stop` by `telegram_chat_id`. Several users can link the same group.
-- Each delivery failure increments `consecutive_failures`. At 20 the worker
-  disables the channel with `TOO_MANY_FAILURES`. Success or re-enabling
-  resets it to 0.
+- Counted delivery failures increment `consecutive_failures` (§7
+  `delivery` lists which ones count). At 20 the worker disables the channel
+  with `TOO_MANY_FAILURES`. Success or re-enabling resets it to 0.
 
 ### `device_channel`
 
@@ -648,9 +648,12 @@ create index delivery_due_idx on delivery (next_attempt_at) where status in ('QU
 - `payload` is a snapshot of the machine-readable event:
   `{ event, device: { id, name }, outage: <outage item> }`. Fan-out sends
   only to enabled channels whose user can read the device, and for
-  webhooks only when the event is in `webhook_events`. Webhook retries resend the same body. Telegram text is
-  rendered at send time in the recipient's language and timezone, with
-  quiet hours applied.
+  webhooks only when the event is in `webhook_events`. Webhook retries
+  resend the same event data: the body is `payload` plus `sent_at`, the
+  time of that attempt, serialized and signed again with the channel's
+  current secret. Telegram text is rendered at send time in the recipient's
+  language and timezone, with quiet hours applied. Webhooks have no pacer
+  and no quiet hours.
 - Retries: 1 min, 5 min, 30 min, 2 h, 6 h, then `FAILED` (6 attempts).
   Redeliver sets `QUEUED` and `next_attempt_at = now()` on the same row.
 - **Platform bot outcomes.** `2xx` → `SENT`. `429` → `RETRYING` at
@@ -660,11 +663,27 @@ create index delivery_due_idx on delivery (next_attempt_at) where status in ('QU
   `consecutive_failures`, so a Telegram outage can't disable channels. A
   `migrate_to_chat_id` reply updates `telegram_chat_id` and retries at
   once. Channels disable at 20 counted failures.
-- **Skipped sends.** A delivery whose channel's user can no longer read the device (a removed viewer) becomes `FAILED` with `last_error = 'skipped: no access'`. A `device.offline` delivery whose outage has closed, or whose channel is disabled, becomes `FAILED` with `skipped: outage closed` or `skipped: channel disabled`. The failure counter is unchanged.
-- **Send loop.** The worker claims up to 30 due rows, sends rows of one
-  channel in order, runs up to 10 channels at once, and takes a token from
-  a 30 messages/s pacer before every send. It beats `worker_heartbeat`
-  under the name `delivery`.
+- **Webhook outcomes.** `2xx` → `SENT`, and `consecutive_failures` resets
+  to 0. Every failed attempt (non-`2xx`, redirect, timeout, network error,
+  blocked address or DNS failure) follows the retry schedule and adds 1 to
+  `consecutive_failures`; there is no immediate `FAILED`. The update that
+  turns `enabled` off at 20 emails the channel's owner once, if they have
+  an email. A secret that can't be decrypted is a server fault: it follows
+  the retry schedule with `last_error = 'webhook secret could not be
+  decrypted'`, sends nothing and isn't counted.
+- **Skipped sends.** A delivery whose channel's user can no longer read the device (a removed viewer) becomes `FAILED` with `last_error = 'skipped: no access'`. A Telegram `device.offline` delivery whose outage has closed becomes `FAILED` with `skipped: outage closed`; a webhook still gets it, because machines order events by the data. A delivery whose channel is disabled becomes `FAILED` with `skipped: channel disabled`. The failure counter is unchanged.
+- **Send loop.** The worker runs two independent loops, one for Telegram
+  and one for webhooks, so a slow receiver can't delay Telegram alerts.
+  Each claims only its own channel type, sends rows of one channel in
+  order and runs up to 10 channels at once. A claim leases rows for 120 s.
+  - The Telegram loop claims up to 30 due rows and takes a token from a
+    30 messages/s pacer before every send. It beats `worker_heartbeat`
+    under the name `delivery`.
+  - The webhook loop claims up to 10 due rows. Even if all belong to one
+    channel and each send takes the full 10 s, the batch ends within the
+    lease, so no second worker claims them again.
+  - On shutdown both loops finish the sends in flight and release the
+    claimed rows they haven't started, without counting an attempt.
 - Emails (verification, reset, invites, "webhook disabled") go straight to
   Resend and are not stored here.
 

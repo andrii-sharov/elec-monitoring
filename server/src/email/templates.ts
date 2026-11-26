@@ -1,11 +1,11 @@
 import type { Language } from '@elec/shared';
 import type { i18n } from 'i18next';
 
-export type EmailKind = 'verifyEmail' | 'resetPassword' | 'accountExists';
+export type EmailKind = 'verifyEmail' | 'resetPassword' | 'accountExists' | 'webhookDisabled';
 
 export type RenderedEmail = { subject: string; text: string; html: string };
 
-type Vars = { lang: Language; name: string; link: string };
+type Vars = { lang: Language; name: string; link: string; channelName?: string };
 
 const HTML_ESCAPES: Record<string, string> = {
   '&': '&amp;',
@@ -49,10 +49,11 @@ function layout(parts: LayoutParts): string {
 export function renderEmail(i18n: i18n, kind: EmailKind, vars: Vars): RenderedEmail {
   const t = i18n.getFixedT(vars.lang);
   const subject = t(`email.${kind}.subject`);
-  const intro = t(`email.${kind}.intro`, { name: vars.name });
+  const intro = t(`email.${kind}.intro`, { name: vars.name, channelName: vars.channelName });
   const action = t(`email.${kind}.action`);
   const footer = t('email.footer');
-  const notes = kind === 'accountExists' ? [] : [t(`email.${kind}.expiry`)];
+  const notes =
+    kind === 'accountExists' || kind === 'webhookDisabled' ? [] : [t(`email.${kind}.expiry`)];
   const text = [intro, '', `${action}:`, vars.link, '', ...notes, footer].join('\n');
   const html = layout({
     lang: vars.lang,

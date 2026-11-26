@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 import { createTestDb, type TestDb } from '../../test/db.ts';
-import { seedDelivery } from '../../test/deliveries.ts';
+import { seedDelivery, seedWebhookDelivery } from '../../test/deliveries.ts';
 import { FakeClock } from '../../test/fakes.ts';
 import { appUser, delivery, device, notificationChannel } from '../db/schema/index.ts';
 import { claimDeliveries, nextRetryAt, recordOutcome, type Outcome } from './deliveries.ts';
@@ -84,6 +84,30 @@ describe('claimDeliveries', () => {
     expect(await claimDeliveries(t.db, clock, 10)).toHaveLength(1);
   });
 
+  test('filters by channel type', async () => {
+    const chat = await seedDelivery(t.db);
+    const hook = await seedWebhookDelivery(t.db, {
+      userOverrides: { email: 'mary@example.com', name: 'Mary', language: 'en' },
+      webhook: { name: 'Office hook' },
+    });
+
+    const webhookRows = await claimDeliveries(t.db, clock, 10, 'WEBHOOK');
+    expect(webhookRows.map((d) => d.id)).toEqual([hook.delivery.id]);
+    expect(webhookRows[0]!.channel).toMatchObject({
+      type: 'WEBHOOK',
+      name: 'Office hook',
+      webhookUrl: 'https://hooks.example.com/elec',
+      webhookSecretEnc: hook.channel.webhookSecretEnc,
+    });
+    expect(webhookRows[0]!.owner).toEqual({
+      email: 'mary@example.com',
+      name: 'Mary',
+      language: 'en',
+    });
+    const chatRows = await claimDeliveries(t.db, clock, 10, 'TELEGRAM_PLATFORM');
+    expect(chatRows.map((d) => d.id)).toEqual([chat.delivery.id]);
+  });
+
   test('reads quiet hours and outage state at claim time', async () => {
     const { claimed } = await claimOne({
       deviceOverrides: { quietHoursStart: '23:00', quietHoursEnd: '07:00' },
@@ -158,6 +182,27 @@ describe('recordOutcome', () => {
     });
   });
 
+  test('WEBHOOK_FAILED retries, counts the failure and reports only the disabling update', async () => {
+    const seeded = await seedWebhookDelivery(t.db);
+    const [claimed] = await claimDeliveries(t.db, clock, 10);
+    await t.db
+      .update(notificationChannel)
+      .set({ consecutiveFailures: 18 })
+      .where(eq(notificationChannel.id, seeded.channel.id));
+    const fail = () =>
+      recordOutcome(t.db, clock, claimed!, { type: 'WEBHOOK_FAILED', error: 'timeout' });
+
+    expect(await fail()).toEqual({ disabled: false });
+    expect(await row(claimed!.id)).toMatchObject({
+      status: 'RETRYING',
+      lastError: 'timeout',
+      nextAttemptAt: at(60),
+    });
+    expect(await fail()).toEqual({ disabled: true });
+    expect(await fail()).toEqual({ disabled: false });
+    expect((await channelRow(seeded.channel.id)).consecutiveFailures).toBe(21);
+  });
+
   test('MIGRATED updates the chat and makes the row due now', async () => {
     const { claimed } = await claimOne();
     await recordOutcome(t.db, clock, claimed, { type: 'MIGRATED', chatId: -100999n });
@@ -192,7 +237,9 @@ describe('recordOutcome', () => {
     const { claimed, seeded } = await claimOne();
     await t.db.delete(device).where(eq(device.id, seeded.device.id));
     const outcome: Outcome = { type: 'SENT' };
-    await expect(recordOutcome(t.db, clock, claimed, outcome)).resolves.toBeUndefined();
+    await expect(recordOutcome(t.db, clock, claimed, outcome)).resolves.toEqual({
+      disabled: false,
+    });
     expect(await t.db.select().from(delivery)).toEqual([]);
   });
 });

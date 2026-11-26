@@ -2,6 +2,7 @@ import { hostname } from 'node:os';
 import { systemClock } from './clock.ts';
 import { loadWorkerConfigOrExit } from './config.ts';
 import { createDb } from './db/client.ts';
+import { createEmailSender } from './email/sender.ts';
 import { createI18n } from './i18n.ts';
 import { checkOffline, queueDueOffAlerts } from './monitoring/offline.ts';
 import { runDeliveryLoop } from './notifications/deliveryLoop.ts';
@@ -9,6 +10,7 @@ import { createPacer } from './notifications/pacer.ts';
 import { createNotificationQueue } from './notifications/queue.ts';
 import { createTelegramTransport } from './notifications/telegram.ts';
 import { cleanupRateLimits } from './rateLimit/cleanup.ts';
+import { createWebhookSender } from './webhooks/sender.ts';
 import { dailyRunner, runCleanup } from './worker/cleanup.ts';
 import { beat } from './worker/heartbeat.ts';
 import { defaultSleep, runLoop } from './worker/loop.ts';
@@ -70,6 +72,10 @@ await Promise.all([
     clock: systemClock,
     logger,
     telegram,
+    webhooks: createWebhookSender(),
+    encryptionKey: config.encryptionKey,
+    email: createEmailSender(config.email, logger),
+    clientUrl: config.urls.client,
     i18n: createI18n(),
     pacer: createPacer({
       ratePerS: TELEGRAM_RATE_PER_S,

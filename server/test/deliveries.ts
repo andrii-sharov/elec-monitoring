@@ -4,7 +4,12 @@ import type { Db } from '../src/db/client.ts';
 import { appUser, delivery, device, outage } from '../src/db/schema/index.ts';
 import { toOutageItem } from '../src/http/devices/views.ts';
 import { createUser } from './auth.ts';
-import { createPlatformChannel, linkChannel, type ChannelRow } from './channels.ts';
+import {
+  createPlatformChannel,
+  createWebhookChannel,
+  linkChannel,
+  type ChannelRow,
+} from './channels.ts';
 import { pairDevice, type DeviceRow } from './devices.ts';
 
 type User = typeof appUser.$inferSelect;
@@ -61,4 +66,15 @@ export async function seedDelivery(db: Db, o: SeedOptions = {}) {
     })
     .returning();
   return { user, device: dev, channel, outageId, delivery: inserted! };
+}
+
+export async function seedWebhookDelivery(
+  db: Db,
+  o: SeedOptions & { webhook?: Parameters<typeof createWebhookChannel>[2] } = {},
+) {
+  const user = o.user ?? (await createUser(db, o.userOverrides));
+  const dev = o.device ?? (await pairDevice(db, user.id, o.deviceOverrides)).device;
+  const channel = o.channel ?? (await createWebhookChannel(db, user.id, o.webhook));
+  if (!o.channel) await linkChannel(db, dev.id, channel.id);
+  return seedDelivery(db, { ...o, user, device: dev, channel });
 }

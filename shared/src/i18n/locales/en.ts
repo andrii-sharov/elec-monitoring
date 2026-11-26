@@ -30,6 +30,12 @@ export const en = {
         'Hi {{name}}, someone tried to create an Electricity Monitor account with this email address, but you already have one. If you forgot your password, reset it on the login page.',
       action: 'Log in',
     },
+    webhookDisabled: {
+      subject: 'Your webhook was turned off',
+      intro:
+        'Hi {{name}}, we turned off your webhook “{{channelName}}” after 20 failed attempts in a row. Check the receiver, then send a test to turn it back on.',
+      action: 'Open notifications',
+    },
     deviceInvite: {
       subject: '{{inviter}} shared {{device}} with you',
       intro:

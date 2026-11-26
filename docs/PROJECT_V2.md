@@ -610,8 +610,13 @@ same way: one channel, attached to every device the user owns or views.
 - Redirects are not followed. A `3xx` is a failure
   (`HTTP 302: redirect not followed`).
 - Retries with backoff: 1 min, 5 min, 30 min, 2 h, 6 h → then `FAILED`.
-- After 20 failures in a row the webhook is disabled and the user gets
-  an email.
+- Every failed attempt counts (non-`2xx`, redirect, timeout, network
+  error, blocked address), and any `2xx` resets the count. At 20 failures
+  in a row the webhook is disabled and the user gets one email, in their
+  language, with a link to the webhooks on the Notifications page. Users
+  without an email get none.
+- A webhook gets `device.offline` even if the outage has already closed,
+  and quiet hours don't apply.
 - "Send test" and "Redeliver" buttons in the client app. The test sends a
   `ping` event right away (`{ "event": "ping", "channel": { "id", "name" },
   "sent_at" }`) with a new delivery ID and is not stored. Success turns a

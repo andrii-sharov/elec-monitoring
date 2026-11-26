@@ -26,7 +26,16 @@ export type ClaimedDelivery = {
   event: DeliveryEvent;
   payload: DeliveryPayload;
   createdAt: Date;
-  channel: { id: string; type: ChannelType; enabled: boolean; chatId: bigint | null };
+  channel: {
+    id: string;
+    type: ChannelType;
+    name: string;
+    enabled: boolean;
+    chatId: bigint | null;
+    webhookUrl: string | null;
+    webhookSecretEnc: Buffer | null;
+  };
+  owner: { email: string | null; name: string; language: Language };
   recipient: { language: Language; timezone: string };
   quietHours: QuietHours | null;
   outageEndedAt: Date | null;
@@ -34,20 +43,37 @@ export type ClaimedDelivery = {
   hasAccess: boolean;
 };
 
-export type Outcome = SendResult | { type: 'SKIPPED'; reason: string };
+export type Outcome =
+  | SendResult
+  | { type: 'SKIPPED'; reason: string }
+  | { type: 'WEBHOOK_FAILED'; error: string };
 
 export async function claimDeliveries(
   db: Db,
   clock: Clock,
   limit: number,
+  type?: ChannelType,
 ): Promise<ClaimedDelivery[]> {
   return db.transaction(async (tx) => {
     const now = clock.now();
+    const ofType =
+      type &&
+      inArray(
+        delivery.channelId,
+        tx
+          .select({ id: notificationChannel.id })
+          .from(notificationChannel)
+          .where(eq(notificationChannel.type, type)),
+      );
     const due = await tx
       .select({ id: delivery.id })
       .from(delivery)
       .where(
-        and(inArray(delivery.status, ['QUEUED', 'RETRYING']), lte(delivery.nextAttemptAt, now)),
+        and(
+          inArray(delivery.status, ['QUEUED', 'RETRYING']),
+          lte(delivery.nextAttemptAt, now),
+          ofType,
+        ),
       )
       .orderBy(asc(delivery.nextAttemptAt), asc(delivery.createdAt), asc(delivery.id))
       .limit(limit)
@@ -68,6 +94,8 @@ export async function claimDeliveries(
       .select({
         delivery,
         channel: notificationChannel,
+        email: appUser.email,
+        userName: appUser.name,
         language: appUser.language,
         timezone: appUser.timezone,
         outageEndedAt: outage.endedAt,
@@ -99,9 +127,13 @@ export async function claimDeliveries(
           channel: {
             id: r.channel.id,
             type: r.channel.type as ChannelType,
+            name: r.channel.name,
             enabled: r.channel.enabled,
             chatId: r.channel.telegramChatId,
+            webhookUrl: r.channel.webhookUrl,
+            webhookSecretEnc: r.channel.webhookSecretEnc,
           },
+          owner: { email: r.email, name: r.userName, language: r.language as Language },
           recipient: { language: r.language as Language, timezone: r.timezone },
           quietHours: r.quietStart && r.quietEnd ? { start: r.quietStart, end: r.quietEnd } : null,
           outageEndedAt: r.outageEndedAt,
@@ -118,18 +150,26 @@ function isUniqueViolation(err: unknown): boolean {
   return code.code === '23505' || code.cause?.code === '23505';
 }
 
-async function failChannel(db: Db, channelId: string): Promise<void> {
+export async function releaseDelivery(db: Db, clock: Clock, d: ClaimedDelivery): Promise<void> {
+  await db
+    .update(delivery)
+    .set({ attempts: d.attempts - 1, nextAttemptAt: clock.now() })
+    .where(eq(delivery.id, d.id));
+}
+
+async function failChannel(db: Db, channelId: string): Promise<boolean> {
   const [row] = await db
     .update(notificationChannel)
     .set({ consecutiveFailures: sql`${notificationChannel.consecutiveFailures} + 1` })
     .where(eq(notificationChannel.id, channelId))
     .returning({ failures: notificationChannel.consecutiveFailures });
-  if (row && row.failures >= FAILURES_TO_DISABLE) {
-    await db
-      .update(notificationChannel)
-      .set({ enabled: false, disabledReason: 'TOO_MANY_FAILURES' })
-      .where(and(eq(notificationChannel.id, channelId), eq(notificationChannel.enabled, true)));
-  }
+  if (!row || row.failures < FAILURES_TO_DISABLE) return false;
+  const disabled = await db
+    .update(notificationChannel)
+    .set({ enabled: false, disabledReason: 'TOO_MANY_FAILURES' })
+    .where(and(eq(notificationChannel.id, channelId), eq(notificationChannel.enabled, true)))
+    .returning({ id: notificationChannel.id });
+  return disabled.length > 0;
 }
 
 export async function recordOutcome(
@@ -137,10 +177,19 @@ export async function recordOutcome(
   clock: Clock,
   d: ClaimedDelivery,
   outcome: Outcome,
-): Promise<void> {
+): Promise<{ disabled: boolean }> {
   const now = clock.now();
   const update = (set: Partial<typeof delivery.$inferInsert>) =>
     db.update(delivery).set(set).where(eq(delivery.id, d.id));
+  const retryOrFail = (error: string) => {
+    const retryAt = nextRetryAt(d.attempts, now);
+    return update(
+      retryAt
+        ? { status: 'RETRYING', nextAttemptAt: retryAt, lastError: error }
+        : { status: 'FAILED', lastError: error },
+    );
+  };
+  const unchanged = { disabled: false };
 
   switch (outcome.type) {
     case 'SENT':
@@ -149,7 +198,7 @@ export async function recordOutcome(
         .update(notificationChannel)
         .set({ consecutiveFailures: 0 })
         .where(eq(notificationChannel.id, d.channel.id));
-      return;
+      return unchanged;
     case 'RETRY_AFTER':
       await update({
         status: 'RETRYING',
@@ -157,7 +206,7 @@ export async function recordOutcome(
         nextAttemptAt: new Date(now.getTime() + outcome.seconds * 1000),
         lastError: 'rate limited by Telegram',
       });
-      return;
+      return unchanged;
     case 'MIGRATED':
       try {
         await db
@@ -170,25 +219,21 @@ export async function recordOutcome(
           status: 'FAILED',
           lastError: 'chat was migrated to a chat that is already linked',
         });
-        return;
+        return unchanged;
       }
       await update({ status: 'RETRYING', attempts: d.attempts - 1, nextAttemptAt: now });
-      return;
+      return unchanged;
     case 'PERMANENT':
       await update({ status: 'FAILED', lastError: outcome.error });
-      await failChannel(db, d.channel.id);
-      return;
-    case 'TRANSIENT': {
-      const retryAt = nextRetryAt(d.attempts, now);
-      await update(
-        retryAt
-          ? { status: 'RETRYING', nextAttemptAt: retryAt, lastError: outcome.error }
-          : { status: 'FAILED', lastError: outcome.error },
-      );
-      return;
-    }
+      return { disabled: await failChannel(db, d.channel.id) };
+    case 'WEBHOOK_FAILED':
+      await retryOrFail(outcome.error);
+      return { disabled: await failChannel(db, d.channel.id) };
+    case 'TRANSIENT':
+      await retryOrFail(outcome.error);
+      return unchanged;
     case 'SKIPPED':
       await update({ status: 'FAILED', lastError: `skipped: ${outcome.reason}` });
-      return;
+      return unchanged;
   }
 }
