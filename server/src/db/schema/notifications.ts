@@ -124,5 +124,8 @@ export const delivery = pgTable(
     index('delivery_due_idx')
       .on(t.nextAttemptAt)
       .where(sql`status in ('QUEUED', 'RETRYING')`),
+    index('delivery_channel_due_idx')
+      .on(t.channelId, t.nextAttemptAt, t.createdAt, t.id)
+      .where(sql`status in ('QUEUED', 'RETRYING')`),
   ],
 ).enableRLS();

@@ -771,7 +771,9 @@ failure count reset. Rate limit: 5 / min per user.
 - Webhook: the API sends a signed `ping` request right away (see §8). It
   is not stored in the delivery log. If the receiver does not accept it,
   `409 conflict` with message
-  `The receiver did not accept the request (<error>)`.
+  `The receiver did not accept the request (<error>)` and the detail
+  `{ "path": "url", "code": "delivery_failed", "reason": "<error>" }`. The
+  client shows `reason` as it is, like `last_error` in the delivery log.
 
 `POST /channels/:id/rotate-secret` (webhook only, otherwise
 `409 conflict`) → `200` with the channel and a new `secret`, shown once.

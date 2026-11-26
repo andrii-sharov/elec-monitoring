@@ -101,7 +101,7 @@ export function HistoryTimeline({
           >
             <h3
               id={`day-${day.date}-title`}
-              className="sticky top-0 z-10 -mx-1 bg-background/85 px-1 py-1 font-heading text-sm font-medium text-muted-foreground backdrop-blur"
+              className="sticky top-1 z-10 w-fit rounded-full border border-border bg-card/90 px-3 py-1 font-heading text-sm font-medium text-muted-foreground backdrop-blur"
             >
               {format.day(day.date, { weekday: 'long', day: 'numeric', month: 'long' })}
             </h3>

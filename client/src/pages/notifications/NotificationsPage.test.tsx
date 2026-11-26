@@ -372,7 +372,7 @@ test('a failed webhook test says the receiver did not accept it', async () => {
   await expand(user, 'Automation');
   expect(screen.getByText(/Send a test message to turn it back on/)).toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'Send test' }));
-  expect(await screen.findByText('The receiver did not accept the test.')).toBeInTheDocument();
+  expect(await screen.findAllByText('The receiver did not accept the test.')).not.toHaveLength(0);
 });
 
 test('edit devices drops a cancelled change and a stale search on reopen', async () => {
@@ -423,4 +423,29 @@ test('rename starts from the current name after the webhook was edited', async (
   await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   await user.click(screen.getByRole('button', { name: 'Rename' }));
   expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Relay');
+});
+
+test('a failed webhook test shows what the receiver answered', async () => {
+  server.use(
+    http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items: [webhookFixture()] })),
+    http.post(`${base}/api/v1/channels/:id/test`, () =>
+      HttpResponse.json(
+        {
+          error: {
+            code: 'conflict',
+            message: 'The receiver did not accept the request (HTTP 500)',
+            details: [{ path: 'url', code: 'delivery_failed', reason: 'HTTP 500' }],
+          },
+        },
+        { status: 409 },
+      ),
+    ),
+  );
+  const { user } = renderRoute('/notifications', { me: meFixture() });
+
+  await expand(user, 'Automation');
+  await user.click(screen.getByRole('button', { name: 'Send test' }));
+
+  expect(await screen.findAllByText('The receiver did not accept the test.')).not.toHaveLength(0);
+  expect(await screen.findByText('HTTP 500')).toBeInTheDocument();
 });

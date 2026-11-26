@@ -108,7 +108,7 @@ export function historyRouter(deps: AppDeps): Router {
     if (q.cursor) {
       const [startedAt, outageId] = parseCursor(q.cursor, z.tuple([cursorDateSchema, z.uuid()]));
       conditions.push(
-        sql`(${outage.startedAt}, ${outage.id}) < (${new Date(startedAt)}, ${outageId})`,
+        sql`(${outage.startedAt}, ${outage.id}) < (${new Date(startedAt).toISOString()}::timestamptz, ${outageId}::uuid)`,
       );
     }
     const rows = await db
@@ -149,7 +149,7 @@ export function historyRouter(deps: AppDeps): Router {
         ]),
       );
       conditions.push(
-        sql`(${d.startedAt}, ${d.bootId}, ${d.localId}) < (${new Date(startedAt)}, ${bootId}, ${localId})`,
+        sql`(${d.startedAt}, ${d.bootId}, ${d.localId}) < (${new Date(startedAt).toISOString()}::timestamptz, ${bootId}::uuid, ${localId})`,
       );
     }
     const rows = await db

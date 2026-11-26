@@ -8,6 +8,7 @@ import {
   meFixture,
   webhookFixture,
 } from '../../../test/fixtures.ts';
+import { pollMs } from '../../api/queries.ts';
 import { renderRoute } from '../../../test/render.tsx';
 import { server } from '../../../test/server.ts';
 
@@ -188,4 +189,28 @@ test('a failed load more keeps the rows and shows the error', async () => {
   await user.click(await within(log).findByRole('button', { name: 'Load more' }));
   expect(await within(log).findByRole('alert')).toHaveTextContent('Something went wrong');
   expect(rows(log)).toHaveLength(1);
+});
+
+test('polls the first page but stops once older pages are loaded', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  const requested: (string | null)[] = [];
+  deliveries((cursor) => {
+    requested.push(cursor);
+    return cursor
+      ? { items: [older], next_cursor: null }
+      : { items: [sent], next_cursor: 'page-2' };
+  });
+  const { log, user } = await openLog();
+  await within(log).findByRole('button', { name: 'Load more' });
+
+  await vi.advanceTimersByTimeAsync(pollMs.device);
+  await vi.waitFor(() => expect(requested).toHaveLength(2));
+
+  await user.click(within(log).getByRole('button', { name: 'Load more' }));
+  await vi.waitFor(() => expect(rows(log)).toHaveLength(2));
+  const loaded = requested.length;
+  await vi.advanceTimersByTimeAsync(pollMs.device * 3);
+
+  expect(requested).toHaveLength(loaded);
+  vi.useRealTimers();
 });

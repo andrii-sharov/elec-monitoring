@@ -79,7 +79,9 @@ export function ChannelRow({ channel, devices, selected, onSelect, index, onSecr
     },
     onError: (error) => {
       if (webhook && isApiError(error, 'conflict')) {
-        toast.error(t('app.notifications.webhook.testFailed'));
+        toast.error(t('app.notifications.webhook.testFailed'), {
+          description: error.details[0]?.reason,
+        });
       } else {
         fail(error);
       }

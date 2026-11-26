@@ -121,7 +121,7 @@ export function useDeliveries(id: string) {
     queryFn: ({ pageParam }) => getDeliveries(api, id, pageParam),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.next_cursor ?? undefined,
-    refetchInterval: pollMs.device,
+    refetchInterval: (query) => ((query.state.data?.pages.length ?? 0) > 1 ? false : pollMs.device),
   });
 }
 

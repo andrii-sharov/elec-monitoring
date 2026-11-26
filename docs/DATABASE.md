@@ -637,6 +637,8 @@ create table delivery (
 create unique index delivery_once_per_event on delivery (outage_id, channel_id, event);
 create index delivery_channel_created_idx on delivery (channel_id, created_at desc, id desc);
 create index delivery_due_idx on delivery (next_attempt_at) where status in ('QUEUED', 'RETRYING');
+create index delivery_channel_due_idx on delivery (channel_id, next_attempt_at, created_at, id)
+  where status in ('QUEUED', 'RETRYING');
 ```
 
 - Every event belongs to an outage or power blip, so `outage_id` is
@@ -679,19 +681,19 @@ create index delivery_due_idx on delivery (next_attempt_at) where status in ('QU
 - **Skipped sends.** A delivery whose channel's user can no longer read the device (a removed viewer) becomes `FAILED` with `last_error = 'skipped: no access'`. A Telegram `device.offline` delivery whose outage has closed becomes `FAILED` with `skipped: outage closed`; a webhook still gets it, because machines order events by the data. A delivery whose channel is disabled becomes `FAILED` with `skipped: channel disabled`. The failure counter is unchanged.
 - **Send loop.** The worker runs two independent loops, one for Telegram
   and one for webhooks, so a slow receiver can't delay Telegram alerts.
-  Each claims only its own channel type, sends rows of one channel in
-  order and runs up to 10 channels at once. A claim leases rows for 120 s.
-  - The Telegram loop claims up to 30 due rows and takes a token from a
+  Each claims only its own channel type and sends rows of one channel in
+  order. A claim leases rows for 120 s.
+  - The Telegram loop claims up to 30 due rows, runs up to 10 channels at
+    once and takes a token from a
     30 messages/s pacer before every send. It beats `worker_heartbeat`
     under the name `delivery`.
-  - The webhook loop claims up to 10 due rows, at most one per channel:
-    the oldest by `next_attempt_at`, `created_at`, `id` (a `not exists`
-    anti-join, still `for update skip locked`). A channel with a backlog
-    or a hanging receiver gets one send per batch and can't fill the
-    batch for other channels. All rows of a batch are sent at once, so it
-    ends within the lease and no second worker claims them again.
-  - On shutdown both loops finish the sends in flight and release the
-    claimed rows they haven't started, without counting an attempt.
+  - The webhook loop keeps up to 50 sends in flight and claims a new row
+    as soon as a slot is free, so a hanging receiver holds only its own
+    slot. It takes at most one row per channel, the oldest by
+    `next_attempt_at`, `created_at`, `id` (a `not exists` anti-join, still
+    `for update skip locked`), and skips channels that already have a send
+    in flight. Every claimed row is sent at once and ends within the
+    lease. On shutdown it waits for the sends in flight.
 - Emails (verification, reset, invites, "webhook disabled") go straight to
   Resend and are not stored here.
 

@@ -30,7 +30,7 @@ export async function runCleanup(db: Db, clock: Clock): Promise<CleanupResult> {
     .where(
       or(
         isNotNull(session.revokedAt),
-        sql`not exists (select 1 from refresh_token rt where rt.session_id = ${session.id} and rt.expires_at > ${now})`,
+        sql`not exists (select 1 from refresh_token rt where rt.session_id = ${session.id} and rt.expires_at > ${now.toISOString()}::timestamptz)`,
       ),
     )
     .returning({ id: session.id });

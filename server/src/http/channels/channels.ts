@@ -292,6 +292,7 @@ export function channelsRouter(deps: AppDeps): Router {
         409,
         'conflict',
         `The receiver did not accept the request (${result.error})`,
+        [{ path: 'url', code: 'delivery_failed', reason: result.error }],
       );
     }
   }

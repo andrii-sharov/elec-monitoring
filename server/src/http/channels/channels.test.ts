@@ -620,6 +620,7 @@ describe('webhook channels', () => {
     expect(failed.body.error).toEqual({
       code: 'conflict',
       message: 'The receiver did not accept the request (HTTP 500)',
+      details: [{ path: 'url', code: 'delivery_failed', reason: 'HTTP 500' }],
     });
     expect(await stored(channel.id)).toMatchObject({ enabled: false, consecutiveFailures: 20 });
 

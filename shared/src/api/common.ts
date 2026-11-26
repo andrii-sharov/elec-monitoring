@@ -31,6 +31,7 @@ export const errorSchema = z
             code: z.string(),
             min: z.number().optional(),
             max: z.number().optional(),
+            reason: z.string().optional(),
           }),
         )
         .optional(),
@@ -38,7 +39,13 @@ export const errorSchema = z
   })
   .meta({ id: 'Error' });
 
-export type ErrorDetail = { path: string; code: string; min?: number; max?: number };
+export type ErrorDetail = {
+  path: string;
+  code: string;
+  min?: number;
+  max?: number;
+  reason?: string;
+};
 
 export const isoDate = z.string().meta({ example: '2026-11-21T16:42:00Z' });
 

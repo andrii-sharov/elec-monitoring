@@ -22,7 +22,7 @@ import { renderDeliveryText } from './render.ts';
 import type { TelegramClient } from './telegram.ts';
 
 export const DELIVERY_BATCH = 30;
-export const WEBHOOK_BATCH = 10;
+export const WEBHOOK_CONCURRENCY = 50;
 export const SEND_CONCURRENCY = 10;
 const IDLE_SLEEP_MS = 1000;
 const BEAT_EVERY_MS = 10_000;
@@ -40,10 +40,18 @@ export type DeliveryDeps = {
   pacer: { take(): Promise<void> };
 };
 
-type Lane = { type: ChannelType; batch: number };
+type Lane = { type: ChannelType; batch: number; concurrency: number };
 
-const TELEGRAM_LANE: Lane = { type: 'TELEGRAM_PLATFORM', batch: DELIVERY_BATCH };
-const WEBHOOK_LANE: Lane = { type: 'WEBHOOK', batch: WEBHOOK_BATCH };
+const TELEGRAM_LANE: Lane = {
+  type: 'TELEGRAM_PLATFORM',
+  batch: DELIVERY_BATCH,
+  concurrency: SEND_CONCURRENCY,
+};
+const WEBHOOK_LANE: Lane = {
+  type: 'WEBHOOK',
+  batch: WEBHOOK_CONCURRENCY,
+  concurrency: WEBHOOK_CONCURRENCY,
+};
 
 async function sendWebhook(deps: DeliveryDeps, d: ClaimedDelivery): Promise<Outcome> {
   const [channel] = await deps.db
@@ -141,7 +149,7 @@ async function processLane(deps: DeliveryDeps, lane: Lane, signal?: AbortSignal)
       }
     }
   };
-  await Promise.all(Array.from({ length: Math.min(SEND_CONCURRENCY, queue.length) }, worker));
+  await Promise.all(Array.from({ length: Math.min(lane.concurrency, queue.length) }, worker));
   return claimed.length;
 }
 
@@ -155,18 +163,18 @@ export async function processDueDeliveries(deps: DeliveryDeps): Promise<number> 
 
 type LoopDeps = DeliveryDeps & { signal: AbortSignal; sleep?: Sleep };
 
-async function runLane(deps: LoopDeps, lane: Lane, beat?: () => Promise<void>): Promise<void> {
+async function runTelegramLane(deps: LoopDeps, beat: () => Promise<void>): Promise<void> {
   const sleep = deps.sleep ?? defaultSleep;
   let lastBeatMs = Number.NEGATIVE_INFINITY;
   while (!deps.signal.aborted) {
     let handled = 0;
     try {
       const nowMs = deps.clock.now().getTime();
-      if (beat && nowMs - lastBeatMs >= BEAT_EVERY_MS) {
+      if (nowMs - lastBeatMs >= BEAT_EVERY_MS) {
         await beat();
         lastBeatMs = nowMs;
       }
-      handled = await processLane(deps, lane, deps.signal);
+      handled = await processLane(deps, TELEGRAM_LANE, deps.signal);
     } catch (err) {
       deps.logger.error(err);
     }
@@ -175,8 +183,36 @@ async function runLane(deps: LoopDeps, lane: Lane, beat?: () => Promise<void>): 
   }
 }
 
+async function runWebhookLane(deps: LoopDeps): Promise<void> {
+  const sleep = deps.sleep ?? defaultSleep;
+  const inFlight = new Map<string, Promise<void>>();
+  while (!deps.signal.aborted) {
+    let started = 0;
+    try {
+      const free = WEBHOOK_CONCURRENCY - inFlight.size;
+      const claimed =
+        free > 0
+          ? await claimDeliveries(deps.db, deps.clock, free, 'WEBHOOK', [...inFlight.keys()])
+          : [];
+      for (const d of claimed) {
+        const send = handle(deps, d)
+          .catch((err: unknown) => deps.logger.error(err))
+          .finally(() => inFlight.delete(d.channel.id));
+        inFlight.set(d.channel.id, send);
+      }
+      started = claimed.length;
+    } catch (err) {
+      deps.logger.error(err);
+    }
+    if (deps.signal.aborted) break;
+    if (started === 0)
+      await Promise.race([sleep(IDLE_SLEEP_MS, deps.signal), ...inFlight.values()]);
+  }
+  await Promise.all(inFlight.values());
+}
+
 export async function runDeliveryLoop(
   deps: LoopDeps & { beat: () => Promise<void> },
 ): Promise<void> {
-  await Promise.all([runLane(deps, TELEGRAM_LANE, deps.beat), runLane(deps, WEBHOOK_LANE)]);
+  await Promise.all([runTelegramLane(deps, deps.beat), runWebhookLane(deps)]);
 }

@@ -1,0 +1,1 @@
+CREATE INDEX "delivery_channel_due_idx" ON "delivery" USING btree ("channel_id","next_attempt_at","created_at","id") WHERE status in ('QUEUED', 'RETRYING');

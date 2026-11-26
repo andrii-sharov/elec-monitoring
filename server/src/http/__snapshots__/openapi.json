@@ -5336,6 +5336,9 @@
                     },
                     "max": {
                       "type": "number"
+                    },
+                    "reason": {
+                      "type": "string"
                     }
                   },
                   "required": [

@@ -1,5 +1,5 @@
 import type { ChannelType, DeliveryEvent, Language } from '@elec/shared';
-import { and, asc, eq, inArray, lte, notExists, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, lte, notExists, notInArray, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { Clock } from '../clock.ts';
 import type { Db, Executor } from '../db/client.ts';
@@ -72,6 +72,7 @@ export async function claimDeliveries(
   clock: Clock,
   limit: number,
   type?: ChannelType,
+  excludeChannelIds: string[] = [],
 ): Promise<ClaimedDelivery[]> {
   return db.transaction(async (tx) => {
     const now = clock.now();
@@ -93,6 +94,7 @@ export async function claimDeliveries(
           lte(delivery.nextAttemptAt, now),
           ofType,
           type === 'WEBHOOK' ? oldestDueOfChannel(tx, now) : undefined,
+          excludeChannelIds.length ? notInArray(delivery.channelId, excludeChannelIds) : undefined,
         ),
       )
       .orderBy(asc(delivery.nextAttemptAt), asc(delivery.createdAt), asc(delivery.id))

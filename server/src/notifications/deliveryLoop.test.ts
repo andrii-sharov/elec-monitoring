@@ -19,12 +19,11 @@ import { appUser, delivery, deviceViewer, notificationChannel } from '../db/sche
 import { createI18n } from '../i18n.ts';
 import { encrypt } from '../lib/crypto.ts';
 import type { WebhookResult } from '../webhooks/sender.ts';
-import { LEASE_MS } from './deliveries.ts';
 import { createPacer } from './pacer.ts';
 import {
   processDueDeliveries,
   runDeliveryLoop,
-  WEBHOOK_BATCH,
+  WEBHOOK_CONCURRENCY,
   type DeliveryDeps,
 } from './deliveryLoop.ts';
 
@@ -544,13 +543,12 @@ describe('webhook deliveries', () => {
     expect((await stored(seeded.delivery.id)).status).toBe('SENT');
   });
 
-  test('claims no more webhooks than one lease can cover', async () => {
-    expect(WEBHOOK_BATCH * 10_000).toBeLessThan(LEASE_MS);
-    for (let i = 0; i <= WEBHOOK_BATCH; i++) {
+  test('claims no more webhooks than it sends at once', async () => {
+    for (let i = 0; i <= WEBHOOK_CONCURRENCY; i++) {
       await seedWebhookDelivery(t.db, { userOverrides: { email: `john${i}@example.com` } });
     }
 
-    expect(await processDueDeliveries(deps)).toBe(WEBHOOK_BATCH);
+    expect(await processDueDeliveries(deps)).toBe(WEBHOOK_CONCURRENCY);
     expect(await processDueDeliveries(deps)).toBe(1);
   });
 
@@ -649,6 +647,44 @@ describe('runDeliveryLoop with a hanging webhook', () => {
     release();
     await running;
     expect((await stored(hook.delivery.id)).status).toBe('SENT');
+  });
+
+  test('a webhook that comes due while other receivers hang is still sent', async () => {
+    const hang = Promise.withResolvers<WebhookResult>();
+    webhooks.send = (request) => {
+      webhooks.sent.push(request);
+      return request.url.includes('hang.')
+        ? hang.promise
+        : Promise.resolve({ type: 'SENT', status: 200 });
+    };
+    for (let i = 0; i < 12; i++) {
+      await seedWebhookDelivery(t.db, {
+        userOverrides: { email: `john${i}@example.com` },
+        webhook: { url: 'https://hang.example.com/' },
+      });
+    }
+    const controller = new AbortController();
+    let late: Seeded | undefined;
+    let lateStatus: string | undefined;
+
+    const running = runDeliveryLoop({
+      ...deps,
+      signal: controller.signal,
+      beat: () => Promise.resolve(),
+      sleep: async () => {
+        await nextTurn();
+        if (webhooks.sent.length < 12) return;
+        late ??= await seedWebhookDelivery(t.db, { userOverrides: { email: 'mary@example.com' } });
+        lateStatus = (await stored(late.delivery.id)).status;
+        if (lateStatus === 'SENT') controller.abort();
+      },
+    });
+    await new Promise((resolve) => controller.signal.addEventListener('abort', resolve));
+
+    expect(lateStatus).toBe('SENT');
+    expect(webhooks.sent).toHaveLength(13);
+    hang.resolve({ type: 'SENT', status: 200 });
+    await running;
   });
 
   test('on abort finishes the send in flight and starts nothing more', async () => {
