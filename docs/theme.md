@@ -81,9 +81,19 @@ the `:root` defaults.
 - Motion follows an action or a real state change from a poll. The
   exceptions: Sonar's slow ring on an `ONLINE` dot, Sonar's searching arc
   and inward echo on the device page while `OFFLINE`, the live dot next to
-  an open outage in the timeline, and the entrance of the devices list,
-  device hero and timeline items. `prefers-reduced-motion: reduce` sets the motion tokens to
-  `0ms` and turns off animation on every `[data-motion]` element.
+  an open outage in the timeline, the looping promo video on auth pages,
+  and the entrance (`data-motion="enter"`, staggered by `--i`) of lists,
+  the device hero, tab panels, history rows, channel rows and member rows.
+  The tab indicator slides with the motion tokens.
+  `prefers-reduced-motion: reduce` sets the motion tokens to `0ms`, turns
+  off animation on every `[data-motion]` element and stops the promo
+  video (poster with controls).
+- The brand mark (`BrandMark`, `assets/logo/`) keeps its own fixed colors
+  from `assets/README.md` in every style and theme; it is the only hex
+  in components.
+- The history grid fills each hour by the share without power with
+  `--status-offline`, on a `--status-online` tint; blips are a `--warning`
+  dot. Every cell has a text label.
 
 ### Adding a style
 

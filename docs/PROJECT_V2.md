@@ -703,8 +703,14 @@ Pages:
   "No contact for 25 min", "Waiting for the first check-in", "Updating"),
   and in Sonar and Switchboard a 7-day power strip built from the loaded
   outages (time before the oldest loaded outage is unknown while more
-  pages exist). Then status, timeline of outages (an open outage shows a
-  live duration that ticks every second), stats (day / week / month),
+  pages exist). Below the hero, tabs (kept in `?tab=`): **History**,
+  **Notifications** (channels for this device), **Members** (members &
+  invites), later **Stats**. History shows one Monday–Sunday week in the
+  user's timezone (`?week=`, previous / next / This week) in three views
+  (`?view=`, last choice remembered): **Timeline** grouped by day with day
+  chips, **Grid** of 7 days × 24 hours filled by the time without power,
+  and **Table** (start, end, duration, type, cause, kind). An open outage
+  shows a live duration that ticks every second. Then stats (day / week / month),
   settings and their applied status, firmware version, update availability,
   Install button, automatic update setting, queued and running updates,
   update result, members & invites, channels, "re-pair", "rotate token",
