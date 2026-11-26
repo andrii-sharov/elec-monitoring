@@ -547,7 +547,6 @@ export const en = {
     channel: {
       type: {
         TELEGRAM_PLATFORM: 'Telegram',
-        TELEGRAM_BOT: 'Telegram bot',
         WEBHOOK: 'Webhook',
       },
       reason: { USER: 'Disabled by you', TOO_MANY_FAILURES: 'Disabled after repeated failures' },

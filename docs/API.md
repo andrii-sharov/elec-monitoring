@@ -777,15 +777,6 @@ every device the caller owns or views at that moment; devices created or shared 
 appears. `url` opens a private chat, `group_url` lets the user pick a
 group.
 
-`POST /channels`, own bot:
-
-```json
-{ "type": "TELEGRAM_BOT", "name": "My bot", "bot_token": "…", "chat_id": "-100123" }
-```
-
-The server calls `getMe` and sends a test message. Failure →
-`400 telegram_check_failed`. The token is never returned again.
-
 `POST /channels`, webhook:
 
 ```json
@@ -977,7 +968,7 @@ in PROJECT_V2.md §3–§12. Section numbers below refer to PROJECT_V2.md.
 | §4 OTA: device downloads the signed image                            | No download location                                                            | `GET /api/v1/device/firmware/:version` (or signed storage URL in `pending`)                             |
 | §4 Browser flashing with ESP Web Tools                               | No manifest or image source                                                     | ✅ `GET /api/v1/firmware/manifest.json`, `GET /api/v1/firmware/images/:version/factory.bin` (M5)        |
 | §9 "Update available" in the client                                  | Nothing lists releases                                                          | `GET /api/v1/firmware/releases`, `firmware.available` in device details                                 |
-| §7 Connect platform Telegram                                         | `POST /channels` covers only own bot and webhook                                | `POST /channels/telegram-link`                                                                          |
+| §7 Connect platform Telegram                                         | `POST /channels` covers only webhooks                                           | `POST /channels/telegram-link`                                                                          |
 | §7 Telegram bot webhook                                              | Only in §12                                                                     | Listed in §6 here                                                                                       |
 | §9 Admin app                                                         | No admin endpoints at all                                                       | §5 here                                                                                                 |
 | §12 CI checks "API health endpoint"                                  | `/health` not listed in v2                                                      | §7 here                                                                                                 |

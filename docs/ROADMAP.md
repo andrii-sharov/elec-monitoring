@@ -34,7 +34,7 @@ Status: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 | M5  | [Firmware core and device setup](#m5--firmware-core-and-device-setup) | ✅     | M2         | [M05](plans/M05-firmware.md)                                                                                                                                  |
 | M6  | [Sharing](#m6--sharing)                                               | 🟡     | M4         | [M06](plans/M06-sharing.md)                                                                                                                                   |
 | M7  | [Phone sign-in via Telegram](#m7--phone-sign-in-via-telegram)         | 🟡     | M4         | [M07](plans/M07-phone-auth.md) · [M07a](plans/M07a-phone-input.md)                                                                                            |
-| M8  | [Own bot and webhooks](#m8--own-telegram-bot-and-webhooks)            | ⬜     | M4         | —                                                                                                                                                             |
+| M8  | [Webhooks](#m8--webhooks)                                             | ⬜     | M4         | —                                                                                                                                                             |
 | M9  | [Statistics](#m9--statistics)                                         | ⬜     | M4         | —                                                                                                                                                             |
 | M10 | [Admin app](#m10--admin-app)                                          | ⬜     | M4         | —                                                                                                                                                             |
 | M11 | [Remote management and OTA](#m11--remote-device-management-and-ota)   | ⬜     | M4, M5     | —                                                                                                                                                             |
@@ -351,28 +351,27 @@ group, a user who blocked the bot, and a Telegram user moving between
 accounts. 👤 Run the
 [manual checks](plans/M07-phone-auth.md#manual-checks-staging) on staging.
 
-## M8 — Own Telegram bot and webhooks
+## M8 — Webhooks
 
-**Goal:** advanced users get their own bot and signed webhooks.
+**Goal:** advanced users get signed webhooks. There is no own-bot channel:
+all Telegram alerts come from the platform bot.
 **Spec:** P §7 · A §4 Channels, §8 · D §7.
 **Needs:** Q13.
 
-- [ ] Own bot channel: `getMe` and test message, token encrypted and
-      never returned
 - [ ] Webhook channel: SSRF guard (`https` only, no private, loopback or
       link-local IPs after DNS, checked again at send time), secret shown
       once, rotate secret
 - [ ] Webhook delivery: HMAC signature headers, 10 s timeout, retries at
       1 min, 5 min, 30 min, 2 h, 6 h, then `FAILED`; disable after 20
       failures in a row and email the owner
-- [ ] Channel CRUD, enable / disable, test, delivery log, redeliver with
-      the same delivery ID
-- [ ] Client: full Notifications page
+- [ ] Webhook create and edit, delivery log, redeliver with the same
+      delivery ID (rename, on / off, test and device links exist since M4c)
+- [ ] Client: webhook rows and add flow on the Notifications page
 
 **Done when:** tests cover SSRF ranges (IPv4 and IPv6) and redirects,
 a signature test vector, the retry schedule with a controlled clock,
 disabling on the 20th failure, and redeliver keeping its ID. 👤 Connect
-an own bot and a webhook receiver on staging.
+a webhook receiver on staging.
 
 ## M9 — Statistics
 

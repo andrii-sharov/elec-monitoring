@@ -7,7 +7,8 @@ Turn [v1](archived/PROJECT_V1.md) into a platform for many users.
 Anyone can buy a pre-flashed device from us, or buy their own ESP32-C3
 and flash our firmware. They connect it to their home Wi-Fi and get
 alerts when their device loses and restores contact. Advanced users get a REST
-API, their own Telegram bots, webhooks and more control.
+API, webhooks and more control. All Telegram alerts come from our
+platform bot; users don't connect their own bots.
 
 The device pings every 20 s by default. Missing pings indicate a loss of
 contact. The device also checks in immediately after boot, as soon as it
@@ -29,7 +30,6 @@ The platform is **free** for all users for now.
   and pairing code on the device's own setup page.
 - Notifications:
   - Telegram via the **platform bot** (simple, default),
-  - Telegram via the **user's own bot** (advanced),
   - **Webhooks** (signed, with retries).
 - **REST API** with Swagger UI backed by a generated OpenAPI document.
 - Outage classification:
@@ -543,7 +543,7 @@ power blip.
 
 ## 7. Notifications
 
-Each user has **channels** (platform Telegram, own bot, webhook) and
+Each user has **channels** (platform Telegram, webhook) and
 chooses which devices notify which channels. All sends go through a
 queue (a Postgres table) processed by the worker, with a delivery log.
 Viber is a candidate for a future notification channel and would follow
@@ -567,13 +567,6 @@ linked changes nothing.
 
 Confirming a phone number in the bot (§3) also links that private chat the
 same way: one channel, attached to every device the user owns or views.
-
-### Telegram — user's own bot (advanced)
-
-- User creates a bot with `@BotFather`, pastes the bot token and
-  `chat_id` in the client app.
-- Server checks the token (`getMe`) and sends a test message.
-- Bot token is stored **encrypted** (AES-256-GCM, key in env).
 
 ### Webhooks
 
@@ -1057,7 +1050,7 @@ client UI.
   the OTA partition layout and verifying key.
 - **M6 Sharing:** invites, viewer role.
 - **M7 Phone sign-in via Telegram.**
-- **M8 Own Telegram bot + webhooks** with delivery log and retries.
+- **M8 Webhooks** with delivery log and retries.
 - **M9 Statistics** in API, client app and `/stats` bot command.
 - **M10 Admin app:** read-only monitoring of the API, worker, devices and
   notification queue.

@@ -16,7 +16,6 @@ export const channelTypeInfo: Record<ChannelType, ChannelTypeInfo> = {
     summary: (channel, t) =>
       channel.config.chat_id ? t('app.notifications.chatId', { id: channel.config.chat_id }) : null,
   },
-  TELEGRAM_BOT: { icon: Send, available: false, summary: () => null },
   WEBHOOK: { icon: Webhook, available: false, summary: () => null },
 };
 

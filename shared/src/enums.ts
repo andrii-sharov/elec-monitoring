@@ -48,5 +48,5 @@ export type DeliveryEvent = (typeof deliveryEvents)[number];
 export const deliveryStatuses = ['QUEUED', 'SENT', 'RETRYING', 'FAILED'] as const;
 export type DeliveryStatus = (typeof deliveryStatuses)[number];
 
-export const channelTypes = ['TELEGRAM_PLATFORM', 'TELEGRAM_BOT', 'WEBHOOK'] as const;
+export const channelTypes = ['TELEGRAM_PLATFORM', 'WEBHOOK'] as const;
 export type ChannelType = (typeof channelTypes)[number];

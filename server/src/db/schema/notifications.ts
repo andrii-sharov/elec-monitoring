@@ -32,7 +32,6 @@ export const notificationChannel = pgTable(
     disabledReason: text(),
     consecutiveFailures: integer().notNull().default(0),
     telegramChatId: bigint({ mode: 'bigint' }),
-    telegramBotTokenEnc: bytea(),
     webhookUrl: text(),
     webhookEvents: text().array(),
     webhookSecretEnc: bytea(),
@@ -43,10 +42,7 @@ export const notificationChannel = pgTable(
       .$onUpdate(() => new Date()),
   },
   (t) => [
-    check(
-      'notification_channel_type_check',
-      sql`type in ('TELEGRAM_PLATFORM', 'TELEGRAM_BOT', 'WEBHOOK')`,
-    ),
+    check('notification_channel_type_check', sql`type in ('TELEGRAM_PLATFORM', 'WEBHOOK')`),
     check(
       'notification_channel_disabled_reason_check',
       sql`disabled_reason in ('USER', 'TOO_MANY_FAILURES')`,
@@ -56,13 +52,10 @@ export const notificationChannel = pgTable(
       'notification_channel_type_columns_check',
       sql`(type = 'TELEGRAM_PLATFORM'
           and telegram_chat_id is not null
-          and num_nonnulls(telegram_bot_token_enc, webhook_url, webhook_events, webhook_secret_enc) = 0)
-        or (type = 'TELEGRAM_BOT'
-          and num_nonnulls(telegram_chat_id, telegram_bot_token_enc) = 2
           and num_nonnulls(webhook_url, webhook_events, webhook_secret_enc) = 0)
         or (type = 'WEBHOOK'
           and num_nonnulls(webhook_url, webhook_events, webhook_secret_enc) = 3
-          and num_nonnulls(telegram_chat_id, telegram_bot_token_enc) = 0)`,
+          and telegram_chat_id is null)`,
     ),
     check(
       'notification_channel_webhook_events_check',

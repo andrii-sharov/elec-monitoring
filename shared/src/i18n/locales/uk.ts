@@ -557,7 +557,6 @@ export const uk: Dictionary = {
     channel: {
       type: {
         TELEGRAM_PLATFORM: 'Telegram',
-        TELEGRAM_BOT: 'Telegram-бот',
         WEBHOOK: 'Вебхук',
       },
       reason: { USER: 'Вимкнено вами', TOO_MANY_FAILURES: 'Вимкнено через повторні помилки' },

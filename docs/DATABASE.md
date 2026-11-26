@@ -556,13 +556,12 @@ database rejects incomplete channels.
 create table notification_channel (
   id                     uuid primary key,
   user_id                uuid not null references app_user (id) on delete cascade,
-  type                   text not null check (type in ('TELEGRAM_PLATFORM', 'TELEGRAM_BOT', 'WEBHOOK')),
+  type                   text not null check (type in ('TELEGRAM_PLATFORM', 'WEBHOOK')),
   name                   text not null,
   enabled                boolean not null default true,
   disabled_reason        text check (disabled_reason in ('USER', 'TOO_MANY_FAILURES')),
   consecutive_failures   integer not null default 0,
   telegram_chat_id       bigint,
-  telegram_bot_token_enc bytea,
   webhook_url            text,
   webhook_events         text[],
   webhook_secret_enc     bytea,
@@ -572,13 +571,10 @@ create table notification_channel (
   check (
     (type = 'TELEGRAM_PLATFORM'
       and telegram_chat_id is not null
-      and num_nonnulls(telegram_bot_token_enc, webhook_url, webhook_events, webhook_secret_enc) = 0)
-    or (type = 'TELEGRAM_BOT'
-      and num_nonnulls(telegram_chat_id, telegram_bot_token_enc) = 2
       and num_nonnulls(webhook_url, webhook_events, webhook_secret_enc) = 0)
     or (type = 'WEBHOOK'
       and num_nonnulls(webhook_url, webhook_events, webhook_secret_enc) = 3
-      and num_nonnulls(telegram_chat_id, telegram_bot_token_enc) = 0)
+      and telegram_chat_id is null)
   ),
   check (cardinality(webhook_events) > 0
     and webhook_events <@ array['device.offline', 'device.online', 'device.power_blip'])

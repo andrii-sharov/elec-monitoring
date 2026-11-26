@@ -566,7 +566,6 @@ export const ru: Dictionary = {
     channel: {
       type: {
         TELEGRAM_PLATFORM: 'Telegram',
-        TELEGRAM_BOT: 'Telegram-бот',
         WEBHOOK: 'Вебхук',
       },
       reason: { USER: 'Выключен вами', TOO_MANY_FAILURES: 'Выключен из-за повторных ошибок' },
