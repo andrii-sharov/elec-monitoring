@@ -36,7 +36,8 @@ jobs:
           FW_VERSION: ${{ steps.version.outputs.version }}
           FIRMWARE_SIGNING_KEY: ${{ secrets.FIRMWARE_SIGNING_KEY }}
         run: |
-          mkdir -p assets
+          release="$RUNNER_TEMP/release"
+          mkdir -p "$release"
           for env in staging production; do
             (cd firmware && pio run -e "$env")
             out="dist/$env"
@@ -46,11 +47,11 @@ jobs:
             firmware/scripts/sign.sh "$out/app.bin"
             firmware/scripts/verify-release.sh "$out" firmware/keys/ota-signing.pub.pem
             for file in app.bin factory.bin app.sig; do
-              cp "$out/$file" "assets/elec-fw-$FW_VERSION-$env-$file"
+              cp "$out/$file" "$release/elec-fw-$FW_VERSION-$env-$file"
             done
           done
       - name: Draft GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
-        run: gh release create "$GITHUB_REF_NAME" --draft --title "Firmware $VERSION" assets/*
+        run: gh release create "$GITHUB_REF_NAME" --draft --title "Firmware $VERSION" "$RUNNER_TEMP"/release/*
