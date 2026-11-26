@@ -96,8 +96,6 @@ describe('claimDeliveries', () => {
     expect(webhookRows[0]!.channel).toMatchObject({
       type: 'WEBHOOK',
       name: 'Office hook',
-      webhookUrl: 'https://hooks.example.com/elec',
-      webhookSecretEnc: hook.channel.webhookSecretEnc,
     });
     expect(webhookRows[0]!.owner).toEqual({
       email: 'mary@example.com',

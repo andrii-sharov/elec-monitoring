@@ -34,6 +34,20 @@ describe('webhookDisabled', () => {
     expect(email.text).not.toContain('valid for');
     expect(email.html).toContain('&lt;Office&gt; hook');
   });
+
+  test.each(languages)('has its own footer in %s', (lang) => {
+    const rendered = renderEmail(i18n, 'webhookDisabled', {
+      lang,
+      name: 'John',
+      link,
+      channelName: 'Office hook',
+    });
+    const { footer, webhookDisabled } = resources[lang].translation.email;
+    expect(rendered.text.endsWith(webhookDisabled.footer)).toBe(true);
+    expect(rendered.text).not.toContain(footer);
+    expect(rendered.html).toContain(webhookDisabled.footer);
+    expect(rendered.html).not.toContain(footer.replace("'", '&#39;'));
+  });
 });
 
 test('uses the recipient language', () => {

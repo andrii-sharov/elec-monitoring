@@ -35,6 +35,8 @@ export const en = {
       intro:
         'Hi {{name}}, we turned off your webhook “{{channelName}}” after 20 failed attempts in a row. Check the receiver, then send a test to turn it back on.',
       action: 'Open notifications',
+      footer:
+        'You received this email because this webhook belongs to your Electricity Monitor account.',
     },
     deviceInvite: {
       subject: '{{inviter}} shared {{device}} with you',

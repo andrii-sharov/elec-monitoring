@@ -51,7 +51,7 @@ export function renderEmail(i18n: i18n, kind: EmailKind, vars: Vars): RenderedEm
   const subject = t(`email.${kind}.subject`);
   const intro = t(`email.${kind}.intro`, { name: vars.name, channelName: vars.channelName });
   const action = t(`email.${kind}.action`);
-  const footer = t('email.footer');
+  const footer = kind === 'webhookDisabled' ? t('email.webhookDisabled.footer') : t('email.footer');
   const notes =
     kind === 'accountExists' || kind === 'webhookDisabled' ? [] : [t(`email.${kind}.expiry`)];
   const text = [intro, '', `${action}:`, vars.link, '', ...notes, footer].join('\n');

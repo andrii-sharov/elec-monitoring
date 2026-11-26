@@ -274,6 +274,24 @@ const sameChannel = (first: Seeded) => ({
   outageId: first.outageId,
 });
 
+async function twoRowsWithHook(afterFirstSend: (channelId: string) => Promise<unknown>) {
+  const first = await seedWebhookDelivery(t.db, {
+    webhook: { url: 'https://hooks.example.com/old', secret: 'whsec_old' },
+  });
+  const second = await seedDelivery(t.db, {
+    ...sameChannel(first),
+    event: 'device.online',
+    createdAt: new Date('2026-11-21T16:45:00Z'),
+  });
+  webhooks.send = async (request) => {
+    webhooks.sent.push(request);
+    if (webhooks.sent.length === 1) await afterFirstSend(first.channel.id);
+    return { type: 'SENT', status: 200 };
+  };
+  expect(await processDueDeliveries(deps)).toBe(2);
+  return { first, second };
+}
+
 describe('webhook deliveries', () => {
   test('posts the payload with sent_at, signed with the channel secret, without pacing', async () => {
     const seeded = await seedWebhookDelivery(t.db, {
@@ -373,7 +391,7 @@ describe('webhook deliveries', () => {
     expect(email.sent).toHaveLength(1);
   });
 
-  test('two failing deliveries in one batch at 19 send exactly one email', async () => {
+  test('two due deliveries in one batch at 19 send exactly one email', async () => {
     const first = await seedWebhookDelivery(t.db);
     await seedDelivery(t.db, { ...sameChannel(first), event: 'device.online' });
     await setChannel(first.channel.id, { consecutiveFailures: 19 });
@@ -382,6 +400,7 @@ describe('webhook deliveries', () => {
     expect(await processDueDeliveries(deps)).toBe(2);
 
     expect((await channelState(first.channel.id)).enabled).toBe(false);
+    expect(webhooks.sent).toHaveLength(1);
     expect(email.sent).toHaveLength(1);
   });
 
@@ -438,6 +457,60 @@ describe('webhook deliveries', () => {
       lastError: 'webhook secret could not be decrypted',
     });
     expect((await channelState(broken.channel.id)).consecutiveFailures).toBe(0);
+  });
+
+  test('a later row of a batch uses the rotated secret and the new URL', async () => {
+    await twoRowsWithHook((channelId) =>
+      setChannel(channelId, {
+        webhookUrl: 'https://hooks.example.com/new',
+        webhookSecretEnc: encrypt(testConfig.encryptionKey, 'whsec_new'),
+      }),
+    );
+
+    expect(webhooks.sent.map((r) => [r.url, r.secret])).toEqual([
+      ['https://hooks.example.com/old', 'whsec_old'],
+      ['https://hooks.example.com/new', 'whsec_new'],
+    ]);
+  });
+
+  test('a later row of a batch is skipped once the channel is disabled', async () => {
+    const { first, second } = await twoRowsWithHook((channelId) =>
+      setChannel(channelId, { enabled: false, disabledReason: 'USER' }),
+    );
+
+    expect(webhooks.sent.map((r) => r.deliveryId)).toEqual([first.delivery.id]);
+    expect(await stored(second.delivery.id)).toMatchObject({
+      status: 'FAILED',
+      lastError: 'skipped: channel disabled',
+    });
+  });
+
+  test('a channel deleted during a batch stops its sends without errors', async () => {
+    const { first } = await twoRowsWithHook((channelId) =>
+      t.db.delete(notificationChannel).where(eq(notificationChannel.id, channelId)),
+    );
+
+    expect(webhooks.sent.map((r) => r.deliveryId)).toEqual([first.delivery.id]);
+    expect(await t.db.select().from(delivery)).toEqual([]);
+    expect(deps.logger.error).not.toHaveBeenCalled();
+  });
+
+  test('an unexpected error while sending counts as a failed attempt', async () => {
+    const seeded = await seedWebhookDelivery(t.db);
+    await setChannel(seeded.channel.id, { consecutiveFailures: 19 });
+    webhooks.send = () => Promise.reject(new Error('boom'));
+
+    await processDueDeliveries(deps);
+
+    expect(await stored(seeded.delivery.id)).toMatchObject({
+      status: 'RETRYING',
+      lastError: 'boom',
+    });
+    expect(await channelState(seeded.channel.id)).toMatchObject({
+      enabled: false,
+      consecutiveFailures: 20,
+    });
+    expect(email.sent).toHaveLength(1);
   });
 
   test('still sends device.offline for a closed outage, unlike Telegram', async () => {

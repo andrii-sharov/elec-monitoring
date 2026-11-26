@@ -32,8 +32,6 @@ export type ClaimedDelivery = {
     name: string;
     enabled: boolean;
     chatId: bigint | null;
-    webhookUrl: string | null;
-    webhookSecretEnc: Buffer | null;
   };
   owner: { email: string | null; name: string; language: Language };
   recipient: { language: Language; timezone: string };
@@ -130,8 +128,6 @@ export async function claimDeliveries(
             name: r.channel.name,
             enabled: r.channel.enabled,
             chatId: r.channel.telegramChatId,
-            webhookUrl: r.channel.webhookUrl,
-            webhookSecretEnc: r.channel.webhookSecretEnc,
           },
           owner: { email: r.email, name: r.userName, language: r.language as Language },
           recipient: { language: r.language as Language, timezone: r.timezone },

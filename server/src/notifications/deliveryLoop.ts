@@ -1,7 +1,9 @@
 import type { ChannelType } from '@elec/shared';
+import { eq } from 'drizzle-orm';
 import type { i18n } from 'i18next';
 import type { Clock } from '../clock.ts';
 import type { Db } from '../db/client.ts';
+import { notificationChannel } from '../db/schema/index.ts';
 import { sendInBackground, type EmailSender } from '../email/sender.ts';
 import { renderEmail } from '../email/templates.ts';
 import { decrypt } from '../lib/crypto.ts';
@@ -44,16 +46,27 @@ const TELEGRAM_LANE: Lane = { type: 'TELEGRAM_PLATFORM', batch: DELIVERY_BATCH }
 const WEBHOOK_LANE: Lane = { type: 'WEBHOOK', batch: WEBHOOK_BATCH };
 
 async function sendWebhook(deps: DeliveryDeps, d: ClaimedDelivery): Promise<Outcome> {
+  const [channel] = await deps.db
+    .select({
+      enabled: notificationChannel.enabled,
+      url: notificationChannel.webhookUrl,
+      secretEnc: notificationChannel.webhookSecretEnc,
+    })
+    .from(notificationChannel)
+    .where(eq(notificationChannel.id, d.channel.id));
+  if (!channel) return { type: 'SKIPPED', reason: 'channel deleted' };
+  if (!channel.enabled) return { type: 'SKIPPED', reason: 'channel disabled' };
+
   let secret: string;
   try {
-    secret = decrypt(deps.encryptionKey, d.channel.webhookSecretEnc!);
+    secret = decrypt(deps.encryptionKey, channel.secretEnc!);
   } catch {
     const error = 'webhook secret could not be decrypted';
     deps.logger.error(error, d.channel.id);
     return { type: 'TRANSIENT', error };
   }
   const result = await deps.webhooks.send({
-    url: d.channel.webhookUrl!,
+    url: channel.url!,
     secret,
     event: d.event,
     deliveryId: d.id,
@@ -103,7 +116,8 @@ async function handle(deps: DeliveryDeps, d: ClaimedDelivery): Promise<void> {
     outcome = await decide(deps, d);
   } catch (err) {
     deps.logger.error('delivery failed', d.id, err);
-    outcome = { type: 'TRANSIENT', error: err instanceof Error ? err.message : String(err) };
+    const error = err instanceof Error ? err.message : String(err);
+    outcome = { type: d.channel.type === 'WEBHOOK' ? 'WEBHOOK_FAILED' : 'TRANSIENT', error };
   }
   const { disabled } = await recordOutcome(deps.db, deps.clock, d, outcome);
   if (disabled && d.channel.type === 'WEBHOOK') emailWebhookDisabled(deps, d);

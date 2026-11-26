@@ -668,7 +668,12 @@ create index delivery_due_idx on delivery (next_attempt_at) where status in ('QU
   blocked address or DNS failure) follows the retry schedule and adds 1 to
   `consecutive_failures`; there is no immediate `FAILED`. The update that
   turns `enabled` off at 20 emails the channel's owner once, if they have
-  an email. A secret that can't be decrypted is a server fault: it follows
+  an email. Right before each send the worker re-reads the channel's
+  `enabled`, URL and secret, so later rows of a claimed batch never use a
+  rotated secret or a replaced URL, and none are sent once the channel is
+  off (`skipped: channel disabled`). An unexpected error while handling a
+  webhook delivery is a counted failed attempt too. The exception is a
+  secret that can't be decrypted, which is a server fault: it follows
   the retry schedule with `last_error = 'webhook secret could not be
   decrypted'`, sends nothing and isn't counted.
 - **Skipped sends.** A delivery whose channel's user can no longer read the device (a removed viewer) becomes `FAILED` with `last_error = 'skipped: no access'`. A Telegram `device.offline` delivery whose outage has closed becomes `FAILED` with `skipped: outage closed`; a webhook still gets it, because machines order events by the data. A delivery whose channel is disabled becomes `FAILED` with `skipped: channel disabled`. The failure counter is unchanged.
