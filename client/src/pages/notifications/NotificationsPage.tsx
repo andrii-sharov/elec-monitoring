@@ -1,7 +1,7 @@
 import type { ChannelType } from '@elec/shared';
 import { useMutation } from '@tanstack/react-query';
 import { BellRing, Plus, RotateCw, Search } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
@@ -18,36 +18,47 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { selectTriggerClassName } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage } from '@/forms/errorMessage';
-import { cn } from '@/lib/utils';
 import { ChannelRow, useChannelRefresh } from './ChannelRow';
 import { filterChannels, filterParams, readFilters, sorts, statuses } from './channelFilters';
 import { addableTypes, channelTypeInfo } from './channelTypes';
 import { TelegramConnect } from './TelegramConnect';
 import { EmptyState } from '@/components/Illustration';
 
+type Option = { value: string; label: string };
+
 function FilterSelect({
   label,
   value,
+  options,
   onChange,
-  children,
 }: {
   label: string;
   value: string;
+  options: Option[];
   onChange: (value: string) => void;
-  children: ReactNode;
 }) {
   return (
-    <select
-      aria-label={label}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className={cn(selectTriggerClassName, 'h-8 w-auto pe-2 text-sm')}
-    >
-      {children}
-    </select>
+    <Select items={options} value={value} onValueChange={(next) => next && onChange(next)}>
+      <SelectTrigger aria-label={label} className="min-w-32">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent align="start">
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -200,49 +211,39 @@ export function NotificationsPage() {
                   label={t('app.notifications.filterType')}
                   value={filters.type}
                   onChange={(type) => setFilter({ type })}
-                >
-                  <option value="all">{t('app.notifications.allTypes')}</option>
-                  {types.map((type) => (
-                    <option key={type} value={type}>
-                      {t(`app.channel.type.${type}`)}
-                    </option>
-                  ))}
-                </FilterSelect>
+                  options={[
+                    { value: 'all', label: t('app.notifications.allTypes') },
+                    ...types.map((type) => ({ value: type, label: t(`app.channel.type.${type}`) })),
+                  ]}
+                />
               ) : null}
               <FilterSelect
                 label={t('app.notifications.filterDevice')}
                 value={filters.device}
                 onChange={(device) => setFilter({ device })}
-              >
-                <option value="all">{t('app.notifications.allDevices')}</option>
-                {deviceList.map((device) => (
-                  <option key={device.id} value={device.id}>
-                    {device.name}
-                  </option>
-                ))}
-              </FilterSelect>
+                options={[
+                  { value: 'all', label: t('app.notifications.allDevices') },
+                  ...deviceList.map((device) => ({ value: device.id, label: device.name })),
+                ]}
+              />
               <FilterSelect
                 label={t('app.notifications.filterStatus')}
                 value={filters.status}
                 onChange={(status) => setFilter({ status })}
-              >
-                {statuses.map((status) => (
-                  <option key={status} value={status}>
-                    {t(`app.notifications.status.${status}`)}
-                  </option>
-                ))}
-              </FilterSelect>
+                options={statuses.map((status) => ({
+                  value: status,
+                  label: t(`app.notifications.status.${status}`),
+                }))}
+              />
               <FilterSelect
                 label={t('app.notifications.sortBy')}
                 value={filters.sort}
                 onChange={(sort) => setFilter({ sort })}
-              >
-                {sorts.map((sort) => (
-                  <option key={sort} value={sort}>
-                    {t(`app.notifications.sort.${sort}`)}
-                  </option>
-                ))}
-              </FilterSelect>
+                options={sorts.map((sort) => ({
+                  value: sort,
+                  label: t(`app.notifications.sort.${sort}`),
+                }))}
+              />
             </div>
             <div className="flex min-h-8 flex-wrap items-center gap-2 text-sm">
               <Checkbox

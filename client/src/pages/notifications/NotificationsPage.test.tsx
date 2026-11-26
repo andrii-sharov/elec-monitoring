@@ -24,6 +24,11 @@ async function openConnect(user: ReturnType<typeof renderRoute>['user']) {
   await user.click(await screen.findByRole('menuitem', { name: 'Telegram' }));
 }
 
+async function pick(user: ReturnType<typeof renderRoute>['user'], filter: string, option: string) {
+  await user.click(screen.getByRole('combobox', { name: filter }));
+  await user.click(await screen.findByRole('option', { name: option }));
+}
+
 async function expand(user: ReturnType<typeof renderRoute>['user'], name: string) {
   await user.click(await screen.findByRole('button', { name: `Details for ${name}` }));
 }
@@ -211,10 +216,10 @@ test('search, status and device filters narrow the list and live in the URL', as
   expect(screen.getByText('1 of 2')).toBeInTheDocument();
   expect(router.state.location.search).toContain('q=off');
   await user.clear(screen.getByRole('searchbox', { name: 'Search channels' }));
-  await user.selectOptions(screen.getByRole('combobox', { name: 'Device' }), 'Home');
+  await pick(user, 'Device', 'Home');
   expect(screen.getByText('Home chat')).toBeInTheDocument();
   expect(screen.queryByText('Office')).toBeNull();
-  await user.selectOptions(screen.getByRole('combobox', { name: 'Status' }), 'Turned off');
+  await pick(user, 'Status', 'Turned off');
   expect(await screen.findByText('No channels match these filters.')).toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'Clear filters' }));
   expect(await screen.findByText('Office')).toBeInTheDocument();

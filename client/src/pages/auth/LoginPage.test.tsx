@@ -173,3 +173,13 @@ test('the label lights up Email or Phone as the field recognises the value', asy
   await user.type(field, '050');
   expect(active()).toBe('Phone');
 });
+
+test('the language menu drops below its button like every other dropdown', async () => {
+  const { user } = renderRoute('/login');
+  await user.click(await screen.findByRole('combobox', { name: 'Language' }));
+  await screen.findByRole('option', { name: 'English' });
+  expect(document.querySelector('[data-slot="select-content"]')).toHaveAttribute(
+    'data-align-trigger',
+    'false',
+  );
+});
