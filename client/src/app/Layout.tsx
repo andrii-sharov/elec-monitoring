@@ -1,6 +1,7 @@
-import { Bell, Cpu, Zap, type LucideIcon } from 'lucide-react';
+import { Bell, Cpu, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, Outlet } from 'react-router';
+import { BrandMark } from '@/components/BrandMark';
 import { cn } from '@/lib/utils';
 import { AccountMenu } from './AccountMenu';
 import { VerifyBanner } from './VerifyBanner';
@@ -34,9 +35,7 @@ export function Layout() {
             viewTransition
             className="flex items-center gap-1.5 rounded-md font-heading font-semibold focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
           >
-            <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Zap aria-hidden="true" className="size-4" />
-            </span>
+            <BrandMark className="size-7" />
             Elec
           </Link>
           <nav

@@ -484,6 +484,11 @@ export const en = {
       pending: 'Waiting for {{name}} to check in',
       updating: '{{name}} is updating',
     },
+    promo: {
+      label:
+        'How Electricity Monitor works: a device in a socket checks in with the server, and when the power goes out you get a Telegram message or a webhook.',
+      caption: 'Plug the device into a socket. When the power goes out, you get a message.',
+    },
     powerStrip: {
       title: 'Last 7 days',
       summary: 'Last 7 days: outages {{outages}}, power blips {{blips}}',

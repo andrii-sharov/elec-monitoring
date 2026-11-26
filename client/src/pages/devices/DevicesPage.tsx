@@ -1,10 +1,11 @@
-import { PlugZap, Plus, RotateCw, Usb } from 'lucide-react';
+import { Plus, RotateCw, Usb } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { useDevices } from '@/api/queries';
 import { useSession } from '@/api/session';
 import { useAppStyle } from '@/appStyles/AppStyleProvider';
+import { PromoHero } from '@/components/PromoHero';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -55,11 +56,9 @@ export function DevicesPage() {
           </Button>
         </div>
       ) : devices.data.items.length === 0 ? (
-        <Card>
+        <Card data-motion="enter">
           <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
-            <span className="flex size-16 items-center justify-center rounded-full bg-secondary text-muted-foreground">
-              <PlugZap aria-hidden="true" className="size-8" />
-            </span>
+            <PromoHero />
             <h2 className="font-heading text-lg font-medium">{t('app.devices.emptyTitle')}</h2>
             <p className="text-muted-foreground">{t('app.devices.emptyBody')}</p>
             {addButton}
