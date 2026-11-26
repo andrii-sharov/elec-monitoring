@@ -12,7 +12,7 @@ import {
   putDeviceIdsSchema,
   telegramLinkSchema,
 } from '@elec/shared/api';
-import { and, asc, count, eq, inArray } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, sql } from 'drizzle-orm';
 import type { Language } from '@elec/shared';
 import { Router } from 'express';
 import { z } from 'zod';
@@ -38,6 +38,10 @@ import { HttpError, errorResponse } from '../errors.ts';
 import { rateLimit } from '../rateLimit.ts';
 
 const channelParamsSchema = z.object({ id: z.uuid() });
+
+const channelNotFound = () => new HttpError(404, 'not_found', 'Not found');
+const needsTestFirst = () =>
+  new HttpError(409, 'conflict', 'Send a test message to turn this channel back on');
 
 const json = (schema: z.ZodType) => ({ 'application/json': { schema } });
 
@@ -90,7 +94,7 @@ export const channelsPaths: ZodOpenApiPathsObject = {
     patch: {
       summary: 'Edit, turn on or turn off one of my channels',
       description:
-        'Turning a channel off sets `disabled_reason: USER`. A channel turned off after too many failures turns back on only through a successful test message. `url` and `events` apply to webhooks only. Editing them keeps the channel state and failure count.',
+        'Turning a channel off sets `disabled_reason: USER`. Turning a disabled channel on resets its failure count. A channel turned off after too many failures turns back on only through a successful test message. `url` and `events` apply to webhooks only. Editing them keeps the channel state and failure count.',
       security: bearer,
       requestParams: { path: channelParamsSchema },
       requestBody: { content: json(channelPatchSchema) },
@@ -220,7 +224,7 @@ async function myChannel(db: Executor, userId: string, id: string): Promise<Chan
     .select()
     .from(notificationChannel)
     .where(and(eq(notificationChannel.id, id), eq(notificationChannel.userId, userId)));
-  if (!row) throw new HttpError(404, 'not_found', 'Not found');
+  if (!row) throw channelNotFound();
   return row;
 }
 
@@ -357,13 +361,44 @@ export function channelsRouter(deps: AppDeps): Router {
       .set({ webhookSecretEnc: encrypt(config.encryptionKey, secret) })
       .where(eq(notificationChannel.id, row.id))
       .returning();
-    res.json({ ...(await channelView(db, updated!)), secret });
+    if (!updated) throw channelNotFound();
+    res.json({ ...(await channelView(db, updated)), secret });
   });
 
+  async function updateChannel(
+    userId: string,
+    id: string,
+    changes: Partial<ChannelRow>,
+  ): Promise<ChannelRow> {
+    const turningOn = changes.enabled === true;
+    const [updated] = await db
+      .update(notificationChannel)
+      .set({
+        ...changes,
+        ...(turningOn && {
+          consecutiveFailures: sql`case when ${notificationChannel.enabled}
+            then ${notificationChannel.consecutiveFailures} else 0 end`,
+        }),
+      })
+      .where(
+        and(
+          eq(notificationChannel.id, id),
+          turningOn
+            ? sql`${notificationChannel.disabledReason} is distinct from 'TOO_MANY_FAILURES'`
+            : undefined,
+        ),
+      )
+      .returning();
+    if (updated) return updated;
+    await myChannel(db, userId, id);
+    throw needsTestFirst();
+  }
+
   router.patch('/api/v1/channels/:id', ...auth, async (req, res) => {
+    const { user } = getAuth(res);
     const { id } = channelParamsSchema.parse(req.params);
     const patch = channelPatchSchema.parse(req.body ?? {});
-    const row = await myChannel(db, getAuth(res).user.id, id);
+    const row = await myChannel(db, user.id, id);
     const notAllowed = row.type === 'WEBHOOK' ? [] : webhookOnlyFields(patch);
     if (notAllowed.length > 0) {
       throw new HttpError(400, 'validation_error', 'Invalid request', notAllowed);
@@ -372,7 +407,7 @@ export function channelsRouter(deps: AppDeps): Router {
     if (patch.name !== undefined) changes.name = patch.name;
     if (patch.events !== undefined) changes.webhookEvents = patch.events;
     if (patch.enabled === true && row.disabledReason === 'TOO_MANY_FAILURES') {
-      throw new HttpError(409, 'conflict', 'Send a test message to turn this channel back on');
+      throw needsTestFirst();
     }
     if (patch.enabled !== undefined) {
       changes.enabled = patch.enabled;
@@ -382,14 +417,10 @@ export function channelsRouter(deps: AppDeps): Router {
       await assertUrlAllowed(patch.url);
       changes.webhookUrl = patch.url;
     }
-    const [updated] = Object.keys(changes).length
-      ? await db
-          .update(notificationChannel)
-          .set(changes)
-          .where(eq(notificationChannel.id, row.id))
-          .returning()
-      : [row];
-    res.json(await channelView(db, updated!));
+    const updated = Object.keys(changes).length
+      ? await updateChannel(user.id, row.id, changes)
+      : row;
+    res.json(await channelView(db, updated));
   });
 
   router.put('/api/v1/channels/:id/devices', ...auth, async (req, res) => {
@@ -436,7 +467,8 @@ export function channelsRouter(deps: AppDeps): Router {
               .where(eq(notificationChannel.id, row.id))
               .returning()
           : [row];
-      res.json(await channelView(db, updated!));
+      if (!updated) throw channelNotFound();
+      res.json(await channelView(db, updated));
     },
   );
 
@@ -448,7 +480,7 @@ export function channelsRouter(deps: AppDeps): Router {
         and(eq(notificationChannel.id, id), eq(notificationChannel.userId, getAuth(res).user.id)),
       )
       .returning({ id: notificationChannel.id });
-    if (deleted.length === 0) throw new HttpError(404, 'not_found', 'Not found');
+    if (deleted.length === 0) throw channelNotFound();
     res.status(204).end();
   });
 

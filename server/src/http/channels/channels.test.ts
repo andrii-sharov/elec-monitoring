@@ -367,6 +367,16 @@ async function stored(id: string) {
 const storedSecret = async (id: string) =>
   decrypt(testConfig.encryptionKey, (await stored(id)).webhookSecretEnc!);
 
+async function disableByUser(id: string, consecutiveFailures: number) {
+  await t.db
+    .update(notificationChannel)
+    .set({ enabled: false, disabledReason: 'USER', consecutiveFailures })
+    .where(eq(notificationChannel.id, id));
+}
+
+const deleteChannelRow = (id: string) =>
+  t.db.delete(notificationChannel).where(eq(notificationChannel.id, id));
+
 describe('webhook channels', () => {
   const url = 'https://hooks.example.com/elec';
   const secretPattern = /^whsec_[A-Za-z0-9_-]{43}$/;
@@ -599,6 +609,84 @@ describe('webhook channels', () => {
     expect(ok.status).toBe(200);
     expect(ok.body).toMatchObject({ enabled: true, disabled_reason: null, failures: 0 });
     expect(logged()).toEqual([]);
+  });
+
+  test('turning a disabled channel on resets its failures', async () => {
+    const { user, auth } = await authed();
+    const channel = await createWebhookChannel(t.db, user.id);
+    await disableByUser(channel.id, 19);
+    const res = await patch(auth, channel.id, { enabled: true });
+    expect(res.body).toMatchObject({ enabled: true, disabled_reason: null, failures: 0 });
+    expect(await stored(channel.id)).toMatchObject({ consecutiveFailures: 0 });
+  });
+
+  test('turning an enabled channel on keeps its failures', async () => {
+    const { user, auth } = await authed();
+    const channel = await createWebhookChannel(t.db, user.id);
+    await t.db
+      .update(notificationChannel)
+      .set({ consecutiveFailures: 3 })
+      .where(eq(notificationChannel.id, channel.id));
+    const res = await patch(auth, channel.id, { enabled: true });
+    expect(res.body).toMatchObject({ enabled: true, failures: 3 });
+  });
+
+  function duringCheck(change: () => Promise<unknown>) {
+    const check = webhooks.check.bind(webhooks);
+    vi.spyOn(webhooks, 'check').mockImplementation(async (target) => {
+      await change();
+      return check(target);
+    });
+  }
+
+  test('does not overwrite a disable that happens during the URL check', async () => {
+    const { user, auth } = await authed();
+    const channel = await createWebhookChannel(t.db, user.id);
+    duringCheck(() =>
+      t.db
+        .update(notificationChannel)
+        .set({ enabled: false, disabledReason: 'TOO_MANY_FAILURES', consecutiveFailures: 20 })
+        .where(eq(notificationChannel.id, channel.id)),
+    );
+    const res = await patch(auth, channel.id, {
+      enabled: true,
+      url: 'https://new.example.com/hook',
+    });
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('conflict');
+    expect(await stored(channel.id)).toMatchObject({
+      enabled: false,
+      disabledReason: 'TOO_MANY_FAILURES',
+      consecutiveFailures: 20,
+      webhookUrl: url,
+    });
+  });
+
+  test.each([
+    ['an edit', {}],
+    ['turning on', { enabled: true }],
+  ])('is not found when deleted during %s', async (_name, changes) => {
+    const { user, auth } = await authed();
+    const channel = await createWebhookChannel(t.db, user.id);
+    duringCheck(() => deleteChannelRow(channel.id));
+    const res = await patch(auth, channel.id, { ...changes, url: 'https://new.example.com/hook' });
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('not_found');
+  });
+
+  test('is not found when deleted during a test that would turn it on', async () => {
+    const { user, auth } = await authed();
+    const channel = await createWebhookChannel(t.db, user.id);
+    await t.db
+      .update(notificationChannel)
+      .set({ enabled: false, disabledReason: 'TOO_MANY_FAILURES', consecutiveFailures: 20 })
+      .where(eq(notificationChannel.id, channel.id));
+    vi.spyOn(webhooks, 'send').mockImplementation(async () => {
+      await deleteChannelRow(channel.id);
+      return { type: 'SENT', status: 200 };
+    });
+    const res = await sendTest(auth, channel.id);
+    expect(res.status).toBe(404);
   });
 
   test("another user's webhook is not found", async () => {

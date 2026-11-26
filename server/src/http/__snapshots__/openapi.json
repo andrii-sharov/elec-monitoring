@@ -2696,7 +2696,7 @@
     "/api/v1/channels/{id}": {
       "patch": {
         "summary": "Edit, turn on or turn off one of my channels",
-        "description": "Turning a channel off sets `disabled_reason: USER`. A channel turned off after too many failures turns back on only through a successful test message. `url` and `events` apply to webhooks only. Editing them keeps the channel state and failure count.",
+        "description": "Turning a channel off sets `disabled_reason: USER`. Turning a disabled channel on resets its failure count. A channel turned off after too many failures turns back on only through a successful test message. `url` and `events` apply to webhooks only. Editing them keeps the channel state and failure count.",
         "security": [
           {
             "bearerAuth": []

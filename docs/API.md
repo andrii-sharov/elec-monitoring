@@ -742,7 +742,8 @@ channel, oldest link first.
 `PATCH /channels/:id` `{ "name"?, "enabled"?, "url"?, "events"? }` (at
 least one; name 1–64 chars, trimmed) → `200` with the channel.
 `enabled: false` sets `disabled_reason: "USER"`, `enabled: true` clears
-it. A channel disabled with `TOO_MANY_FAILURES` returns `409 conflict` on
+it. Turning a disabled channel on resets its failure count. A channel
+disabled with `TOO_MANY_FAILURES` returns `409 conflict` on
 `enabled: true`; a successful test message turns it back on.
 
 `url` and `events` follow the rules of `POST /channels` and apply to
@@ -837,7 +838,9 @@ Channel object:
 ```
 
 `disabled_reason`: `null` | `USER` | `TOO_MANY_FAILURES`. `failures` is
-the number of failed attempts in a row.
+the number of failed attempts in a row. `PATCH` with `enabled: true` on a
+disabled channel re-enables it and resets the failure counter, except for
+`TOO_MANY_FAILURES` (see above).
 
 `GET /devices/:id/channels` → `200 { "channel_ids": ["…"] }`, the caller's
 channels used by the device.
