@@ -146,6 +146,7 @@ export const en = {
     },
     errors: {
       validation_error: 'Check the highlighted fields.',
+      url_not_allowed: 'This address is not allowed. Use a public https URL.',
       unauthorized: 'Your session has ended. Sign in again.',
       forbidden: "You don't have access to this.",
       not_verified: 'Confirm your email or phone first.',

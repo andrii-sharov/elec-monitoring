@@ -4,6 +4,7 @@ import { languages } from '../enums.ts';
 
 export const errorCodes = [
   'validation_error',
+  'url_not_allowed',
   'unauthorized',
   'forbidden',
   'not_verified',

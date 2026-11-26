@@ -14,7 +14,9 @@ export const channelTypeInfo: Record<ChannelType, ChannelTypeInfo> = {
     icon: Send,
     available: true,
     summary: (channel, t) =>
-      channel.config.chat_id ? t('app.notifications.chatId', { id: channel.config.chat_id }) : null,
+      'chat_id' in channel.config && channel.config.chat_id
+        ? t('app.notifications.chatId', { id: channel.config.chat_id })
+        : null,
   },
   WEBHOOK: { icon: Webhook, available: false, summary: () => null },
 };

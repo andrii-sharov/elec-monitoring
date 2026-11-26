@@ -150,6 +150,7 @@ export const uk: Dictionary = {
     },
     errors: {
       validation_error: 'Перевірте виділені поля.',
+      url_not_allowed: 'Ця адреса не дозволена. Вкажіть публічну https-адресу.',
       unauthorized: 'Сеанс завершився. Увійдіть знову.',
       forbidden: 'У вас немає доступу до цього.',
       not_verified: 'Спочатку підтвердьте електронну пошту або телефон.',

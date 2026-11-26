@@ -2582,12 +2582,121 @@
             }
           }
         }
+      },
+      "post": {
+        "summary": "Add a webhook",
+        "description": "The `secret` that signs requests is returned only here and by rotate. The new channel is attached to no devices. At most 10 webhooks per user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Notifications"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "WEBHOOK"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "url": {
+                    "type": "string",
+                    "maxLength": 2048,
+                    "example": "https://example.com/hook"
+                  },
+                  "events": {
+                    "minItems": 1,
+                    "maxItems": 3,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "device.offline",
+                        "device.online",
+                        "device.power_blip"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "type",
+                  "name",
+                  "url",
+                  "events"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The channel with its secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelWithSecret"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body or `url_not_allowed`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`not_verified`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Webhook limit reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/channels/{id}": {
       "patch": {
-        "summary": "Rename, turn on or turn off one of my channels",
-        "description": "Turning a channel off sets `disabled_reason: USER`. A channel turned off after too many failures turns back on only through a successful test message.",
+        "summary": "Edit, turn on or turn off one of my channels",
+        "description": "Turning a channel off sets `disabled_reason: USER`. A channel turned off after too many failures turns back on only through a successful test message. `url` and `events` apply to webhooks only. Editing them keeps the channel state and failure count.",
         "security": [
           {
             "bearerAuth": []
@@ -2621,6 +2730,24 @@
                   },
                   "enabled": {
                     "type": "boolean"
+                  },
+                  "url": {
+                    "type": "string",
+                    "maxLength": 2048,
+                    "example": "https://example.com/hook"
+                  },
+                  "events": {
+                    "minItems": 1,
+                    "maxItems": 3,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "device.offline",
+                        "device.online",
+                        "device.power_blip"
+                      ]
+                    }
                   }
                 },
                 "additionalProperties": false
@@ -2640,7 +2767,7 @@
             }
           },
           "400": {
-            "description": "Invalid body",
+            "description": "Invalid body or `url_not_allowed`",
             "content": {
               "application/json": {
                 "schema": {
@@ -2880,7 +3007,7 @@
     "/api/v1/channels/{id}/test": {
       "post": {
         "summary": "Send a test message to one of my channels",
-        "description": "Sends a test message now. On success a channel disabled after failures turns back on. Limited to 5 per minute.",
+        "description": "Sends a test message now (a signed `ping` request for a webhook). On success a channel disabled after failures turns back on. Limited to 5 per minute.",
         "security": [
           {
             "bearerAuth": []
@@ -2943,7 +3070,7 @@
             }
           },
           "409": {
-            "description": "The messenger did not accept the message",
+            "description": "The messenger or receiver did not accept the message",
             "content": {
               "application/json": {
                 "schema": {
@@ -2954,6 +3081,94 @@
           },
           "429": {
             "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/channels/{id}/rotate-secret": {
+      "post": {
+        "summary": "Replace the secret of one of my webhooks",
+        "description": "The old secret stops working at once. Queued retries are signed with the new secret.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The channel with its new secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelWithSecret"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid channel ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`not_verified`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Channel not found or not yours",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not a webhook",
             "content": {
               "application/json": {
                 "schema": {
@@ -4483,17 +4698,46 @@
             ]
           },
           "config": {
-            "type": "object",
-            "properties": {
-              "chat_id": {
-                "type": "string",
-                "example": "-1001234567890"
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "chat_id": {
+                    "type": "string",
+                    "example": "-1001234567890"
+                  }
+                },
+                "required": [
+                  "chat_id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "example": "https://example.com/hook"
+                  },
+                  "events": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "device.offline",
+                        "device.online",
+                        "device.power_blip"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "url",
+                  "events"
+                ],
+                "additionalProperties": false
               }
-            },
-            "required": [
-              "chat_id"
-            ],
-            "additionalProperties": false
+            ]
           },
           "created_at": {
             "type": "string",
@@ -4506,6 +4750,11 @@
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
+          },
+          "failures": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
           }
         },
         "required": [
@@ -4516,7 +4765,119 @@
           "disabled_reason",
           "config",
           "created_at",
-          "device_ids"
+          "device_ids",
+          "failures"
+        ],
+        "additionalProperties": false
+      },
+      "ChannelWithSecret": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "TELEGRAM_PLATFORM",
+              "WEBHOOK"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "disabled_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "USER",
+                  "TOO_MANY_FAILURES"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "config": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "chat_id": {
+                    "type": "string",
+                    "example": "-1001234567890"
+                  }
+                },
+                "required": [
+                  "chat_id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "example": "https://example.com/hook"
+                  },
+                  "events": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "device.offline",
+                        "device.online",
+                        "device.power_blip"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "url",
+                  "events"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "example": "2026-11-21T16:42:00Z"
+          },
+          "device_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "failures": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "secret": {
+            "type": "string",
+            "example": "whsec_…"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "name",
+          "enabled",
+          "disabled_reason",
+          "config",
+          "created_at",
+          "device_ids",
+          "failures",
+          "secret"
         ],
         "additionalProperties": false
       },

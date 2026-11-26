@@ -154,6 +154,7 @@ export const ru: Dictionary = {
     },
     errors: {
       validation_error: 'Проверьте выделенные поля.',
+      url_not_allowed: 'Этот адрес не разрешён. Укажите публичный https-адрес.',
       unauthorized: 'Сеанс завершён. Войдите снова.',
       forbidden: 'У вас нет доступа к этому.',
       not_verified: 'Сначала подтвердите электронную почту или телефон.',

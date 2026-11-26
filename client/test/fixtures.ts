@@ -79,6 +79,7 @@ export function channelFixture(overrides: Partial<Channel> = {}): Channel {
     config: { chat_id: '-1001234567890' },
     created_at: '2026-11-21T16:42:00Z',
     device_ids: [],
+    failures: 0,
     ...overrides,
   };
 }

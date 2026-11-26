@@ -1,14 +1,23 @@
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { testApp, testConfig } from '../../../test/app.ts';
 import { createUser, signIn } from '../../../test/auth.ts';
-import { createPlatformChannel, linkChannel } from '../../../test/channels.ts';
+import {
+  createPlatformChannel,
+  createWebhookChannel,
+  linkChannel,
+} from '../../../test/channels.ts';
 import { createTestDb, type TestDb } from '../../../test/db.ts';
 import { createDevice } from '../../../test/devices.ts';
 import { addViewer } from '../../../test/sharing.ts';
 import { seedDelivery } from '../../../test/deliveries.ts';
-import { FakeClock, FakeTelegramClient } from '../../../test/fakes.ts';
+import {
+  FakeClock,
+  FakeTelegramClient,
+  FakeWebhookSender,
+  silentLogger,
+} from '../../../test/fakes.ts';
 import {
   appUser,
   delivery,
@@ -16,8 +25,9 @@ import {
   notificationChannel,
   oneTimeToken,
 } from '../../db/schema/index.ts';
-import { sha256 } from '../../lib/crypto.ts';
+import { decrypt, sha256 } from '../../lib/crypto.ts';
 import type { RateLimiter } from '../../rateLimit/limiter.ts';
+import { signBody } from '../../webhooks/sender.ts';
 
 let t: TestDb;
 let clock: FakeClock;
@@ -104,6 +114,7 @@ describe('GET /api/v1/channels', () => {
         config: { chat_id: '-1001234567890' },
         created_at: mine.createdAt.toISOString(),
         device_ids: [],
+        failures: 0,
       },
     ]);
   });
@@ -345,5 +356,262 @@ describe('channel management', () => {
       .post(`/api/v1/channels/${channel.id}/test`)
       .set('Authorization', auth);
     expect(res.status).toBe(429);
+  });
+});
+
+async function stored(id: string) {
+  const [row] = await t.db.select().from(notificationChannel).where(eq(notificationChannel.id, id));
+  return row!;
+}
+
+const storedSecret = async (id: string) =>
+  decrypt(testConfig.encryptionKey, (await stored(id)).webhookSecretEnc!);
+
+describe('webhook channels', () => {
+  const url = 'https://hooks.example.com/elec';
+  const secretPattern = /^whsec_[A-Za-z0-9_-]{43}$/;
+  let webhooks: FakeWebhookSender;
+  let logger: ReturnType<typeof silentLogger>;
+
+  beforeEach(() => {
+    webhooks = new FakeWebhookSender();
+    webhooks.blockedHosts.add('internal.example.com');
+    logger = silentLogger();
+  });
+
+  const hooked = () => request(testApp({ db: t.db, clock, webhooks, logger }));
+
+  const body = (overrides: object = {}) => ({
+    type: 'WEBHOOK',
+    name: 'Home Assistant',
+    url,
+    events: ['device.offline', 'device.online'],
+    ...overrides,
+  });
+
+  const create = (auth: string, overrides: object = {}) =>
+    hooked().post('/api/v1/channels').set('Authorization', auth).send(body(overrides));
+
+  const patch = (auth: string, id: string, changes: object) =>
+    hooked().patch(`/api/v1/channels/${id}`).set('Authorization', auth).send(changes);
+
+  const rotate = (auth: string, id: string) =>
+    hooked().post(`/api/v1/channels/${id}/rotate-secret`).set('Authorization', auth);
+
+  const sendTest = (auth: string, id: string) =>
+    hooked().post(`/api/v1/channels/${id}/test`).set('Authorization', auth);
+
+  const logged = () =>
+    [logger.info, logger.warn, logger.error].flatMap((log) => vi.mocked(log).mock.calls);
+
+  test('creates a webhook and returns the secret only once', async () => {
+    const { auth } = await authed();
+    const res = await create(auth, { name: '  Home Assistant  ' });
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({
+      type: 'WEBHOOK',
+      name: 'Home Assistant',
+      enabled: true,
+      disabled_reason: null,
+      config: { url, events: ['device.offline', 'device.online'] },
+      device_ids: [],
+      failures: 0,
+    });
+    expect(res.body.secret).toMatch(secretPattern);
+    expect(await storedSecret(res.body.id)).toBe(res.body.secret);
+
+    const list = await hooked().get('/api/v1/channels').set('Authorization', auth);
+    expect(list.body.items).toHaveLength(1);
+    expect(list.body.items[0]).not.toHaveProperty('secret');
+    expect(JSON.stringify(list.body)).not.toContain('whsec_');
+    expect((await patch(auth, res.body.id, { name: 'Renamed' })).body).not.toHaveProperty('secret');
+    expect((await sendTest(auth, res.body.id)).body).not.toHaveProperty('secret');
+    expect(logged()).toEqual([]);
+  });
+
+  test('stores the URL as it was sent', async () => {
+    const { auth } = await authed();
+    const input = 'https://HOOKS.example.com';
+    const res = await create(auth, { url: input });
+    expect(res.body.config.url).toBe(input);
+    expect((await stored(res.body.id)).webhookUrl).toBe(input);
+  });
+
+  test.each([
+    ['plain http', 'http://hooks.example.com/'],
+    ['a private IP literal', 'https://10.0.0.1/'],
+    ['a host that resolves to a private address', 'https://internal.example.com/'],
+    ['credentials', 'https://john:pass@hooks.example.com/'],
+    ['not a URL', 'hooks'],
+  ])('refuses %s', async (_name, target) => {
+    const { auth } = await authed();
+    const res = await create(auth, { url: target });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('url_not_allowed');
+    expect(await t.db.select().from(notificationChannel)).toEqual([]);
+  });
+
+  test.each([
+    ['duplicate events', { events: ['device.offline', 'device.offline'] }],
+    ['no events', { events: [] }],
+    ['an unknown event', { events: ['device.exploded'] }],
+    ['a blank name', { name: '  ' }],
+    ['a long URL', { url: `https://hooks.example.com/${'a'.repeat(2048)}` }],
+    ['another type', { type: 'TELEGRAM_PLATFORM' }],
+    ['an unknown key', { secret: 'mine' }],
+  ])('rejects %s', async (_name, overrides) => {
+    const { auth } = await authed();
+    const res = await create(auth, overrides);
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('validation_error');
+  });
+
+  test('allows at most 10 webhooks per user', async () => {
+    const { user, auth } = await authed();
+    const other = await createUser(t.db, { email: 'jane@example.com' });
+    await createWebhookChannel(t.db, other.id);
+    await createPlatformChannel(t.db, user.id);
+    for (let i = 0; i < 9; i += 1) await createWebhookChannel(t.db, user.id);
+    expect((await create(auth)).status).toBe(201);
+    const res = await create(auth);
+    expect(res.status).toBe(409);
+    expect(res.body.error).toEqual({ code: 'conflict', message: 'Webhook limit reached' });
+  });
+
+  test('needs a verified account', async () => {
+    const { auth } = await authed({ emailVerifiedAt: null });
+    expect((await create(auth)).status).toBe(403);
+    expect((await rotate(auth, crypto.randomUUID())).status).toBe(403);
+    expect((await hooked().post('/api/v1/channels').send(body())).status).toBe(401);
+  });
+
+  test('edits the URL and events without re-enabling or resetting failures', async () => {
+    const { user, auth } = await authed();
+    const channel = await createWebhookChannel(t.db, user.id);
+    await t.db
+      .update(notificationChannel)
+      .set({ enabled: false, disabledReason: 'TOO_MANY_FAILURES', consecutiveFailures: 20 })
+      .where(eq(notificationChannel.id, channel.id));
+    const res = await patch(auth, channel.id, {
+      url: 'https://new.example.com/hook',
+      events: ['device.power_blip'],
+    });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      enabled: false,
+      disabled_reason: 'TOO_MANY_FAILURES',
+      failures: 20,
+      config: { url: 'https://new.example.com/hook', events: ['device.power_blip'] },
+    });
+  });
+
+  test('checks only a changed URL on edit', async () => {
+    const { user, auth } = await authed();
+    const channel = await createWebhookChannel(t.db, user.id, {
+      url: 'https://internal.example.com/',
+    });
+    const same = await patch(auth, channel.id, {
+      url: 'https://internal.example.com/',
+      name: 'Renamed',
+    });
+    expect(same.status).toBe(200);
+    const res = await patch(auth, channel.id, { url: 'https://10.0.0.1/' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('url_not_allowed');
+    expect((await stored(channel.id)).webhookUrl).toBe('https://internal.example.com/');
+  });
+
+  test.each([
+    ['url', { url }],
+    ['events', { events: ['device.offline'] }],
+  ])('does not accept %s on a Telegram channel', async (path, changes) => {
+    const { user, auth } = await authed();
+    const channel = await createPlatformChannel(t.db, user.id);
+    const res = await patch(auth, channel.id, changes);
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('validation_error');
+    expect(res.body.error.details).toEqual([{ path, code: 'not_allowed' }]);
+  });
+
+  test('rotates the secret', async () => {
+    const { auth } = await authed();
+    const created = await create(auth);
+    const before = await stored(created.body.id);
+    const res = await rotate(auth, created.body.id);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ id: created.body.id, config: { url } });
+    expect(res.body.secret).toMatch(secretPattern);
+    expect(res.body.secret).not.toBe(created.body.secret);
+    expect((await stored(created.body.id)).webhookSecretEnc).not.toEqual(before.webhookSecretEnc);
+    expect(await storedSecret(created.body.id)).toBe(res.body.secret);
+    expect(logged()).toEqual([]);
+  });
+
+  test('has no secret to rotate on a Telegram channel', async () => {
+    const { user, auth } = await authed();
+    const channel = await createPlatformChannel(t.db, user.id);
+    const res = await rotate(auth, channel.id);
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('conflict');
+  });
+
+  test('sends a signed ping as the test', async () => {
+    const { user, auth } = await authed();
+    const channel = await createWebhookChannel(t.db, user.id, { name: 'Home Assistant' });
+    const res = await sendTest(auth, channel.id);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ id: channel.id, enabled: true });
+    await sendTest(auth, channel.id);
+
+    const [first, second] = webhooks.sent;
+    expect(first).toMatchObject({ url, event: 'ping', secret: 'whsec_test_secret' });
+    expect(JSON.parse(first!.body)).toEqual({
+      event: 'ping',
+      channel: { id: channel.id, name: 'Home Assistant' },
+      sent_at: '2026-11-21T16:42:00.000Z',
+    });
+    expect(signBody(first!.secret, first!.body)).toBe(
+      signBody(await storedSecret(channel.id), first!.body),
+    );
+    expect(first!.deliveryId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(second!.deliveryId).not.toBe(first!.deliveryId);
+    expect(await t.db.select().from(delivery)).toEqual([]);
+  });
+
+  test('only a successful test turns a failing webhook back on', async () => {
+    const { user, auth } = await authed();
+    const channel = await createWebhookChannel(t.db, user.id);
+    await t.db
+      .update(notificationChannel)
+      .set({ enabled: false, disabledReason: 'TOO_MANY_FAILURES', consecutiveFailures: 20 })
+      .where(eq(notificationChannel.id, channel.id));
+    webhooks.next.push({ type: 'FAILED', error: 'HTTP 500' });
+
+    const failed = await sendTest(auth, channel.id);
+    expect(failed.status).toBe(409);
+    expect(failed.body.error).toEqual({
+      code: 'conflict',
+      message: 'The receiver did not accept the request (HTTP 500)',
+    });
+    expect(await stored(channel.id)).toMatchObject({ enabled: false, consecutiveFailures: 20 });
+
+    const ok = await sendTest(auth, channel.id);
+    expect(ok.status).toBe(200);
+    expect(ok.body).toMatchObject({ enabled: true, disabled_reason: null, failures: 0 });
+    expect(logged()).toEqual([]);
+  });
+
+  test("another user's webhook is not found", async () => {
+    const { auth } = await authed();
+    const other = await createUser(t.db, { email: 'jane@example.com' });
+    const foreign = await createWebhookChannel(t.db, other.id);
+    const responses = [
+      await patch(auth, foreign.id, { url: 'https://new.example.com/' }),
+      await rotate(auth, foreign.id),
+      await sendTest(auth, foreign.id),
+    ];
+    expect(responses.map((r) => r.status)).toEqual([404, 404, 404]);
+    expect(webhooks.sent).toEqual([]);
+    expect(await stored(foreign.id)).toEqual(foreign);
   });
 });

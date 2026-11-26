@@ -3,13 +3,16 @@ import {
   channelListSchema,
   channelPatchSchema,
   channelSchema,
+  channelWithSecretSchema,
+  createWebhookSchema,
   deviceIdsSchema,
   deviceParamsSchema,
+  MAX_WEBHOOKS,
   putChannelIdsSchema,
   putDeviceIdsSchema,
   telegramLinkSchema,
 } from '@elec/shared/api';
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, count, eq, inArray } from 'drizzle-orm';
 import type { Language } from '@elec/shared';
 import { Router } from 'express';
 import { z } from 'zod';
@@ -19,12 +22,13 @@ import {
   issueOneTimeToken,
   ONE_TIME_TTL_S,
 } from '../../auth/oneTimeTokens.ts';
-import { toChannel, type ChannelRow } from '../../channels/views.ts';
+import { toChannel, webhookSecret, type ChannelRow } from '../../channels/views.ts';
 import type { Executor } from '../../db/client.ts';
-import { deviceChannel, notificationChannel } from '../../db/schema/index.ts';
+import { appUser, deviceChannel, notificationChannel } from '../../db/schema/index.ts';
 import { getAccessibleDevice } from '../../devices/access.ts';
 import { accessibleDeviceIds } from '../../devices/queries.ts';
 import { createI18n } from '../../i18n.ts';
+import { encrypt, newId, randomToken } from '../../lib/crypto.ts';
 import { telegramT } from '../../telegram/html.ts';
 import { CHANNEL_TEST_PER_USER, TELEGRAM_LINK_PER_USER } from '../../rateLimit/limiter.ts';
 import type { AppDeps } from '../app.ts';
@@ -65,18 +69,34 @@ export const channelsPaths: ZodOpenApiPathsObject = {
         '403': errorResponse('`not_verified`'),
       },
     },
+    post: {
+      summary: 'Add a webhook',
+      description: `The \`secret\` that signs requests is returned only here and by rotate. The new channel is attached to no devices. At most ${MAX_WEBHOOKS} webhooks per user.`,
+      security: bearer,
+      requestBody: { content: json(createWebhookSchema) },
+      responses: {
+        '201': {
+          description: 'The channel with its secret',
+          content: json(channelWithSecretSchema),
+        },
+        '400': errorResponse('Invalid body or `url_not_allowed`'),
+        '401': unauthorized,
+        '403': errorResponse('`not_verified`'),
+        '409': errorResponse('Webhook limit reached'),
+      },
+    },
   },
   '/api/v1/channels/{id}': {
     patch: {
-      summary: 'Rename, turn on or turn off one of my channels',
+      summary: 'Edit, turn on or turn off one of my channels',
       description:
-        'Turning a channel off sets `disabled_reason: USER`. A channel turned off after too many failures turns back on only through a successful test message.',
+        'Turning a channel off sets `disabled_reason: USER`. A channel turned off after too many failures turns back on only through a successful test message. `url` and `events` apply to webhooks only. Editing them keeps the channel state and failure count.',
       security: bearer,
       requestParams: { path: channelParamsSchema },
       requestBody: { content: json(channelPatchSchema) },
       responses: {
         '200': { description: 'The channel', content: json(channelSchema) },
-        '400': errorResponse('Invalid body'),
+        '400': errorResponse('Invalid body or `url_not_allowed`'),
         '401': unauthorized,
         '403': errorResponse('`not_verified`'),
         '404': errorResponse('Channel not found or not yours'),
@@ -119,7 +139,7 @@ export const channelsPaths: ZodOpenApiPathsObject = {
     post: {
       summary: 'Send a test message to one of my channels',
       description:
-        'Sends a test message now. On success a channel disabled after failures turns back on. Limited to 5 per minute.',
+        'Sends a test message now (a signed `ping` request for a webhook). On success a channel disabled after failures turns back on. Limited to 5 per minute.',
       security: bearer,
       requestParams: { path: channelParamsSchema },
       responses: {
@@ -127,8 +147,28 @@ export const channelsPaths: ZodOpenApiPathsObject = {
         '401': unauthorized,
         '403': errorResponse('`not_verified`'),
         '404': errorResponse('Channel not found or not yours'),
-        '409': errorResponse('The messenger did not accept the message'),
+        '409': errorResponse('The messenger or receiver did not accept the message'),
         '429': errorResponse('Too many requests'),
+      },
+    },
+  },
+  '/api/v1/channels/{id}/rotate-secret': {
+    post: {
+      summary: 'Replace the secret of one of my webhooks',
+      description:
+        'The old secret stops working at once. Queued retries are signed with the new secret.',
+      security: bearer,
+      requestParams: { path: channelParamsSchema },
+      responses: {
+        '200': {
+          description: 'The channel with its new secret',
+          content: json(channelWithSecretSchema),
+        },
+        '400': errorResponse('Invalid channel ID'),
+        '401': unauthorized,
+        '403': errorResponse('`not_verified`'),
+        '404': errorResponse('Channel not found or not yours'),
+        '409': errorResponse('Not a webhook'),
       },
     },
   },
@@ -188,11 +228,53 @@ async function channelView(db: Executor, row: ChannelRow) {
   return toChannel(row, (await deviceIdsByChannel(db, [row.id])).get(row.id) ?? []);
 }
 
+const newWebhookSecret = () => `whsec_${randomToken()}`;
+
+function webhookOnlyFields(patch: { url?: string; events?: string[] }) {
+  return (['url', 'events'] as const)
+    .filter((path) => patch[path] !== undefined)
+    .map((path) => ({ path, code: 'not_allowed' }));
+}
+
 export function channelsRouter(deps: AppDeps): Router {
   const router = Router();
   const { db, clock, config } = deps;
   const auth = [requireUser(deps), requireVerified];
   const i18n = createI18n();
+
+  async function assertUrlAllowed(url: string) {
+    const checked = await deps.webhooks.check(url);
+    if (!checked.ok) throw new HttpError(400, 'url_not_allowed', 'This URL is not allowed');
+  }
+
+  async function sendTelegramTest(chatId: bigint, language: Language) {
+    const text = telegramT(i18n, language)('telegram.channelTest');
+    const result = await deps.telegram.sendMessage(chatId, text, { silent: false });
+    if (result.type !== 'SENT') {
+      throw new HttpError(409, 'conflict', 'The messenger did not accept the message');
+    }
+  }
+
+  async function sendPing(row: ChannelRow) {
+    const result = await deps.webhooks.send({
+      url: row.webhookUrl!,
+      secret: webhookSecret(config, row),
+      event: 'ping',
+      deliveryId: newId(),
+      body: JSON.stringify({
+        event: 'ping',
+        channel: { id: row.id, name: row.name },
+        sent_at: clock.now().toISOString(),
+      }),
+    });
+    if (result.type !== 'SENT') {
+      throw new HttpError(
+        409,
+        'conflict',
+        `The receiver did not accept the request (${result.error})`,
+      );
+    }
+  }
 
   router.post(
     '/api/v1/channels/telegram-link',
@@ -227,12 +309,68 @@ export function channelsRouter(deps: AppDeps): Router {
     res.json({ items: rows.map((row) => toChannel(row, devices.get(row.id) ?? [])) });
   });
 
+  router.post('/api/v1/channels', ...auth, async (req, res) => {
+    const { user } = getAuth(res);
+    const body = createWebhookSchema.parse(req.body ?? {});
+    await assertUrlAllowed(body.url);
+    const secret = newWebhookSecret();
+    const row = await db.transaction(async (tx) => {
+      await tx
+        .select({ id: appUser.id })
+        .from(appUser)
+        .where(eq(appUser.id, user.id))
+        .for('update');
+      const [webhooks] = await tx
+        .select({ n: count() })
+        .from(notificationChannel)
+        .where(
+          and(eq(notificationChannel.userId, user.id), eq(notificationChannel.type, 'WEBHOOK')),
+        );
+      if ((webhooks?.n ?? 0) >= MAX_WEBHOOKS) {
+        throw new HttpError(409, 'conflict', 'Webhook limit reached');
+      }
+      const [created] = await tx
+        .insert(notificationChannel)
+        .values({
+          userId: user.id,
+          type: 'WEBHOOK',
+          name: body.name,
+          webhookUrl: body.url,
+          webhookEvents: body.events,
+          webhookSecretEnc: encrypt(config.encryptionKey, secret),
+        })
+        .returning();
+      return created!;
+    });
+    res.status(201).json({ ...toChannel(row), secret });
+  });
+
+  router.post('/api/v1/channels/:id/rotate-secret', ...auth, async (req, res) => {
+    const { id } = channelParamsSchema.parse(req.params);
+    const row = await myChannel(db, getAuth(res).user.id, id);
+    if (row.type !== 'WEBHOOK') {
+      throw new HttpError(409, 'conflict', 'Only webhooks have a secret');
+    }
+    const secret = newWebhookSecret();
+    const [updated] = await db
+      .update(notificationChannel)
+      .set({ webhookSecretEnc: encrypt(config.encryptionKey, secret) })
+      .where(eq(notificationChannel.id, row.id))
+      .returning();
+    res.json({ ...(await channelView(db, updated!)), secret });
+  });
+
   router.patch('/api/v1/channels/:id', ...auth, async (req, res) => {
     const { id } = channelParamsSchema.parse(req.params);
     const patch = channelPatchSchema.parse(req.body ?? {});
     const row = await myChannel(db, getAuth(res).user.id, id);
+    const notAllowed = row.type === 'WEBHOOK' ? [] : webhookOnlyFields(patch);
+    if (notAllowed.length > 0) {
+      throw new HttpError(400, 'validation_error', 'Invalid request', notAllowed);
+    }
     const changes: Partial<ChannelRow> = {};
     if (patch.name !== undefined) changes.name = patch.name;
+    if (patch.events !== undefined) changes.webhookEvents = patch.events;
     if (patch.enabled === true && row.disabledReason === 'TOO_MANY_FAILURES') {
       throw new HttpError(409, 'conflict', 'Send a test message to turn this channel back on');
     }
@@ -240,11 +378,17 @@ export function channelsRouter(deps: AppDeps): Router {
       changes.enabled = patch.enabled;
       changes.disabledReason = patch.enabled ? null : 'USER';
     }
-    const [updated] = await db
-      .update(notificationChannel)
-      .set(changes)
-      .where(eq(notificationChannel.id, row.id))
-      .returning();
+    if (patch.url !== undefined && patch.url !== row.webhookUrl) {
+      await assertUrlAllowed(patch.url);
+      changes.webhookUrl = patch.url;
+    }
+    const [updated] = Object.keys(changes).length
+      ? await db
+          .update(notificationChannel)
+          .set(changes)
+          .where(eq(notificationChannel.id, row.id))
+          .returning()
+      : [row];
     res.json(await channelView(db, updated!));
   });
 
@@ -282,14 +426,8 @@ export function channelsRouter(deps: AppDeps): Router {
       const { user } = getAuth(res);
       const { id } = channelParamsSchema.parse(req.params);
       const row = await myChannel(db, user.id, id);
-      if (row.type !== 'TELEGRAM_PLATFORM' || row.telegramChatId === null) {
-        throw new HttpError(409, 'conflict', 'Test messages are not available for this channel');
-      }
-      const text = telegramT(i18n, user.language as Language)('telegram.channelTest');
-      const result = await deps.telegram.sendMessage(row.telegramChatId, text, { silent: false });
-      if (result.type !== 'SENT') {
-        throw new HttpError(409, 'conflict', 'The messenger did not accept the message');
-      }
+      if (row.type === 'WEBHOOK') await sendPing(row);
+      else await sendTelegramTest(row.telegramChatId!, user.language as Language);
       const [updated] =
         row.disabledReason === 'TOO_MANY_FAILURES'
           ? await db

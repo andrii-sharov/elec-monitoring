@@ -588,25 +588,50 @@ same way: one channel, attached to every device the user owns or views.
   ```
   POST <user url>
   Content-Type: application/json
+  User-Agent: ElecMonitor-Webhook/1
   X-Elec-Event: device.offline
   X-Elec-Delivery: <delivery id>
-  X-Elec-Signature: sha256=<HMAC of body with webhook secret>
+  X-Elec-Signature: sha256=<lowercase hex HMAC-SHA256(secret, raw body)>
 
   {
     "event": "device.offline",
-    "device": {"id": "...", "name": "Home"},
-    "outage": {"id": 123, "started_at": "...", "ended_at": null,
-               "duration_s": null, "cause": null, "kind": null},
+    "device": {"id": "<uuid>", "name": "Home"},
+    "outage": {"id": "<uuid>", "type": "OUTAGE", "started_at": "...",
+               "ended_at": null, "duration_s": null, "cause": null,
+               "kind": null, "ota_attempt_id": null},
     "sent_at": "..."
   }
   ```
-- Success = any `2xx` within 10 s.
+- `sent_at` is the time of the attempt. Each attempt serializes and signs
+  the body again with the same event data. Receivers deduplicate by
+  `X-Elec-Delivery` and can reject a stale `sent_at`.
+- Success = any `2xx` within 10 s for the whole request, including connect.
+  At most 1 KiB of the response is read and discarded.
+- Redirects are not followed. A `3xx` is a failure
+  (`HTTP 302: redirect not followed`).
 - Retries with backoff: 1 min, 5 min, 30 min, 2 h, 6 h → then `FAILED`.
 - After 20 failures in a row the webhook is disabled and the user gets
   an email.
-- "Send test" and "Redeliver" buttons in the client app.
-- **SSRF protection:** only `https`, no private / localhost / link-local
-  IPs (checked after DNS resolve).
+- "Send test" and "Redeliver" buttons in the client app. The test sends a
+  `ping` event right away (`{ "event": "ping", "channel": { "id", "name" },
+  "sent_at" }`) with a new delivery ID and is not stored. Success turns a
+  webhook disabled after failures back on and resets its failure count.
+- **SSRF protection:** a URL is allowed only when every check passes.
+  - The scheme is `https`, there are no credentials (`user:pass@`) and the
+    URL is at most 2048 chars. Any port is allowed.
+  - The host is an IP literal or resolves through DNS, and **every**
+    address is public.
+  - Blocked IPv4: `0.0.0.0/8`, `10.0.0.0/8`, `100.64.0.0/10`,
+    `127.0.0.0/8`, `169.254.0.0/16`, `172.16.0.0/12`, `192.0.0.0/24`,
+    `192.0.2.0/24`, `192.88.99.0/24`, `192.168.0.0/16`, `198.18.0.0/15`,
+    `198.51.100.0/24`, `203.0.113.0/24`, `224.0.0.0/4`, `240.0.0.0/4`.
+  - IPv6 is allowed only inside `2000::/3`, except `2001::/32`,
+    `2001:db8::/32` and `2002::/16`. `::ffff:a.b.c.d` and
+    `64:ff9b::a.b.c.d` are judged by their IPv4 address.
+  - The check runs at create, URL edit, test and every send. A send
+    connects only to the addresses it checked. At create or edit a blocked
+    address or DNS failure is `400 url_not_allowed`; at send time it is a
+    failed attempt (`address not allowed` or `DNS lookup failed`).
 
 ### Message texts
 

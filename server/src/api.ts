@@ -9,6 +9,7 @@ import { listen } from './http/listen.ts';
 import { createNotificationQueue } from './notifications/queue.ts';
 import { createTelegramTransport } from './notifications/telegram.ts';
 import { createPgRateLimiter } from './rateLimit/limiter.ts';
+import { createWebhookSender } from './webhooks/sender.ts';
 
 const config = loadConfigOrExit(process.env);
 const { db, close } = createDb(config.databaseUrl);
@@ -23,6 +24,7 @@ const app = createApp({
   notifications: createNotificationQueue(systemClock),
   firmware: createFirmwareStore(config.firmware),
   telegram: createTelegramTransport(config.telegram, console),
+  webhooks: createWebhookSender(),
 });
 
 async function shutdown(exitCode: number): Promise<never> {

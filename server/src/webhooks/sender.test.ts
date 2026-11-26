@@ -245,6 +245,14 @@ describe('send', () => {
     expect(connections()).toBe(0);
   });
 
+  test('gives up on a hanging DNS check', async () => {
+    const sender = createWebhookSender({
+      lookup: () => new Promise(() => {}),
+      checkTimeoutMs: 20,
+    });
+    expect(await sender.check('https://hooks.example.com/')).toEqual({ ok: false, reason: 'dns' });
+  });
+
   test('checks the address again on every send', async () => {
     const { port, connections } = await receiver();
     const lookup = loopback().mockResolvedValueOnce([{ address: '93.184.215.14', family: 4 }]);

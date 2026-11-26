@@ -10,6 +10,7 @@ import type { Logger } from '../logger.ts';
 import type { NotificationQueue } from '../notifications/queue.ts';
 import type { TelegramClient } from '../notifications/telegram.ts';
 import type { RateLimiter } from '../rateLimit/limiter.ts';
+import type { WebhookSender } from '../webhooks/sender.ts';
 import { corsMiddleware } from './cors.ts';
 import { errorHandler, notFound } from './errors.ts';
 import { healthPaths, healthRouter } from './health.ts';
@@ -40,6 +41,7 @@ export type AppDeps = {
   notifications: NotificationQueue;
   firmware: FirmwareStore;
   telegram: TelegramClient;
+  webhooks: WebhookSender;
 };
 
 export function apiDocument(): OpenApiDocument {

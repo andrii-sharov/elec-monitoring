@@ -53,6 +53,7 @@ Validation errors add `details`:
 | HTTP | `code`                | When                                                                         |
 | ---- | --------------------- | ---------------------------------------------------------------------------- |
 | 400  | `validation_error`    | Body, query or path fails the schema                                         |
+| 400  | `url_not_allowed`     | A webhook URL that is not public `https` (see Notification channels)         |
 | 401  | `unauthorized`        | Missing, invalid or expired token                                            |
 | 403  | `forbidden`           | Authenticated, but the role does not allow it (e.g. viewer edits settings)   |
 | 401  | `invalid_credentials` | Log in with a wrong email or password (the same answer for both)             |
@@ -717,20 +718,20 @@ newest first:
 
 ### Notification channels
 
-| Method | Path                                         | Auth      | Purpose                                   |
-| ------ | -------------------------------------------- | --------- | ----------------------------------------- |
-| GET    | `/channels`                                  | signed in | List my channels                          |
-| POST   | `/channels`                                  | signed in | Add a webhook (M8)                        |
-| POST   | `/channels/telegram-link`                    | signed in | Link to connect the platform Telegram bot |
-| PATCH  | `/channels/:id`                              | signed in | Rename, turn on or off                    |
-| PUT    | `/channels/:id/devices`                      | signed in | Set which devices send to this channel    |
-| DELETE | `/channels/:id`                              | signed in | Delete channel                            |
-| POST   | `/channels/:id/test`                         | signed in | Send test message                         |
-| POST   | `/channels/:id/rotate-secret` **(proposed)** | signed in | New webhook secret                        |
-| GET    | `/devices/:id/channels`                      | signed in | My channels used by this device           |
-| PUT    | `/devices/:id/channels`                      | signed in | Set which of my channels this device uses |
-| GET    | `/channels/:id/deliveries`                   | signed in | Delivery log                              |
-| POST   | `/deliveries/:id/redeliver`                  | signed in | Retry a delivery                          |
+| Method | Path                          | Auth      | Purpose                                   |
+| ------ | ----------------------------- | --------- | ----------------------------------------- |
+| GET    | `/channels`                   | signed in | List my channels                          |
+| POST   | `/channels`                   | signed in | Add a webhook                             |
+| POST   | `/channels/telegram-link`     | signed in | Link to connect the platform Telegram bot |
+| PATCH  | `/channels/:id`               | signed in | Edit, turn on or off                      |
+| PUT    | `/channels/:id/devices`       | signed in | Set which devices send to this channel    |
+| DELETE | `/channels/:id`               | signed in | Delete channel                            |
+| POST   | `/channels/:id/test`          | signed in | Send test message                         |
+| POST   | `/channels/:id/rotate-secret` | signed in | New webhook secret                        |
+| GET    | `/devices/:id/channels`       | signed in | My channels used by this device           |
+| PUT    | `/devices/:id/channels`       | signed in | Set which of my channels this device uses |
+| GET    | `/channels/:id/deliveries`    | signed in | Delivery log                              |
+| POST   | `/deliveries/:id/redeliver`   | signed in | Retry a delivery                          |
 
 Channels belong to the caller. Viewers attach their own channels to
 shared devices.
@@ -738,21 +739,38 @@ shared devices.
 `GET /channels` items include `device_ids`: the devices linked to that
 channel, oldest link first.
 
-`PATCH /channels/:id` `{ "name"?, "enabled"? }` (at least one; name 1–64
-chars, trimmed) → `200` with the channel. `enabled: false` sets
-`disabled_reason: "USER"`, `enabled: true` clears it. A channel disabled
-with `TOO_MANY_FAILURES` returns `409 conflict` on `enabled: true`; a
-successful test message turns it back on.
+`PATCH /channels/:id` `{ "name"?, "enabled"?, "url"?, "events"? }` (at
+least one; name 1–64 chars, trimmed) → `200` with the channel.
+`enabled: false` sets `disabled_reason: "USER"`, `enabled: true` clears
+it. A channel disabled with `TOO_MANY_FAILURES` returns `409 conflict` on
+`enabled: true`; a successful test message turns it back on.
+
+`url` and `events` follow the rules of `POST /channels` and apply to
+webhooks only. On a Telegram channel they are `400 validation_error` with
+detail `{ "path": "url" | "events", "code": "not_allowed" }`. A changed URL
+is checked like a new one (`400 url_not_allowed`). Editing does not
+re-enable the channel or reset its failure count.
 
 `PUT /channels/:id/devices` `{ "device_ids": [...] }` (at most 100) →
 `200 { "device_ids": [...] }`. Replaces the channel's links. Every ID must
 be a device the caller owns or views, otherwise `400` with detail
 `{ "path": "device_ids.<i>", "code": "not_found" }`.
 
-`POST /channels/:id/test` → `200` with the channel after the test. Sends a
-short message in the caller's language. If the messenger refuses it,
-`409 conflict`. On success a channel disabled after failures is turned
-back on and its failure count reset. Rate limit: 5 / min per user.
+`POST /channels/:id/test` → `200` with the channel after the test. On
+success a channel disabled after failures is turned back on and its
+failure count reset. Rate limit: 5 / min per user.
+
+- Telegram: sends a short message in the caller's language. If the
+  messenger refuses it, `409 conflict`.
+- Webhook: the API sends a signed `ping` request right away (see §8). It
+  is not stored in the delivery log. If the receiver does not accept it,
+  `409 conflict` with message
+  `The receiver did not accept the request (<error>)`.
+
+`POST /channels/:id/rotate-secret` (webhook only, otherwise
+`409 conflict`) → `200` with the channel and a new `secret`, shown once.
+The old secret stops working at once, with no grace period. Retries that
+are already queued are signed with the new secret.
 
 `DELETE /channels/:id` → `204`. Only the channel's owner can delete it;
 a missing channel or another user's channel is `404 not_found`. The
@@ -788,8 +806,19 @@ group.
 }
 ```
 
-`201` returns `secret` **once**. Non-HTTPS or private IP after DNS →
-`400 url_not_allowed`.
+`name` is 1–64 chars, trimmed. `events` holds 1–3 unique values of
+`device.offline`, `device.online` and `device.power_blip`. `url` is at
+most 2048 chars and is stored as sent.
+
+`201` returns the channel plus `secret` (`whsec_…`) **once**; only rotate
+returns a secret again. The new channel is attached to no devices. A user
+can have at most 10 webhooks; the 11th is `409 conflict`
+"Webhook limit reached".
+
+A URL that is not `https`, carries credentials, does not resolve, or
+resolves to any non-public address is `400 url_not_allowed` (rules in
+[PROJECT_V2.md §7](PROJECT_V2.md#webhooks)). The DNS check gives up after
+5 s.
 
 Channel object:
 
@@ -801,12 +830,14 @@ Channel object:
   "enabled": true,
   "disabled_reason": null,
   "config": { "url": "https://…", "events": ["device.offline"] },
-  "created_at": "…"
+  "created_at": "…",
+  "device_ids": [],
+  "failures": 0
 }
 ```
 
-`disabled_reason`: `null` | `USER` | `TOO_MANY_FAILURES`. `PATCH` with
-`enabled: true` re-enables and resets the failure counter.
+`disabled_reason`: `null` | `USER` | `TOO_MANY_FAILURES`. `failures` is
+the number of failed attempts in a row.
 
 `GET /devices/:id/channels` → `200 { "channel_ids": ["…"] }`, the caller's
 channels used by the device.
@@ -955,6 +986,30 @@ See [PROJECT_V2.md §7](PROJECT_V2.md#webhooks). Payload `device`,
 the REST API above. `device.power_blip` sends the outage object with
 `type: "POWER_BLIP"`.
 
+Every request is a `POST` with these headers:
+
+| Header             | Value                                                  |
+| ------------------ | ------------------------------------------------------ |
+| `Content-Type`     | `application/json`                                     |
+| `User-Agent`       | `ElecMonitor-Webhook/1`                                |
+| `X-Elec-Event`     | The event name, or `ping`                              |
+| `X-Elec-Delivery`  | Delivery ID. Retries keep it, so deduplicate by it     |
+| `X-Elec-Signature` | `sha256=<lowercase hex HMAC-SHA256(secret, raw body)>` |
+
+`sent_at` is the time of the attempt: each attempt serializes and signs the
+body again, while the event data stays the same. Receivers can reject a
+stale `sent_at`.
+
+The test request uses `X-Elec-Event: ping` and a new `X-Elec-Delivery`:
+
+```json
+{
+  "event": "ping",
+  "channel": { "id": "…", "name": "Home Assistant" },
+  "sent_at": "2026-11-21T16:42:00.000Z"
+}
+```
+
 ## 9. Review: gaps and open questions
 
 Reviewed the endpoints from the original spec §8 against the features
@@ -974,15 +1029,15 @@ in PROJECT_V2.md §3–§12. Section numbers below refer to PROJECT_V2.md.
 | §12 CI checks "API health endpoint"                                  | `/health` not listed in v2                                                      | §7 here                                                                                                 |
 | Swagger UI                                                           | No paths                                                                        | `/api/v1/openapi.json`, `/api/docs`                                                                     |
 | §6 Invites                                                           | Owner can't see or revoke pending invites. Invitee can't see what the invite is | ✅ `GET` / `DELETE /devices/:id/invites`, `GET /invites/:token` (M6)                                    |
-| §7 Webhook secret                                                    | No rotation if leaked                                                           | `POST /channels/:id/rotate-secret`                                                                      |
+| §7 Webhook secret                                                    | No rotation if leaked                                                           | ✅ `POST /channels/:id/rotate-secret` (M8)                                                              |
 | `PUT /devices/:id/channels`                                          | No matching `GET`                                                               | `GET /devices/:id/channels`                                                                             |
 | §5 Wi-Fi diagnostics stored                                          | No way to read them                                                             | ✅ `GET /devices/:id/diagnostics` (owner, M2)                                                           |
 | OTA queued by mistake                                                | No cancel                                                                       | `DELETE /devices/:id/firmware-update`                                                                   |
 
 ### Inconsistencies
 
-- **ID types.** The webhook example has `"id": 123` for outages, devices
-  use string IDs. Pick one (this file assumes UUIDs).
+- ~~**ID types.**~~ ✅ Resolved (M8): every ID in a webhook body is a UUID
+  string.
 - **Enum case.** Resolved: enum values are `UPPER_CASE` in the spec, the
   API and the database (see [Formats](#formats)).
 - **Stats response** has no power blips, no cause breakdown and no series
