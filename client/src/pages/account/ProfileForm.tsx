@@ -56,7 +56,7 @@ export function ProfileForm({ me }: { me: Me }) {
     updateMe.mutate(body, {
       onSuccess: (updated) => {
         reset(valuesOf(updated));
-        toast.success(t('app.account.saved'));
+        toast.success(t('app.account.saved', { lng: updated.language }));
       },
       onError: (error) => {
         const mapped =

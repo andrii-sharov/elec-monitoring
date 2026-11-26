@@ -128,10 +128,16 @@
   animation-timing-function: var(--app-motion-ease);
 }
 
+:root,
+[data-app-style] {
+  --app-enter-duration: min(calc(var(--app-motion-duration) * 2), 240ms);
+  --app-panel-duration: min(var(--app-motion-duration), 120ms);
+}
+
 @keyframes app-rise {
   from {
-    opacity: 0;
-    transform: translateY(0.5rem);
+    opacity: 0.4;
+    transform: translateY(0.25rem);
   }
 }
 
@@ -142,8 +148,12 @@
 }
 
 [data-motion='enter'] {
-  animation: app-rise calc(var(--app-motion-duration) * 2) var(--app-motion-ease) both;
-  animation-delay: calc(var(--i, 0) * 60ms);
+  animation: app-rise var(--app-enter-duration) var(--app-motion-ease) both;
+  animation-delay: calc(min(var(--i, 0), 8) * 30ms);
+}
+
+[data-motion='panel'] {
+  animation: app-fade-in var(--app-panel-duration) ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {

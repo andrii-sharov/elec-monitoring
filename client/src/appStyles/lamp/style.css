@@ -46,6 +46,9 @@
     color-mix(in oklab, var(--warning) 45%, transparent),
     transparent 70%
   );
+}
+
+.lamp-glow[data-motion='flicker'] {
   animation: lamp-flicker var(--app-motion-duration) steps(1, end) both;
 }
 

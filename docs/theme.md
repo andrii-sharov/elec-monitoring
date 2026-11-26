@@ -83,8 +83,17 @@ the `:root` defaults.
   and inward echo on the device page while `OFFLINE`, the live dot next to
   an open outage in the timeline, the looping promo video on auth pages,
   and the entrance (`data-motion="enter"`, staggered by `--i`) of lists,
-  the device hero, tab panels, history rows, channel rows and member rows.
+  the device hero, history rows, channel rows and member rows.
   The tab indicator slides with the motion tokens.
+- Entrance lasts `--app-enter-duration` (`min(2 × --app-motion-duration,
+  240ms)`), starts at 40% opacity, and its stagger is
+  `min(--i, 8) × 30ms`. Tab and view panels only fade
+  (`data-motion="panel"`, `--app-panel-duration`, at most 120 ms).
+  Entrances are never nested.
+- Change motion (Classic badge fade, Sonar pulse, Switchboard snap, Lamp
+  flicker) plays only while `useStateChange` reports a real change, never
+  on mount. `client/src/appStyles/motion.test.tsx` checks the style sheets
+  and the first render of every `StatusMark`.
   `prefers-reduced-motion: reduce` sets the motion tokens to `0ms`, turns
   off animation on every `[data-motion]` element and stops the promo
   video (poster with controls).

@@ -56,10 +56,17 @@ changing behaviour, and update the spec if a decision changes.
   `client/` uses the existing motion system from `client/src/styles.css`
   and [theme.md](docs/theme.md). Content that appears gets
   `data-motion="enter"`, and list rows add a stagger with
-  `style={{ '--i': index }}`. Live indicators use `data-motion="ambient"`.
-  Use the `--app-motion-duration` and `--app-motion-ease` tokens, never
+  `style={{ '--i': index }}`. Tab and view panels use `data-motion="panel"`.
+  Live indicators use `data-motion="ambient"`. Use the motion tokens, never
   hard-coded timings, and keep `prefers-reduced-motion` working. Don't
   add another animation library.
+- Motion must never hide or flash content:
+  - no entrance inside another entrance;
+  - nothing stays invisible longer than `--app-enter-duration` (240 ms max);
+  - decorative animation (flicker, pulse, snap) runs only on a real state
+    change through `useStateChange`, never on mount.
+  - `client/src/appStyles/motion.test.tsx` enforces this. Extend its
+    ambient list only for motion that `theme.md` allows.
 - `shared/` is an npm workspace for code used by the server and both React
   apps: the translation dictionaries and shared enums.
 - Generate the public OpenAPI document from API schemas and serve it through

@@ -64,7 +64,7 @@ function TabsPanel({ className, ...props }: TabsPrimitive.Panel.Props) {
   return (
     <TabsPrimitive.Panel
       data-slot="tabs-panel"
-      data-motion="enter"
+      data-motion="panel"
       className={cn('outline-none', className)}
       {...props}
     />

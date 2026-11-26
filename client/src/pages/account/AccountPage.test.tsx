@@ -48,6 +48,8 @@ test('changing language to uk sends the patch and switches the page', async () =
   await user.click(screen.getByRole('button', { name: 'Save' }));
   await screen.findByRole('heading', { level: 1, name: 'Обліковий запис' });
   expect(bodies).toEqual([{ language: 'uk' }]);
+  expect(await screen.findByText('Профіль збережено')).toBeInTheDocument();
+  expect(screen.queryByText('Profile saved')).toBeNull();
 });
 
 test('an empty name shows an inline error and sends nothing', async () => {

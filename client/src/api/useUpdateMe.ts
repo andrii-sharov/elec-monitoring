@@ -15,11 +15,11 @@ export function useUpdateMe() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: Patch) => patchMe(api, body),
-    onSuccess: (me, body) => {
+    onSuccess: async (me, body) => {
       queryClient.setQueryData(queryKeys.me, me);
       if (body.language !== undefined) {
         rememberLanguage(me.language);
-        void i18n.changeLanguage(me.language);
+        await i18n.changeLanguage(me.language);
       }
     },
   });
