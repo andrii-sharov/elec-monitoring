@@ -961,9 +961,9 @@ Caddy, `systemd` and env templates are in `deploy/`.
    and `/opt/elec/staging-current` links to the running one.
 4. Settings live in `/etc/elec/staging.env` (`root:root`, `0600`), in
    `systemd` env-file syntax: double-quote values with spaces. Staging
-   uses its own `JWT_SECRET`, Google OAuth client, Resend key and
-   Supabase session pooler URL (IPv4, port `5432`), with `PORT=3000` and
-   `TRUST_PROXY_HOPS=1` because Caddy is the only proxy.
+   uses its own `JWT_SECRET`, `ENCRYPTION_KEY`, Google OAuth client,
+   Resend key and Supabase session pooler URL (IPv4, port `5432`), with
+   `PORT=3000` and `TRUST_PROXY_HOPS=1` because Caddy is the only proxy.
 5. `elec-staging-api.service` and `elec-staging-worker.service` run
    `node dist/api.js` and `node dist/worker.js` directly (not through
    `npm`, so signals reach Node and the service user needs no home) as

@@ -78,7 +78,8 @@ command on `elec-staging` as `ubuntu` unless it says otherwise.
    sudoedit /etc/elec/staging.env
    ```
 
-   Generate `JWT_SECRET` with `openssl rand -base64 48`.
+   Generate `JWT_SECRET` with `openssl rand -base64 48` and
+   `ENCRYPTION_KEY` with `openssl rand -base64 32`.
 
 7. **Services and Caddy.**
 
