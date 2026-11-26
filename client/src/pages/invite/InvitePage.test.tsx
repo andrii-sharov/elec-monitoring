@@ -127,7 +127,7 @@ test('accepting refreshes the profile, so the verify banner goes away', async ()
   });
   await user.click(await screen.findByRole('button', { name: 'Accept' }));
   await vi.waitFor(() => expect(router.state.location.pathname).toBe(`/devices/${shared.id}`));
-  await screen.findByRole('region', { name: 'Members' });
+  await screen.findByRole('tablist', { name: 'Device sections' });
   await vi.waitFor(() =>
     expect(screen.queryByText(/Confirm your email address/)).not.toBeInTheDocument(),
   );

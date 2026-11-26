@@ -41,7 +41,7 @@ test('preselects the linked channel and saves the added one', async () => {
       return HttpResponse.json(value);
     }),
   );
-  const { user } = renderRoute(`/devices/${id}`, { me: meFixture() });
+  const { user } = renderRoute(`/devices/${id}?tab=notifications`, { me: meFixture() });
   const homeBox = await screen.findByRole('checkbox', { name: 'Home chat' });
   const officeBox = screen.getByRole('checkbox', { name: 'Office' });
   await vi.waitFor(() => expect(homeBox).toBeChecked());
@@ -57,7 +57,7 @@ test('without channels it links to the notifications page', async () => {
     http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items: [] })),
     http.get(`${base}/api/v1/devices/${id}/channels`, () => HttpResponse.json({ channel_ids: [] })),
   );
-  renderRoute(`/devices/${id}`, { me: meFixture() });
+  renderRoute(`/devices/${id}?tab=notifications`, { me: meFixture() });
   const link = await screen.findByRole('link', { name: 'Connect a channel' });
   expect(link).toHaveAttribute('href', '/notifications');
 });
@@ -70,7 +70,7 @@ test('a failed save shows the error', async () => {
       HttpResponse.json({ error: { code: 'forbidden', message: 'x' } }, { status: 403 }),
     ),
   );
-  const { user } = renderRoute(`/devices/${id}`, { me: meFixture() });
+  const { user } = renderRoute(`/devices/${id}?tab=notifications`, { me: meFixture() });
   await user.click(await screen.findByRole('checkbox', { name: 'Home chat' }));
   await user.click(screen.getByRole('button', { name: 'Save channels' }));
   expect(await screen.findByRole('alert')).toHaveTextContent("You don't have access to this.");

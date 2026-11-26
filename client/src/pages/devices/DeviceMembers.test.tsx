@@ -62,7 +62,7 @@ test('the owner sees members with emails and pending invites', async () => {
       }),
     ],
   });
-  renderRoute(`/devices/${id}`, { me: johnny });
+  renderRoute(`/devices/${id}?tab=members`, { me: johnny });
   const section = await membersSection();
   expect(await section.findByText('mary@example.com')).toBeVisible();
   expect(section.getByText('johnny@example.com')).toBeVisible();
@@ -83,7 +83,7 @@ test('revoking an invite removes it from the list', async () => {
       return new HttpResponse(null, { status: 204 });
     }),
   );
-  const { user } = renderRoute(`/devices/${id}`, { me: johnny });
+  const { user } = renderRoute(`/devices/${id}?tab=members`, { me: johnny });
   const section = await membersSection();
   await user.click(await section.findByRole('button', { name: 'Revoke' }));
   await vi.waitFor(() => expect(section.queryByText('anna@example.com')).not.toBeInTheDocument());
@@ -98,7 +98,7 @@ test('inviting sends the email, clears the field and refetches', async () => {
       return HttpResponse.json(inviteFixture({ email: 'pete@example.com' }), { status: 201 });
     }),
   );
-  const { user } = renderRoute(`/devices/${id}`, { me: johnny });
+  const { user } = renderRoute(`/devices/${id}?tab=members`, { me: johnny });
   const section = await membersSection();
   const field = await section.findByLabelText('Email or phone');
   await user.type(field, 'pete@example.com');
@@ -124,7 +124,7 @@ test('an existing member shows on the email field', async () => {
       ),
     ),
   );
-  const { user } = renderRoute(`/devices/${id}`, { me: johnny });
+  const { user } = renderRoute(`/devices/${id}?tab=members`, { me: johnny });
   const section = await membersSection();
   await user.type(await section.findByLabelText('Email or phone'), 'mary@example.com');
   await user.click(section.getByRole('button', { name: 'Send invite' }));
@@ -140,7 +140,7 @@ test('an invalid email is caught before sending', async () => {
       return HttpResponse.json(inviteFixture(), { status: 201 });
     }),
   );
-  const { user } = renderRoute(`/devices/${id}`, { me: johnny });
+  const { user } = renderRoute(`/devices/${id}?tab=members`, { me: johnny });
   const section = await membersSection();
   await user.type(await section.findByLabelText('Email or phone'), 'mary@');
   await user.click(section.getByRole('button', { name: 'Send invite' }));
@@ -156,7 +156,7 @@ test('the form is disabled at 10 members and invites', async () => {
     members: [owner, mary, ...viewers],
     invites: [inviteFixture()],
   });
-  renderRoute(`/devices/${id}`, { me: johnny });
+  renderRoute(`/devices/${id}?tab=members`, { me: johnny });
   const section = await membersSection();
   expect(await section.findByText(/the most allowed/)).toBeVisible();
   expect(section.getByRole('button', { name: 'Send invite' })).toBeDisabled();
@@ -174,7 +174,7 @@ test('removing a viewer asks first, then refetches', async () => {
       return new HttpResponse(null, { status: 204 });
     }),
   );
-  const { user } = renderRoute(`/devices/${id}`, { me: johnny });
+  const { user } = renderRoute(`/devices/${id}?tab=members`, { me: johnny });
   const section = await membersSection();
   await user.click(await section.findByRole('button', { name: 'Remove Mary' }));
   const dialog = await screen.findByRole('alertdialog');
@@ -197,7 +197,7 @@ test('a viewer sees the list, no invite tools, and can leave', async () => {
     }),
     http.get(`${base}/api/v1/devices`, () => HttpResponse.json({ items: [] })),
   );
-  const { user, router } = renderRoute(`/devices/${id}`, { me });
+  const { user, router } = renderRoute(`/devices/${id}?tab=members`, { me });
   const section = await membersSection();
   expect(await section.findByText('Johnny')).toBeVisible();
   expect(section.queryByText('johnny@example.com')).not.toBeInTheDocument();
@@ -222,7 +222,7 @@ test('the invite form works from the keyboard', async () => {
       return HttpResponse.json(inviteFixture({ email: 'pete@example.com' }), { status: 201 });
     }),
   );
-  const { user } = renderRoute(`/devices/${id}`, { me: johnny });
+  const { user } = renderRoute(`/devices/${id}?tab=members`, { me: johnny });
   const section = await membersSection();
   const field = await section.findByLabelText('Email or phone');
   field.focus();
@@ -241,7 +241,7 @@ test('a phone invite shows a link to copy', async () => {
       return HttpResponse.json(inviteFixture({ email: null, phone, url }), { status: 201 });
     }),
   );
-  const { user } = renderRoute(`/devices/${id}`, { me: johnny });
+  const { user } = renderRoute(`/devices/${id}?tab=members`, { me: johnny });
   const copy = vi.spyOn(navigator.clipboard, 'writeText');
   const section = await membersSection();
   await user.type(await section.findByLabelText('Email or phone'), phone);
@@ -260,7 +260,7 @@ test('an email invite shows no link', async () => {
       HttpResponse.json(inviteFixture({ email: 'pete@example.com' }), { status: 201 }),
     ),
   );
-  const { user } = renderRoute(`/devices/${id}`, { me: johnny });
+  const { user } = renderRoute(`/devices/${id}?tab=members`, { me: johnny });
   const section = await membersSection();
   await user.type(await section.findByLabelText('Email or phone'), 'pete@example.com');
   await user.click(section.getByRole('button', { name: 'Send invite' }));
@@ -273,7 +273,7 @@ test('members and pending invites show a phone when there is no email', async ()
     members: [owner, { ...mary, email: null, phone: '+380501234567' }],
     invites: [inviteFixture({ email: null, phone: '+380509999999' })],
   });
-  renderRoute(`/devices/${id}`, { me: johnny });
+  renderRoute(`/devices/${id}?tab=members`, { me: johnny });
   const section = await membersSection();
   expect(await section.findByText('+380 50 123 4567')).toBeVisible();
   expect(await section.findByText('+380 50 999 9999')).toBeVisible();

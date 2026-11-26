@@ -145,6 +145,22 @@ export function getOutages(api: ApiClient, id: string, cursor?: string) {
   });
 }
 
+export type OutageRange = { from: string; to: string };
+
+export async function getAllOutages(api: ApiClient, id: string, range: OutageRange) {
+  const items = [];
+  let cursor: string | undefined;
+  do {
+    const page = await api.request(`${device(id)}/outages`, {
+      query: { ...range, limit: 100, cursor },
+      schema: outagesPageSchema,
+    });
+    items.push(...page.items);
+    cursor = page.next_cursor ?? undefined;
+  } while (cursor);
+  return items;
+}
+
 export function getChannels(api: ApiClient) {
   return api.request('/api/v1/channels', { schema: channelListSchema });
 }

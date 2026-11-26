@@ -156,8 +156,8 @@ test('a pending device shows setup at the top with a new pairing code', async ()
   );
   const { user } = renderRoute(`/devices/${id}`, { me: meFixture() });
   const setup = await screen.findByRole('region', { name: 'Finish setting up' });
-  const timeline = screen.getByRole('region', { name: 'Timeline' });
-  expect(setup.compareDocumentPosition(timeline) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  const sections = screen.getByRole('tablist', { name: 'Device sections' });
+  expect(setup.compareDocumentPosition(sections) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(within(setup).getByRole('button', { name: 'Flash firmware' })).toBeInTheDocument();
   await user.click(within(setup).getByRole('button', { name: 'Get pairing code' }));
   expect(await within(setup).findByText('K7Q2 M9XD')).toBeInTheDocument();
@@ -170,13 +170,30 @@ test('a viewer of a pending device sees no setup', async () => {
     ),
   );
   renderRoute(`/devices/${id}`, { me: meFixture() });
-  await screen.findByRole('region', { name: 'Timeline' });
+  await screen.findByRole('tablist', { name: 'Device sections' });
   expect(screen.queryByRole('region', { name: 'Finish setting up' })).toBeNull();
 });
 
 test('an online device shows no setup', async () => {
   server.use(http.get(`${base}/api/v1/devices/${id}`, () => HttpResponse.json(deviceFixture())));
   renderRoute(`/devices/${id}`, { me: meFixture() });
-  await screen.findByRole('region', { name: 'Timeline' });
+  await screen.findByRole('tablist', { name: 'Device sections' });
   expect(screen.queryByRole('region', { name: 'Finish setting up' })).toBeNull();
+});
+
+test('tabs switch sections and keep the choice in the URL', async () => {
+  server.use(
+    http.get(`${base}/api/v1/devices/${id}`, () => HttpResponse.json(deviceFixture())),
+    http.get(`${base}/api/v1/devices/${id}/members`, () => HttpResponse.json({ items: [] })),
+    http.get(`${base}/api/v1/devices/${id}/invites`, () => HttpResponse.json({ items: [] })),
+  );
+  const { user, router } = renderRoute(`/devices/${id}`, { me: meFixture() });
+  expect(await screen.findByRole('tab', { name: 'History' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await user.click(screen.getByRole('tab', { name: 'Members' }));
+  expect(await screen.findByRole('region', { name: 'Members' })).toBeInTheDocument();
+  expect(router.state.location.search).toBe('?tab=members');
+  expect(screen.queryByRole('navigation', { name: 'Days of the week' })).toBeNull();
 });

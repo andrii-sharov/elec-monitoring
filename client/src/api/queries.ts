@@ -1,11 +1,13 @@
 import type { Channel, Device, Me } from '@elec/shared/api';
 import {
+  keepPreviousData,
   useInfiniteQuery,
   useQuery,
   type QueryKey,
   type UseQueryOptions,
 } from '@tanstack/react-query';
 import {
+  getAllOutages,
   getChannels,
   getDevice,
   getDeviceChannels,
@@ -15,6 +17,7 @@ import {
   getMe,
   getMembers,
   getOutages,
+  type OutageRange,
 } from './endpoints.ts';
 import { useSession } from './session.tsx';
 
@@ -23,6 +26,7 @@ export const queryKeys = {
   devices: ['devices'],
   device: (id: string) => ['device', id],
   outages: (id: string) => ['outages', id],
+  outageRange: (id: string, from: string, to: string) => ['outages', id, 'range', from, to],
   channels: ['channels'],
   deviceChannels: (id: string) => ['deviceChannels', id],
   members: (id: string) => ['members', id],
@@ -69,6 +73,16 @@ export function useOutages(id: string) {
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (last) => last.next_cursor ?? undefined,
     refetchInterval: pollMs.device,
+  });
+}
+
+export function useOutageRange(id: string, range: OutageRange, live: boolean) {
+  const { api } = useSession();
+  return useQuery({
+    queryKey: queryKeys.outageRange(id, range.from, range.to),
+    queryFn: () => getAllOutages(api, id, range),
+    placeholderData: keepPreviousData,
+    refetchInterval: live ? pollMs.device : false,
   });
 }
 

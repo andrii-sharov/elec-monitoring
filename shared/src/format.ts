@@ -9,7 +9,7 @@ export type DurationKey =
 export type Translate = (key: DurationKey, options: { value: number }) => string;
 
 const DEFAULT_TIMEZONE = 'Europe/Kyiv';
-const LOCALES: Record<Language, string> = { uk: 'uk-UA', en: 'en-GB', ru: 'ru-RU' };
+export const LOCALES: Record<Language, string> = { uk: 'uk-UA', en: 'en-GB', ru: 'ru-RU' };
 
 function safeTimezone(timezone: string): string {
   try {
@@ -64,4 +64,8 @@ export function formatRange(from: Date, to: Date, language: Language, timezone: 
   const b = momentParts(to, locale, timezone);
   if (a.day === b.day && a.month === b.month) return `${a.time} → ${b.time}`;
   return `${a.day} ${a.month} ${a.time} → ${b.day} ${b.month} ${b.time}`;
+}
+
+export function formatTime(at: Date, language: Language, timezone: string): string {
+  return momentParts(at, LOCALES[language], timezone).time;
 }

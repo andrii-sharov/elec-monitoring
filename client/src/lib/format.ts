@@ -3,7 +3,9 @@ import {
   formatDuration,
   formatMoment,
   formatRange,
+  formatTime,
   languages,
+  LOCALES,
 } from '@elec/shared';
 import type { Language } from '@elec/shared';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +16,10 @@ export type Formatters = {
   duration(seconds: number): string;
   range(fromIso: string, toIso: string): string;
   since(iso: string, now?: Date): string;
+  time(iso: string): string;
+  day(date: string, options: Intl.DateTimeFormatOptions): string;
+  days(from: string, to: string): string;
+  timezone: string;
 };
 
 export function browserTimezone(): string {
@@ -35,5 +41,18 @@ export function useFormatters(): Formatters {
     range: (fromIso, toIso) => formatRange(new Date(fromIso), new Date(toIso), language, timezone),
     since: (iso, now = new Date()) =>
       `${moment(iso)} · ${duration((now.getTime() - new Date(iso).getTime()) / 1000)}`,
+    time: (iso) => formatTime(new Date(iso), language, timezone),
+    day: (date, options) =>
+      new Intl.DateTimeFormat(LOCALES[language], { ...options, timeZone: 'UTC' }).format(
+        Date.parse(date),
+      ),
+    days: (from, to) =>
+      new Intl.DateTimeFormat(LOCALES[language], {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        timeZone: 'UTC',
+      }).formatRange(Date.parse(from), Date.parse(to)),
+    timezone,
   };
 }
