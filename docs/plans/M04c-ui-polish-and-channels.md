@@ -1,6 +1,6 @@
 # M4c — UI polish, history periods, channels and timings
 
-Follow-up to [M4b](M04b-device-page-and-brand.md). Status: **approved, in progress.** Items marked
+Follow-up to [M4b](M04b-device-page-and-brand.md). Status: **done.** Items marked
 _(assumption)_ are calls made in the draft.
 
 ## Decisions from review
