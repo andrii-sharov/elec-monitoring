@@ -91,6 +91,7 @@ Validation errors add `details`:
 | Add email                       | 3 / h per user and per email   |
 | Resend verification             | 3 / h per user                 |
 | Device invites                  | 10 / h per user                |
+| Channel test message            | 5 / min per user               |
 | Change password, delete account | 10 / 15 min per user           |
 
 Responses include `Retry-After` on `429`; CORS exposes it to the app origins.
@@ -719,9 +720,10 @@ newest first:
 | Method | Path                                         | Auth      | Purpose                                   |
 | ------ | -------------------------------------------- | --------- | ----------------------------------------- |
 | GET    | `/channels`                                  | signed in | List my channels                          |
-| POST   | `/channels`                                  | signed in | Add own bot or webhook                    |
+| POST   | `/channels`                                  | signed in | Add a webhook (M8)                        |
 | POST   | `/channels/telegram-link`                    | signed in | Link to connect the platform Telegram bot |
-| PATCH  | `/channels/:id`                              | signed in | Update, enable, disable                   |
+| PATCH  | `/channels/:id`                              | signed in | Rename, turn on or off                    |
+| PUT    | `/channels/:id/devices`                      | signed in | Set which devices send to this channel    |
 | DELETE | `/channels/:id`                              | signed in | Delete channel                            |
 | POST   | `/channels/:id/test`                         | signed in | Send test message                         |
 | POST   | `/channels/:id/rotate-secret` **(proposed)** | signed in | New webhook secret                        |
@@ -732,6 +734,25 @@ newest first:
 
 Channels belong to the caller. Viewers attach their own channels to
 shared devices.
+
+`GET /channels` items include `device_ids`: the devices linked to that
+channel, oldest link first.
+
+`PATCH /channels/:id` `{ "name"?, "enabled"? }` (at least one; name 1–64
+chars, trimmed) → `200` with the channel. `enabled: false` sets
+`disabled_reason: "USER"`, `enabled: true` clears it. A channel disabled
+with `TOO_MANY_FAILURES` returns `409 conflict` on `enabled: true`; a
+successful test message turns it back on.
+
+`PUT /channels/:id/devices` `{ "device_ids": [...] }` (at most 100) →
+`200 { "device_ids": [...] }`. Replaces the channel's links. Every ID must
+be a device the caller owns or views, otherwise `400` with detail
+`{ "path": "device_ids.<i>", "code": "not_found" }`.
+
+`POST /channels/:id/test` → `200` with the channel after the test. Sends a
+short message in the caller's language. If the messenger refuses it,
+`409 conflict`. On success a channel disabled after failures is turned
+back on and its failure count reset. Rate limit: 5 / min per user.
 
 `DELETE /channels/:id` → `204`. Only the channel's owner can delete it;
 a missing channel or another user's channel is `404 not_found`. The

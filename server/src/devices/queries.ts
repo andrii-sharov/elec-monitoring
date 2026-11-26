@@ -48,3 +48,16 @@ export async function findDeviceViews(db: Executor, userId: string): Promise<Dev
     role: row.device.ownerId === userId ? ('OWNER' as const) : ('VIEWER' as const),
   }));
 }
+
+export async function accessibleDeviceIds(db: Executor, userId: string): Promise<Set<string>> {
+  const rows = await db
+    .select({ id: device.id })
+    .from(device)
+    .where(
+      or(
+        eq(device.ownerId, userId),
+        sql`exists (select 1 from ${deviceViewer} where ${deviceViewer.deviceId} = ${device.id} and ${deviceViewer.userId} = ${userId})`,
+      ),
+    );
+  return new Set(rows.map((row) => row.id));
+}

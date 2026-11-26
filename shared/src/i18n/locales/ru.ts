@@ -42,6 +42,8 @@ export const ru: Dictionary = {
     },
   },
   telegram: {
+    channelTest:
+      '✅ Тестовое сообщение от Electricity Monitor. Уведомления о ваших устройствах будут приходить в этот чат.',
     auth: {
       links: {
         resetLink: 'Сбросьте пароль',

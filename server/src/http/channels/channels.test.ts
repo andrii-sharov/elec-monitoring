@@ -6,8 +6,9 @@ import { createUser, signIn } from '../../../test/auth.ts';
 import { createPlatformChannel, linkChannel } from '../../../test/channels.ts';
 import { createTestDb, type TestDb } from '../../../test/db.ts';
 import { createDevice } from '../../../test/devices.ts';
+import { addViewer } from '../../../test/sharing.ts';
 import { seedDelivery } from '../../../test/deliveries.ts';
-import { FakeClock } from '../../../test/fakes.ts';
+import { FakeClock, FakeTelegramClient } from '../../../test/fakes.ts';
 import {
   appUser,
   delivery,
@@ -102,6 +103,7 @@ describe('GET /api/v1/channels', () => {
         disabled_reason: null,
         config: { chat_id: '-1001234567890' },
         created_at: mine.createdAt.toISOString(),
+        device_ids: [],
       },
     ]);
   });
@@ -249,5 +251,99 @@ describe('auth', () => {
     ]);
     expect(responses.map((r) => r.status)).toEqual([403, 403, 403, 403]);
     expect(responses[0]!.body.error.code).toBe('not_verified');
+  });
+});
+
+describe('channel management', () => {
+  async function setup() {
+    const { user, auth } = await authed();
+    const channel = await createPlatformChannel(t.db, user.id, { chatId: -100777n });
+    const owned = await createDevice(t.db, user.id, { name: 'Home' });
+    const owner = await createUser(t.db, { email: 'jane@example.com' });
+    const shared = await createDevice(t.db, owner.id, { name: 'Dacha' });
+    await addViewer(t.db, shared.id, user.id);
+    const stranger = await createDevice(t.db, owner.id, { name: 'Office' });
+    return { user, auth, channel, owned, shared, stranger, owner };
+  }
+
+  const put = (auth: string, id: string, body: object) =>
+    request(app()).put(`/api/v1/channels/${id}/devices`).set('Authorization', auth).send(body);
+
+  test('links owned and shared devices from the channel side and lists them', async () => {
+    const { auth, channel, owned, shared } = await setup();
+    const res = await put(auth, channel.id, { device_ids: [owned.id, shared.id, owned.id] });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ device_ids: [owned.id, shared.id] });
+    const list = await request(app()).get('/api/v1/channels').set('Authorization', auth);
+    expect(list.body.items[0].device_ids.toSorted()).toEqual([owned.id, shared.id].toSorted());
+    const cleared = await put(auth, channel.id, { device_ids: [] });
+    expect(cleared.body).toEqual({ device_ids: [] });
+  });
+
+  test('refuses a device the caller cannot see and a channel that is not theirs', async () => {
+    const { auth, channel, owned, stranger, owner } = await setup();
+    const res = await put(auth, channel.id, { device_ids: [owned.id, stranger.id] });
+    expect(res.status).toBe(400);
+    expect(res.body.error.details).toEqual([{ path: 'device_ids.1', code: 'not_found' }]);
+    const theirs = await createPlatformChannel(t.db, owner.id);
+    expect((await put(auth, theirs.id, { device_ids: [] })).status).toBe(404);
+  });
+
+  test('renames, turns off and turns on a channel', async () => {
+    const { auth, channel } = await setup();
+    const patch = (body: object) =>
+      request(app()).patch(`/api/v1/channels/${channel.id}`).set('Authorization', auth).send(body);
+    expect((await patch({ name: '  Family  ' })).body).toMatchObject({ name: 'Family' });
+    expect((await patch({ enabled: false })).body).toMatchObject({
+      enabled: false,
+      disabled_reason: 'USER',
+    });
+    expect((await patch({ enabled: true })).body).toMatchObject({
+      enabled: true,
+      disabled_reason: null,
+    });
+    expect((await patch({})).status).toBe(400);
+    expect((await patch({ name: '' })).status).toBe(400);
+  });
+
+  test('a channel disabled after failures turns on only through a test message', async () => {
+    const { user, auth, channel } = await setup();
+    await t.db
+      .update(notificationChannel)
+      .set({ enabled: false, disabledReason: 'TOO_MANY_FAILURES', consecutiveFailures: 20 })
+      .where(eq(notificationChannel.id, channel.id));
+    const patch = await request(app())
+      .patch(`/api/v1/channels/${channel.id}`)
+      .set('Authorization', auth)
+      .send({ enabled: true });
+    expect(patch.status).toBe(409);
+
+    const telegram = new FakeTelegramClient(clock);
+    telegram.script({ type: 'PERMANENT', error: 'HTTP 403: blocked' });
+    const test = () =>
+      request(testApp({ db: t.db, clock, telegram }))
+        .post(`/api/v1/channels/${channel.id}/test`)
+        .set('Authorization', auth);
+    expect((await test()).status).toBe(409);
+    const ok = await test();
+    expect(ok.status).toBe(200);
+    expect(ok.body).toMatchObject({ enabled: true, disabled_reason: null });
+    expect(telegram.sent).toEqual([
+      expect.objectContaining({ chatId: -100777n, text: expect.stringContaining('✅') }),
+    ]);
+    const [row] = await t.db
+      .select()
+      .from(notificationChannel)
+      .where(eq(notificationChannel.id, channel.id));
+    expect(row?.consecutiveFailures).toBe(0);
+    expect(user.id).toBe(row?.userId);
+  });
+
+  test('sending test messages is rate limited', async () => {
+    const { auth, channel } = await setup();
+    const res = await request(app(denyAll))
+      .post(`/api/v1/channels/${channel.id}/test`)
+      .set('Authorization', auth);
+    expect(res.status).toBe(429);
   });
 });

@@ -38,6 +38,8 @@ export const en = {
     },
   },
   telegram: {
+    channelTest:
+      '✅ Test message from Electricity Monitor. Alerts for your devices will come to this chat.',
     auth: {
       links: {
         resetLink: 'Reset your password',

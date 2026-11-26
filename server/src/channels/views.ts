@@ -3,7 +3,7 @@ import type { notificationChannel } from '../db/schema/index.ts';
 
 export type ChannelRow = typeof notificationChannel.$inferSelect;
 
-export function toChannel(row: ChannelRow): Channel {
+export function toChannel(row: ChannelRow, deviceIds: string[] = []): Channel {
   return {
     id: row.id,
     type: row.type as Channel['type'],
@@ -12,5 +12,6 @@ export function toChannel(row: ChannelRow): Channel {
     disabled_reason: row.disabledReason as Channel['disabled_reason'],
     config: { chat_id: String(row.telegramChatId ?? '') },
     created_at: row.createdAt.toISOString(),
+    device_ids: deviceIds,
   };
 }
