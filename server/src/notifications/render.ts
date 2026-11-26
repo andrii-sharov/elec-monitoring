@@ -7,6 +7,7 @@ import {
 } from '@elec/shared';
 import type { i18n } from 'i18next';
 import type { OutageItem } from '@elec/shared/api';
+import { telegramT } from '../telegram/html.ts';
 
 export type DeliveryPayload = {
   event: DeliveryEvent;
@@ -23,7 +24,7 @@ export type RenderInput = {
 
 export function renderDeliveryText(i18n: i18n, input: RenderInput): string {
   const { payload, language, timezone } = input;
-  const t = i18n.getFixedT(language);
+  const t = telegramT(i18n, language);
   const { outage, device } = payload;
   const name = device.name;
   const started = new Date(outage.started_at);

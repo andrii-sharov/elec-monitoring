@@ -319,7 +319,7 @@ describe('phone invites', () => {
     expect(Object.keys(bound.body).toSorted()).toEqual(Object.keys(unbound.body).toSorted());
     await vi.waitFor(() => expect(telegram.sent).toHaveLength(1));
     expect(telegram.sent[0]!.chatId).toBe(777n);
-    expect(telegram.sent[0]!.text).toContain('John shared Home with you');
+    expect(telegram.sent[0]!.text).toContain('John shared <b>Home</b> with you');
     expect(telegram.sent[0]!.text).toContain(bound.body.url);
   });
 

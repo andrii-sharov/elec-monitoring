@@ -37,6 +37,7 @@ export function createTelegramClient(
           body: JSON.stringify({
             chat_id: String(chatId),
             text,
+            parse_mode: 'HTML',
             disable_notification: opts.silent,
             link_preview_options: { is_disabled: true },
           }),

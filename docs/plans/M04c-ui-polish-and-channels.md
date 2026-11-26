@@ -226,15 +226,16 @@ OpenAPI snapshot, API.md):
 
 ## Phase E — Bot messages
 
-- Links become **inline URL buttons** under the message ("Reset password",
-  "Log in", "Open invite"), so no token URL is visible. Telegram only
-  accepts public `https` button URLs, so with a local `http://` client URL
-  (dev) the text falls back to an HTML link `<a href>`.
-- Alerts use `parse_mode: HTML`: device name in bold, times and duration on
-  their own lines, cause and kind as words. Device names and every other
-  value are HTML-escaped (a new `escapeHtml` in the renderer, with tests
-  for `<`, `>` and `&` in names).
-- Update the message texts in spec §7 and the render snapshot tests.
+- Every Telegram message is sent with `parse_mode: HTML` (deliveries,
+  pushes and bot replies).
+- Links become HTML text links: "Reset your password", "Log in", "Open the invite". No token URL is visible.
+  Buttons were dropped: the reset link replies remove the contact keyboard,
+  and Telegram allows only one keyboard per message.
+- Device names are bold.
+- Every inserted value is escaped automatically: `telegramT` turns on
+  i18next escaping, and links use `{{- link}}`.
+- A test checks that all `telegram.*` texts use only `<b>` and no raw `&`
+  or `<`, so a bad template can't make Telegram reject an alert.
 
 ## Phase F — Faster detection timings
 

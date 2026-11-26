@@ -9,17 +9,17 @@ const link = 'https://app.test/reset-password?token=abc';
 describe('renderTelegramAuth', () => {
   test('renders the reset link text', () => {
     expect(renderTelegramAuth(i18n, 'resetLink', { lang: 'en', link })).toBe(
-      `Reset your Electricity Monitor password: ${link}\nThe link is valid for 1 hour.`,
+      `🔑 <a href="${link}">Reset your password</a> for Electricity Monitor.\nThe link is valid for 1 hour.`,
     );
   });
 
   test('renders the sign-up attempt text', () => {
     expect(renderTelegramAuth(i18n, 'signupAttempt', { lang: 'en', link })).toBe(
-      `Someone tried to create an Electricity Monitor account with your number. You already have one. Log in: ${link}\nIf you forgot your password, use “Forgot password” on the login page.`,
+      `Someone tried to create an Electricity Monitor account with your number. You already have one. <a href="${link}">Log in</a>.\nIf you forgot your password, use “Forgot password” on the login page.`,
     );
   });
 
-  test('keeps the device name verbatim in an invite', () => {
+  test('escapes names and hides the link behind its label in an invite', () => {
     const text = renderTelegramAuth(i18n, 'invite', {
       lang: 'en',
       link,
@@ -27,7 +27,7 @@ describe('renderTelegramAuth', () => {
       device: '<b>Дім & "Home"',
     });
     expect(text).toBe(
-      `John shared <b>Дім & "Home" with you in Electricity Monitor. Open the invite: ${link}\nThe invite is valid for 7 days.`,
+      `John shared <b>&lt;b&gt;Дім &amp; &quot;Home&quot;</b> with you in Electricity Monitor. <a href="${link}">Open the invite</a>.\nThe invite is valid for 7 days.`,
     );
   });
 
@@ -35,9 +35,18 @@ describe('renderTelegramAuth', () => {
     const render = (lang: 'en' | 'uk' | 'ru') =>
       renderTelegramAuth(i18n, kind, { lang, link, inviter: 'John', device: 'Home' });
     expect(new Set([render('en'), render('uk'), render('ru')]).size).toBe(3);
+    expect(render('en')).toContain(`<a href="${link}">`);
     expect(render('uk')).toContain(link);
     expect(render('ru')).toContain(link);
   });
+});
+
+test('escapes a link with an ampersand inside the href', () => {
+  const text = renderTelegramAuth(i18n, 'resetLink', {
+    lang: 'en',
+    link: 'https://app.test/r?a=1&b=2',
+  });
+  expect(text).toContain('<a href="https://app.test/r?a=1&amp;b=2">');
 });
 
 describe('sendTelegramInBackground', () => {

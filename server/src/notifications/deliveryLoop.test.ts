@@ -54,7 +54,7 @@ describe('processDueDeliveries', () => {
     const seeded = await seedDelivery(t.db, { userOverrides: { language: 'en' } });
     expect(await processDueDeliveries(deps)).toBe(1);
     expect(telegram.sent.map((s) => s.text)).toEqual([
-      '🔴 Home — device stopped checking in\nLast signal: 21 Nov 18:42',
+      '🔴 <b>Home</b> — device stopped checking in\nLast signal: 21 Nov 18:42',
     ]);
     expect(telegram.sent[0]).toMatchObject({
       chatId: seeded.channel.telegramChatId,
@@ -100,7 +100,7 @@ describe('processDueDeliveries', () => {
     });
     expect(await processDueDeliveries(deps)).toBe(2);
     expect(telegram.sent).toHaveLength(1);
-    expect(telegram.sent[0]!.text).toContain('🟢 Home — device is back online');
+    expect(telegram.sent[0]!.text).toContain('🟢 <b>Home</b> — device is back online');
     expect(await stored(off.delivery.id)).toMatchObject({
       status: 'FAILED',
       lastError: 'skipped: outage closed',
@@ -197,7 +197,7 @@ describe('viewers', () => {
     const byChat = new Map(telegram.sent.map((s) => [s.chatId, s.text]));
     expect(byChat.get(owner.channel.telegramChatId!)).toContain('18:42');
     expect(byChat.get(theirs.channel.telegramChatId!)).toBe(
-      '🔴 Home — device stopped checking in\nLast signal: 21 Nov 11:42',
+      '🔴 <b>Home</b> — device stopped checking in\nLast signal: 21 Nov 11:42',
     );
   });
 });

@@ -33,7 +33,7 @@ describe('renderDeliveryText', () => {
   test('offline', () => {
     expect(
       renderDeliveryText(i18n, { ...base, payload: payload('device.offline', outage()) }),
-    ).toBe('🔴 Home — device stopped checking in\nLast signal: 21 Nov 18:42');
+    ).toBe('🔴 <b>Home</b> — device stopped checking in\nLast signal: 21 Nov 18:42');
   });
 
   test('recovery after an OFF alert with a power cause', () => {
@@ -44,7 +44,7 @@ describe('renderDeliveryText', () => {
       kind: 'LONG',
     });
     expect(renderDeliveryText(i18n, { ...base, payload: payload('device.online', item) })).toBe(
-      '🟢 Home — device is back online\nOffline for 2 h 15 min (18:42 → 20:57) · suspected power outage',
+      '🟢 <b>Home</b> — device is back online\nOffline for 2 h 15 min (18:42 → 20:57) · suspected power outage',
     );
   });
 
@@ -62,7 +62,7 @@ describe('renderDeliveryText', () => {
         payload: payload('device.online', item),
       }),
     ).toBe(
-      '🟠 Home — device was out of contact\nOffline for 2 min (18:42 → 18:44) · suspected network outage',
+      '🟠 <b>Home</b> — device was out of contact\nOffline for 2 min (18:42 → 18:44) · suspected network outage',
     );
   });
 
@@ -74,7 +74,7 @@ describe('renderDeliveryText', () => {
       kind: 'SHORT',
     });
     expect(renderDeliveryText(i18n, { ...base, payload: payload('device.online', item) })).toBe(
-      '🟢 Home — device is back online\nOffline for 2 min (18:42 → 18:44)',
+      '🟢 <b>Home</b> — device is back online\nOffline for 2 min (18:42 → 18:44)',
     );
   });
 
@@ -87,7 +87,7 @@ describe('renderDeliveryText', () => {
       kind: 'SHORT',
     });
     expect(renderDeliveryText(i18n, { ...base, payload: payload('device.power_blip', item) })).toBe(
-      '🟡 Home — suspected short power interruption\nDevice restarted · 25 s between check-ins',
+      '🟡 <b>Home</b> — suspected short power interruption\nDevice restarted · 25 s between check-ins',
     );
   });
 
@@ -103,7 +103,7 @@ describe('renderDeliveryText', () => {
       renderDeliveryText(i18n, { ...base, payload: payload('device.power_blip', item) }).split(
         '\n',
       )[0],
-    ).toBe('🟡 Home — suspected power interruption');
+    ).toBe('🟡 <b>Home</b> — suspected power interruption');
   });
 
   test.each(['uk', 'ru'] as const)('%s text differs from en and keeps the name', (language) => {
@@ -113,11 +113,15 @@ describe('renderDeliveryText', () => {
     expect(text).toContain('Home');
   });
 
-  test.each(['<b>&amp; 💡', 'x'.repeat(64)])('device name %s is kept as-is', (name) => {
+  test.each([
+    { name: '<b>&amp; 💡', html: '&lt;b&gt;&amp;amp; 💡' },
+    { name: 'Tom "Big" <Box>', html: 'Tom &quot;Big&quot; &lt;Box&gt;' },
+    { name: 'x'.repeat(64), html: 'x'.repeat(64) },
+  ])('device name $name is escaped inside bold', ({ name, html }) => {
     const text = renderDeliveryText(i18n, {
       ...base,
       payload: payload('device.offline', outage(), name),
     });
-    expect(text).toContain(`${name} —`);
+    expect(text).toContain(`<b>${html}</b> —`);
   });
 });

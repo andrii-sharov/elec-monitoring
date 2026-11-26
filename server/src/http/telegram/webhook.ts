@@ -41,6 +41,7 @@ export function telegramWebhookRouter(deps: AppDeps): Router {
           method: 'sendMessage',
           chat_id: String(reply.chatId),
           text: reply.text,
+          parse_mode: 'HTML',
           reply_markup: reply.replyMarkup,
         });
         return;

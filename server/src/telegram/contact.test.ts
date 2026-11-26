@@ -80,6 +80,7 @@ async function tokenRow(token: string) {
 
 const ASK = {
   method: 'sendMessage',
+  parse_mode: 'HTML',
   chat_id: String(TG),
   text: 'To confirm your number, tap “Share my phone number” below.\nDo this only if you opened this link yourself on the Electricity Monitor site. If someone sent it to you, don’t share: your number would be linked to their account.',
   reply_markup: {

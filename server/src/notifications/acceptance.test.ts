@@ -106,7 +106,9 @@ describe('sustained loss of contact', () => {
       if (s === 38 || s === 40) sentBy40.push(telegram.sent.length);
     }
     expect(sentBy40).toEqual([0, 1]);
-    expect(texts()).toEqual(['🔴 Home — device stopped checking in\nLast signal: 21 Nov 18:42']);
+    expect(texts()).toEqual([
+      '🔴 <b>Home</b> — device stopped checking in\nLast signal: 21 Nov 18:42',
+    ]);
   });
 
   test('with short alerts off the OFF alert waits for the threshold', async () => {
@@ -119,13 +121,15 @@ describe('sustained loss of contact', () => {
     expect(telegram.sent).toHaveLength(0);
     clock.set(at(180));
     await tick();
-    expect(texts()).toEqual(['🔴 Home — device stopped checking in\nLast signal: 21 Nov 18:42']);
+    expect(texts()).toEqual([
+      '🔴 <b>Home</b> — device stopped checking in\nLast signal: 21 Nov 18:42',
+    ]);
   });
 });
 
 describe('recovery', () => {
   const recovery =
-    '🟢 Home — device is back online\nOffline for 5 min (18:42 → 18:47) · suspected network outage';
+    '🟢 <b>Home</b> — device is back online\nOffline for 5 min (18:42 → 18:47) · suspected network outage';
 
   test.each([true, false])(
     'after an OFF alert one recovery is sent (network alerts %s)',
@@ -139,7 +143,7 @@ describe('recovery', () => {
       await d.ping(BOOT_A, 300);
       await tick();
       expect(texts()).toEqual([
-        '🔴 Home — device stopped checking in\nLast signal: 21 Nov 18:42',
+        '🔴 <b>Home</b> — device stopped checking in\nLast signal: 21 Nov 18:42',
         recovery,
       ]);
     },
@@ -152,7 +156,7 @@ describe('recovery', () => {
     await d.ping(BOOT_A, 125);
     await tick();
     expect(texts()).toEqual([
-      '🟠 Home — device was out of contact\nOffline for 2 min (18:42 → 18:44) · suspected network outage',
+      '🟠 <b>Home</b> — device was out of contact\nOffline for 2 min (18:42 → 18:44) · suspected network outage',
     ]);
   });
 
@@ -212,7 +216,7 @@ describe('power blip', () => {
     await d.boot(BOOT_B);
     await tick();
     expect(texts()).toEqual([
-      '🟡 Home — suspected short power interruption\nDevice restarted · 25 s between check-ins',
+      '🟡 <b>Home</b> — suspected short power interruption\nDevice restarted · 25 s between check-ins',
     ]);
   });
 

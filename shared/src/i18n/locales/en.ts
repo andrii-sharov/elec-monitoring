@@ -39,6 +39,11 @@ export const en = {
   },
   telegram: {
     auth: {
+      links: {
+        resetLink: 'Reset your password',
+        signupAttempt: 'Log in',
+        invite: 'Open the invite',
+      },
       askContact:
         'To confirm your number, tap “Share my phone number” below.\nDo this only if you opened this link yourself on the Electricity Monitor site. If someone sent it to you, don’t share: your number would be linked to their account.',
       contactButton: 'Share my phone number',
@@ -47,26 +52,26 @@ export const en = {
         "This link doesn't match your number or has expired. Go back to the site and try again.",
       numberInUse: 'This number is already used by another account.',
       confirmed: 'Your number is confirmed. Alerts for your devices will come to this chat.',
-      resetLink: 'Reset your Electricity Monitor password: {{link}}\nThe link is valid for 1 hour.',
+      resetLink: '🔑 {{- link}} for Electricity Monitor.\nThe link is valid for 1 hour.',
       signupAttempt:
-        'Someone tried to create an Electricity Monitor account with your number. You already have one. Log in: {{link}}\nIf you forgot your password, use “Forgot password” on the login page.',
+        'Someone tried to create an Electricity Monitor account with your number. You already have one. {{- link}}.\nIf you forgot your password, use “Forgot password” on the login page.',
       invite:
-        '{{inviter}} shared {{device}} with you in Electricity Monitor. Open the invite: {{link}}\nThe invite is valid for 7 days.',
+        '{{inviter}} shared <b>{{device}}</b> with you in Electricity Monitor. {{- link}}.\nThe invite is valid for 7 days.',
     },
     offline: {
-      title: '🔴 {{name}} — device stopped checking in',
+      title: '🔴 <b>{{name}}</b> — device stopped checking in',
       body: 'Last signal: {{time}}',
     },
     recovery: {
-      title: '🟢 {{name}} — device is back online',
+      title: '🟢 <b>{{name}}</b> — device is back online',
       body: 'Offline for {{duration}} ({{range}})',
     },
     summary: {
-      title: '🟠 {{name}} — device was out of contact',
+      title: '🟠 <b>{{name}}</b> — device was out of contact',
     },
     powerBlip: {
-      titleShort: '🟡 {{name}} — suspected short power interruption',
-      titleLong: '🟡 {{name}} — suspected power interruption',
+      titleShort: '🟡 <b>{{name}}</b> — suspected short power interruption',
+      titleLong: '🟡 <b>{{name}}</b> — suspected power interruption',
       body: 'Device restarted · {{duration}} between check-ins',
     },
     cause: {
@@ -80,10 +85,10 @@ export const en = {
       alreadyLinked: 'This chat is already linked to your account.',
       linkExpired: 'This link has expired or was already used. Create a new one in the app.',
       status: {
-        ONLINE: '🟢 {{name}} — online since {{time}}',
-        OFFLINE: '🔴 {{name}} — offline since {{time}}',
-        PENDING: '⚪ {{name}} — waiting for the first check-in',
-        UPDATING: '🔄 {{name}} — updating since {{time}}',
+        ONLINE: '🟢 <b>{{name}}</b> — online since {{time}}',
+        OFFLINE: '🔴 <b>{{name}}</b> — offline since {{time}}',
+        PENDING: '⚪ <b>{{name}}</b> — waiting for the first check-in',
+        UPDATING: '🔄 <b>{{name}}</b> — updating since {{time}}',
       },
       statusEmpty: 'No devices send alerts to this chat yet. Choose them in the app.',
       stopped: "🛑 This chat is unlinked. You won't get alerts here anymore.",

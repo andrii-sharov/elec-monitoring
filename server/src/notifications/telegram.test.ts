@@ -28,6 +28,7 @@ describe('createTelegramClient.sendMessage', () => {
     expect(JSON.parse(init?.body as string)).toEqual({
       chat_id: '-1001234567890',
       text: 'hello',
+      parse_mode: 'HTML',
       disable_notification: true,
       link_preview_options: { is_disabled: true },
     });

@@ -9,6 +9,7 @@ import type { Db } from '../db/client.ts';
 import { appUser, device, deviceChannel, notificationChannel } from '../db/schema/index.ts';
 import { parseCommand, type TelegramUpdate } from './commands.ts';
 import { connectPlatformChat, platformChat } from './platformChat.ts';
+import { telegramT } from './html.ts';
 import { renderTelegramAuth } from './pushes.ts';
 
 export type BotDeps = {
@@ -76,7 +77,7 @@ export async function handleUpdate(
   const language = owner?.language ?? languageFromCode(message.from?.language_code);
   const say = (key: string, vars: Record<string, string> = {}): BotReply => ({
     chatId,
-    text: deps.i18n.getFixedT(language)(`telegram.bot.${key}`, vars),
+    text: telegramT(deps.i18n, language)(`telegram.bot.${key}`, vars),
   });
 
   switch (command.name) {
@@ -101,7 +102,7 @@ export async function handleUpdate(
         .orderBy(asc(device.name), asc(device.id));
       const unique = [...new Map(rows.map((r) => [r.id, r])).values()];
       if (unique.length === 0) return say('statusEmpty');
-      const t = deps.i18n.getFixedT(owner.language);
+      const t = telegramT(deps.i18n, owner.language);
       return {
         chatId,
         text: unique
@@ -131,7 +132,7 @@ async function openPhoneCode(
   language: Language,
 ): Promise<BotReply> {
   const chatId = BigInt(message.chat.id);
-  const t = deps.i18n.getFixedT(language);
+  const t = telegramT(deps.i18n, language);
   if (message.chat.type !== 'private') return { chatId, text: t('telegram.auth.privateOnly') };
   if (message.from?.id !== undefined) {
     await claimPhoneCode(deps.db, deps.clock, token, BigInt(message.from.id));
@@ -179,7 +180,7 @@ async function shareContact(
           lang: language,
           link: `${deps.clientUrl}/reset-password?token=${outcome.resetToken}`,
         })
-      : deps.i18n.getFixedT(language)(`telegram.auth.${outcome.kind}`);
+      : telegramT(deps.i18n, language)(`telegram.auth.${outcome.kind}`);
   return { chatId, text, replyMarkup: { remove_keyboard: true } };
 }
 
@@ -200,6 +201,6 @@ async function link(
   if (!outcome) return say('linkExpired');
   return {
     chatId: BigInt(message.chat.id),
-    text: deps.i18n.getFixedT(outcome.language)(`telegram.bot.${outcome.key}`),
+    text: telegramT(deps.i18n, outcome.language)(`telegram.bot.${outcome.key}`),
   };
 }

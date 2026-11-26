@@ -627,8 +627,11 @@ Device restarted · 25 s between check-ins
 - Times use the recipient's timezone, as `21 Nov 18:42`. A range on one
   local day shows times only (`18:42 → 20:57`), otherwise both dates.
   Durations are floored: `25 s`, `12 min`, `2 h 15 min`, `1 d 3 h`.
-- Telegram messages are plain text (no `parse_mode`), so device names need
-  no escaping.
+- Telegram messages use `parse_mode: HTML`. Device names are bold, every
+  inserted value is HTML-escaped (`telegramT` in `server/src/telegram/html.ts`),
+  and links show as text ("Reset your password", "Log in", "Open the
+  invite") instead of the raw token URL. Templates may use only `<b>`; a
+  test checks every `telegram.*` text in all languages.
 
 Render human-readable notifications in the recipient's preferred language
 and timezone. For a shared device, each recipient gets messages according
