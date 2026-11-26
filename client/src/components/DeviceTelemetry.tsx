@@ -4,6 +4,7 @@ import { useFormatters } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { cn } from '@/lib/utils';
 import { liveTickMs } from './StateDuration';
+import { stateStart } from '@/lib/stateStart';
 
 function liveUptime(device: Device, now: number): number | null {
   const { uptime_s: uptime } = device.telemetry;
@@ -20,7 +21,7 @@ export function DeviceTelemetry({ device, className }: { device: Device; classNa
   const uptime = liveUptime(device, now);
   return (
     <div className={cn('flex flex-col gap-1 text-sm text-muted-foreground', className)}>
-      <span>{t('app.device.since', { moment: format.since(device.state_since, at) })}</span>
+      <span>{t('app.device.since', { moment: format.since(stateStart(device), at) })}</span>
       <span>
         {device.last_seen_at
           ? t('app.device.lastSeen', { moment: format.since(device.last_seen_at, at) })

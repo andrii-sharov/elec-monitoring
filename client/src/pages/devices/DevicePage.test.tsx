@@ -197,3 +197,26 @@ test('tabs switch sections and keep the choice in the URL', async () => {
   expect(router.state.location.search).toBe('?tab=members');
   expect(screen.queryByRole('navigation', { name: 'Days of the week' })).toBeNull();
 });
+
+test('an offline device counts from its last check-in, like its open outage', async () => {
+  server.use(
+    http.get(`${base}/api/v1/devices/${id}`, () =>
+      HttpResponse.json(
+        deviceFixture({
+          state: 'OFFLINE',
+          state_since: '2026-11-21T16:42:00Z',
+          last_seen_at: '2026-11-21T16:40:00Z',
+          open_outage: outageFixture({
+            started_at: '2026-11-21T16:40:00Z',
+            ended_at: null,
+            duration_s: null,
+            cause: null,
+            kind: null,
+          }),
+        }),
+      ),
+    ),
+  );
+  renderRoute(`/devices/${id}`, { me: meFixture() });
+  expect(await screen.findByText(/since 21 Nov 18:40 · 2 h 2 min/)).toBeInTheDocument();
+});

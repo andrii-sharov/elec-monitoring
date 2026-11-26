@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { StateDuration } from '@/components/StateDuration';
 import type { DeviceSummaryProps } from '../slots';
 import { SonarStatusMark } from './SonarStatusMark';
+import { stateStart } from '@/lib/stateStart';
 
 export function SonarDeviceSummary({ device }: DeviceSummaryProps) {
   const { t } = useTranslation();
@@ -23,7 +24,7 @@ export function SonarDeviceSummary({ device }: DeviceSummaryProps) {
       </span>
       <StateDuration
         state={device.state}
-        since={device.state_since}
+        since={stateStart(device)}
         className="text-right text-sm text-muted-foreground"
       />
     </Link>

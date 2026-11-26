@@ -7,6 +7,7 @@ import { useFormatters } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { ClassicStatusMark } from './ClassicStatusMark';
 import type { DeviceSummaryProps } from '../slots';
+import { stateStart } from '@/lib/stateStart';
 
 export function ClassicDeviceSummary({ device }: DeviceSummaryProps) {
   const { t } = useTranslation();
@@ -29,7 +30,7 @@ export function ClassicDeviceSummary({ device }: DeviceSummaryProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-1 text-sm text-muted-foreground">
-          <span>{t('app.devices.since', { moment: format.since(device.state_since, at) })}</span>
+          <span>{t('app.devices.since', { moment: format.since(stateStart(device), at) })}</span>
           <span>
             {device.last_seen_at
               ? t('app.devices.lastSeen', { moment: format.since(device.last_seen_at, at) })

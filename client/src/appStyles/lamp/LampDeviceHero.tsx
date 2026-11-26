@@ -4,6 +4,7 @@ import { DeviceTelemetry } from '@/components/DeviceTelemetry';
 import { useLiveDuration } from '@/components/StateDuration';
 import type { DeviceHeroProps } from '../slots';
 import { LampStatusMark } from './LampStatusMark';
+import { stateStart } from '@/lib/stateStart';
 
 const sentenceKey: Record<
   DeviceState,
@@ -17,7 +18,7 @@ const sentenceKey: Record<
 
 export function LampDeviceHero({ device }: DeviceHeroProps) {
   const { t } = useTranslation();
-  const duration = useLiveDuration(device.state_since);
+  const duration = useLiveDuration(stateStart(device));
   return (
     <header
       data-app-style-slot="lamp"

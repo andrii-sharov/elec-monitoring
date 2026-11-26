@@ -5,13 +5,13 @@ from the Underwater Dream theme (`docs/theme.md`); the tile gradient `#1D78A8 �
 is derived from `--primary`. Wordmark font is Unbounded 600, converted to paths, so
 no font loading is needed.
 
-| Folder     | What                                                                                   |
-| ---------- | -------------------------------------------------------------------------------------- |
-| `logo/`    | `logo-mark.svg` (app tile), `logo-mark-mono.svg` (`currentColor`), `logo-animated.svg`  |
-|            | `logo-{en,uk,ru}.svg` follow `prefers-color-scheme`; `-light` / `-dark` are fixed       |
-| `favicon/` | `favicon.svg` (thicker lines for 16 px), `favicon.ico` (16/32/48), PNG icons, manifest |
-| `social/`  | `og-image-{en,uk,ru}.png` 1200×630 (+ SVG sources)                                     |
-| `hero/`    | `hero-{en,uk,ru}.svg` 12 s looping promo, plus MP4 (1920×1080) and WebP poster          |
+| Folder     | What                                                                                        |
+| ---------- | ------------------------------------------------------------------------------------------- |
+| `logo/`    | `logo-mark.svg` (app tile), `logo-mark-mono.svg` (`currentColor`), `logo-animated.svg`      |
+|            | `logo-{en,uk,ru}.svg` follow `prefers-color-scheme`; `-light` / `-dark` are fixed           |
+| `favicon/` | `favicon.svg` (thicker lines for 16 px), `favicon.ico` (16/32/48), PNG icons, manifest      |
+| `social/`  | `og-image-{en,uk,ru}.png` 1200×630 (+ SVG sources)                                          |
+| `hero/`    | `hero-{en,uk,ru}.svg` 12 s looping promo, plus MP4 (1920×1080) and WebP poster              |
 | `source/`  | Generators: `python3 gen.py && python3 anim.py` (needs fontTools, brotli, fontsource fonts) |
 
 All animations are pure CSS inside the SVG and stop under `prefers-reduced-motion`

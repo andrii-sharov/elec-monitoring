@@ -697,7 +697,10 @@ Pages:
 - **Devices** — rendered by the app style's `DeviceSummary`: state with
   a status mark and its text, how long the state has lasted, last seen;
   shared devices marked. The header links to Flash firmware next to Add
-  device.
+  device. An `OFFLINE` device with an open outage counts from the
+  outage's `started_at` (its last check-in), not from `state_since` (the
+  missed deadline), so cards, hero, timeline and the 🔴 alert's "Last
+  signal" agree.
 - **Device** — the app style's `DeviceHero` on top: in Sonar, Switchboard
   and Lamp a live duration that ticks every second ("Power on for 3 h 12 min",
   "No contact for 25 min", "Waiting for the first check-in", "Updating"),

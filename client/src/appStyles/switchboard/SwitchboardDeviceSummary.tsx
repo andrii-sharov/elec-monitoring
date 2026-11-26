@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { StateDuration } from '@/components/StateDuration';
 import type { DeviceSummaryProps } from '../slots';
 import { SwitchboardStatusMark } from './SwitchboardStatusMark';
+import { stateStart } from '@/lib/stateStart';
 
 export function SwitchboardDeviceSummary({ device }: DeviceSummaryProps) {
   const { t } = useTranslation();
@@ -21,7 +22,7 @@ export function SwitchboardDeviceSummary({ device }: DeviceSummaryProps) {
         </span>
         <StateDuration
           state={device.state}
-          since={device.state_since}
+          since={stateStart(device)}
           className="text-xs text-muted-foreground"
         />
         {device.role === 'VIEWER' ? (

@@ -3,6 +3,7 @@ import { PowerStrip } from '@/components/PowerStrip';
 import { StateDuration } from '@/components/StateDuration';
 import type { DeviceHeroProps } from '../slots';
 import { SwitchboardStatusMark } from './SwitchboardStatusMark';
+import { stateStart } from '@/lib/stateStart';
 
 export function SwitchboardDeviceHero({ device }: DeviceHeroProps) {
   return (
@@ -18,7 +19,7 @@ export function SwitchboardDeviceHero({ device }: DeviceHeroProps) {
           <h1 className="truncate font-heading text-xl font-semibold tracking-wide uppercase sm:text-2xl">
             {device.name}
           </h1>
-          <StateDuration state={device.state} since={device.state_since} className="text-base" />
+          <StateDuration state={device.state} since={stateStart(device)} className="text-base" />
         </div>
       </div>
       <PowerStrip deviceId={device.id} />

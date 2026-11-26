@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import { StateDuration } from '@/components/StateDuration';
 import type { DeviceSummaryProps } from '../slots';
 import { LampStatusMark } from './LampStatusMark';
+import { stateStart } from '@/lib/stateStart';
 
 export function LampDeviceSummary({ device }: DeviceSummaryProps) {
   const { t } = useTranslation();
@@ -19,7 +20,7 @@ export function LampDeviceSummary({ device }: DeviceSummaryProps) {
         <span className="font-heading text-2xl leading-tight font-semibold tracking-tight">
           {device.name}
         </span>
-        <StateDuration state={device.state} since={device.state_since} className="text-sm" />
+        <StateDuration state={device.state} since={stateStart(device)} className="text-sm" />
         {device.role === 'VIEWER' ? (
           <span className="text-xs">{t('app.devices.shared')}</span>
         ) : null}

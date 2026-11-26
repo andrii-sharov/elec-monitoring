@@ -3,6 +3,7 @@ import { PowerStrip } from '@/components/PowerStrip';
 import { StateDuration } from '@/components/StateDuration';
 import type { DeviceHeroProps } from '../slots';
 import { SonarStatusMark } from './SonarStatusMark';
+import { stateStart } from '@/lib/stateStart';
 
 export function SonarDeviceHero({ device }: DeviceHeroProps) {
   return (
@@ -16,7 +17,7 @@ export function SonarDeviceHero({ device }: DeviceHeroProps) {
         <div className="flex min-w-0 flex-col gap-1">
           <StateDuration
             state={device.state}
-            since={device.state_since}
+            since={stateStart(device)}
             className="sonar-headline font-heading text-2xl font-semibold tracking-tight sm:text-3xl"
           />
           <h1 className="truncate text-base text-muted-foreground">{device.name}</h1>
