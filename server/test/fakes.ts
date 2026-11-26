@@ -7,6 +7,8 @@ import type { Logger } from '../src/logger.ts';
 import type { NotificationQueue, OutageEvent } from '../src/notifications/queue.ts';
 import type { SendResult, TelegramClient } from '../src/notifications/telegram.ts';
 import type { RateLimiter } from '../src/rateLimit/limiter.ts';
+import type { WebhookRequest, WebhookResult, WebhookSender } from '../src/webhooks/sender.ts';
+import { checkWebhookUrl } from '../src/webhooks/ssrf.ts';
 
 export class FakeClock implements Clock {
   private current: Date;
@@ -127,5 +129,26 @@ export class FakeTelegramClient implements TelegramClient {
       this.sent.push({ chatId, text, silent: opts.silent, at: this.clock.now() });
     }
     return Promise.resolve(result);
+  }
+}
+
+export class FakeWebhookSender implements WebhookSender {
+  sent: WebhookRequest[] = [];
+  next: WebhookResult[] = [];
+  blockedHosts = new Set<string>();
+
+  send(req: WebhookRequest): Promise<WebhookResult> {
+    this.sent.push(req);
+    return Promise.resolve(this.next.shift() ?? { type: 'SENT', status: 200 });
+  }
+
+  async check(url: string): ReturnType<WebhookSender['check']> {
+    const result = await checkWebhookUrl(url, () =>
+      Promise.resolve([{ address: '93.184.215.14', family: 4 }]),
+    );
+    if (result.ok && this.blockedHosts.has(result.url.hostname)) {
+      return { ok: false, reason: 'address' };
+    }
+    return result;
   }
 }
