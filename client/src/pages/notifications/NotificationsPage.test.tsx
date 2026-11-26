@@ -1,18 +1,32 @@
 import { screen, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
-import { channelFixture, meFixture } from '../../../test/fixtures.ts';
+import { channelFixture, deviceFixture, meFixture } from '../../../test/fixtures.ts';
 import { renderRoute } from '../../../test/render.tsx';
 import { server } from '../../../test/server.ts';
 
 const base = 'http://localhost:3000';
 const home = channelFixture();
 const office = channelFixture({ id: '8b9c0d1e-2f3a-4b4c-9d5e-6f7a8b9c0d02', name: 'Office' });
+const homeDevice = deviceFixture();
+const dacha = deviceFixture({ id: '5d1a7b2c-3e4f-4a5b-8c6d-7e8f9a0b1c02', name: 'Dacha' });
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.setSystemTime(new Date('2026-11-21T18:42:00Z'));
+  server.use(
+    http.get(`${base}/api/v1/devices`, () => HttpResponse.json({ items: [homeDevice, dacha] })),
+  );
 });
+
+async function openConnect(user: ReturnType<typeof renderRoute>['user']) {
+  await user.click(await screen.findByRole('button', { name: 'Add channel' }));
+  await user.click(await screen.findByRole('menuitem', { name: 'Telegram' }));
+}
+
+async function expand(user: ReturnType<typeof renderRoute>['user'], name: string) {
+  await user.click(await screen.findByRole('button', { name: `Details for ${name}` }));
+}
 
 afterEach(() => {
   vi.useRealTimers();
@@ -31,32 +45,41 @@ function linkHandler(expiresAt = '2026-11-21T18:57:00Z') {
   );
 }
 
-test('lists channels with state and a disabled reason', async () => {
+test('lists channels with status, devices and a count', async () => {
   server.use(
     http.get(`${base}/api/v1/channels`, () =>
       HttpResponse.json({
-        items: [home, channelFixture({ ...office, enabled: false, disabled_reason: 'USER' })],
+        items: [
+          channelFixture({ ...home, device_ids: [homeDevice.id, dacha.id] }),
+          channelFixture({ ...office, enabled: false, disabled_reason: 'USER' }),
+        ],
       }),
     ),
   );
   renderRoute('/notifications', { me: meFixture() });
-  expect(await screen.findByText('Home chat')).toBeInTheDocument();
-  expect(screen.getByText('Office')).toBeInTheDocument();
-  expect(screen.getByText('Disabled by you')).toBeInTheDocument();
+  const row = (await screen.findByText('Home chat')).closest('li') as HTMLElement;
+  expect(within(row).getByText('Active')).toBeInTheDocument();
+  expect(within(row).getByText('Dacha')).toBeInTheDocument();
+  const off = screen.getByText('Office').closest('li') as HTMLElement;
+  expect(within(off).getByText('Turned off')).toBeInTheDocument();
+  expect(within(off).getByText('No devices send here')).toBeInTheDocument();
+  expect(screen.getByText('2 of 2')).toBeInTheDocument();
 });
 
 test('connect shows both links and stops polling after a new channel appears', async () => {
   let polls = 0;
+  let connected = false;
   server.use(
     linkHandler(),
     http.get(`${base}/api/v1/channels`, () => {
       polls += 1;
-      return HttpResponse.json({ items: polls < 3 ? [home] : [home, office] });
+      return HttpResponse.json({ items: connected ? [home, office] : [home] });
     }),
   );
   const { user } = renderRoute('/notifications', { me: meFixture() });
   await screen.findByText('Home chat');
-  await user.click(screen.getByRole('button', { name: 'Connect Telegram' }));
+  await openConnect(user);
+  await user.click(await screen.findByRole('button', { name: 'Connect Telegram' }));
   const open = await screen.findByRole('link', { name: 'Open in Telegram' });
   expect(open).toHaveAttribute('href', 'https://t.me/ElecBot?start=abc');
   expect(open).toHaveAttribute('target', '_blank');
@@ -67,6 +90,7 @@ test('connect shows both links and stops polling after a new channel appears', a
   );
   await vi.advanceTimersByTimeAsync(3000);
   expect(screen.queryByText('Telegram connected')).not.toBeInTheDocument();
+  connected = true;
   await vi.advanceTimersByTimeAsync(3000);
   expect(await screen.findByText('Telegram connected')).toBeInTheDocument();
   expect(screen.queryByRole('link', { name: 'Open in Telegram' })).not.toBeInTheDocument();
@@ -86,7 +110,8 @@ test('an expired link says so and stops polling', async () => {
   );
   const { user } = renderRoute('/notifications', { me: meFixture() });
   await screen.findByText('Home chat');
-  await user.click(screen.getByRole('button', { name: 'Connect Telegram' }));
+  await openConnect(user);
+  await user.click(await screen.findByRole('button', { name: 'Connect Telegram' }));
   await screen.findByRole('link', { name: 'Open in Telegram' });
   await vi.advanceTimersByTimeAsync(9000);
   expect(await screen.findByText('Link expired, create a new one')).toBeInTheDocument();
@@ -130,7 +155,8 @@ test('remove asks for confirmation, deletes and the channel disappears', async (
   );
   const { user } = renderRoute('/notifications', { me: meFixture() });
   await screen.findByText('Home chat');
-  await user.click(screen.getAllByRole('button', { name: 'Remove' })[0]!);
+  await expand(user, 'Home chat');
+  await user.click(screen.getByRole('button', { name: 'Remove' }));
   await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Remove' }));
   await vi.waitFor(() => expect(screen.queryByText('Home chat')).not.toBeInTheDocument());
   expect(deleted).toHaveBeenCalledOnce();
@@ -145,7 +171,128 @@ test('a failed remove shows the error', async () => {
     ),
   );
   const { user } = renderRoute('/notifications', { me: meFixture() });
+  await expand(user, 'Home chat');
   await user.click(await screen.findByRole('button', { name: 'Remove' }));
   await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Remove' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('Not found.');
+  expect(await screen.findByText('Not found.')).toBeInTheDocument();
+});
+
+function captureJson(method: 'patch' | 'put' | 'post', path: string, response: () => Response) {
+  const bodies: unknown[] = [];
+  server.use(
+    http[method](`${base}${path}`, async ({ request }) => {
+      bodies.push(method === 'post' ? null : await request.json());
+      return response();
+    }),
+  );
+  return bodies;
+}
+
+test('search, status and device filters narrow the list and live in the URL', async () => {
+  server.use(
+    http.get(`${base}/api/v1/channels`, () =>
+      HttpResponse.json({
+        items: [
+          channelFixture({ ...home, device_ids: [homeDevice.id] }),
+          channelFixture({
+            ...office,
+            enabled: false,
+            disabled_reason: 'USER',
+            device_ids: [dacha.id],
+          }),
+        ],
+      }),
+    ),
+  );
+  const { user, router } = renderRoute('/notifications', { me: meFixture() });
+  await screen.findByText('Home chat');
+  await user.type(screen.getByRole('searchbox', { name: 'Search channels' }), 'off');
+  expect(screen.queryByText('Home chat')).toBeNull();
+  expect(screen.getByText('1 of 2')).toBeInTheDocument();
+  expect(router.state.location.search).toContain('q=off');
+  await user.clear(screen.getByRole('searchbox', { name: 'Search channels' }));
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Device' }), 'Home');
+  expect(screen.getByText('Home chat')).toBeInTheDocument();
+  expect(screen.queryByText('Office')).toBeNull();
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Status' }), 'Turned off');
+  expect(await screen.findByText('No channels match these filters.')).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+  expect(await screen.findByText('Office')).toBeInTheDocument();
+});
+
+test('the switch turns a channel off', async () => {
+  server.use(http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items: [home] })));
+  const bodies = captureJson('patch', `/api/v1/channels/${home.id}`, () =>
+    HttpResponse.json({ ...home, enabled: false, disabled_reason: 'USER' }),
+  );
+  const { user } = renderRoute('/notifications', { me: meFixture() });
+  await user.click(await screen.findByRole('switch', { name: 'Send alerts to Home chat' }));
+  await vi.waitFor(() => expect(bodies).toEqual([{ enabled: false }]));
+});
+
+test('a failing channel explains itself and a test message is sent', async () => {
+  const failing = channelFixture({ ...home, enabled: false, disabled_reason: 'TOO_MANY_FAILURES' });
+  server.use(http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items: [failing] })));
+  const sent = captureJson('post', `/api/v1/channels/${home.id}/test`, () =>
+    HttpResponse.json(home),
+  );
+  const { user } = renderRoute('/notifications', { me: meFixture() });
+  expect(await screen.findByRole('switch', { name: 'Send alerts to Home chat' })).toHaveAttribute(
+    'data-disabled',
+  );
+  await expand(user, 'Home chat');
+  expect(screen.getByText(/Send a test message to turn it back on/)).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Send test' }));
+  expect(await screen.findByText('Test message sent')).toBeInTheDocument();
+  expect(sent).toHaveLength(1);
+});
+
+test('edit devices saves the chosen devices for the channel', async () => {
+  server.use(
+    http.get(`${base}/api/v1/channels`, () =>
+      HttpResponse.json({ items: [channelFixture({ ...home, device_ids: [homeDevice.id] })] }),
+    ),
+  );
+  const bodies = captureJson('put', `/api/v1/channels/${home.id}/devices`, () =>
+    HttpResponse.json({ device_ids: [homeDevice.id, dacha.id] }),
+  );
+  const { user } = renderRoute('/notifications', { me: meFixture() });
+  await expand(user, 'Home chat');
+  await user.click(screen.getByRole('button', { name: 'Edit devices' }));
+  const dialog = await screen.findByRole('dialog');
+  await user.type(within(dialog).getByRole('searchbox', { name: 'Search devices' }), 'dach');
+  expect(within(dialog).queryByRole('checkbox', { name: 'Home' })).toBeNull();
+  await user.click(within(dialog).getByRole('checkbox', { name: 'Dacha' }));
+  await user.click(within(dialog).getByRole('button', { name: 'Save channels' }));
+  await vi.waitFor(() => expect(bodies).toEqual([{ device_ids: [homeDevice.id, dacha.id] }]));
+  expect(await screen.findByText('Devices saved')).toBeInTheDocument();
+});
+
+test('bulk select turns several channels off', async () => {
+  server.use(
+    http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items: [home, office] })),
+  );
+  const patched: string[] = [];
+  server.use(
+    http.patch(`${base}/api/v1/channels/:id`, ({ params }) => {
+      patched.push(String(params.id));
+      return HttpResponse.json(home);
+    }),
+  );
+  const { user } = renderRoute('/notifications', { me: meFixture() });
+  await screen.findByText('Home chat');
+  await user.click(screen.getByRole('checkbox', { name: 'Select all shown' }));
+  expect(screen.getByText('2 selected')).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Turn off' }));
+  await vi.waitFor(() => expect(patched.toSorted()).toEqual([home.id, office.id].toSorted()));
+  expect(await screen.findByText('Channels updated')).toBeInTheDocument();
+});
+
+test('webhooks are listed as coming soon', async () => {
+  server.use(http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items: [home] })));
+  const { user } = renderRoute('/notifications', { me: meFixture() });
+  await user.click(await screen.findByRole('button', { name: 'Add channel' }));
+  const webhook = await screen.findByRole('menuitem', { name: /Webhook/ });
+  expect(webhook).toHaveAttribute('aria-disabled', 'true');
+  expect(webhook).toHaveTextContent('Coming soon');
 });

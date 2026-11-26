@@ -202,8 +202,9 @@ Client:
   **Delete**. Webhook rows later add URL, events, secret and the delivery
   log in the same place.
 - Bulk select: turn on, turn off, delete, with a confirm.
-- Device page → Notifications tab: the same row component, filtered to
-  that device.
+- Device page → Notifications tab keeps its checklist of your channels for
+  that device: it answers a different question (which channels does this
+  device use) and stays short.
 
 Server (same structure as today: routes in `server/src/http/channels/`,
 schemas in `shared/src/api/channels.ts`, data access next to the routes,

@@ -744,11 +744,17 @@ Pages:
   instead of the button. The same flash panel is embedded in the
   add-device wizard and the device setup section. `esp-web-tools` loads
   only when a flash panel is shown.
-- **Notifications** — connect platform Telegram bot, add own bot, add
-  webhook, delivery log.
+- **Notifications** — built for many channels: an **Add channel** menu
+  (Telegram now, webhook in M8; new types come from a client registry),
+  search, filters by type, device and status, sorting, all kept in the URL.
+  Each channel is a compact row (type icon, name, status tag, device chips,
+  on/off switch) that expands to rename, edit devices, send a test message
+  and delete. Bulk select turns channels on or off or deletes them. Webhook
+  rows add the delivery log in M8.
 - **API docs** — Swagger UI backed by the generated OpenAPI document.
-- **Account** — name, timezone, language, linked Google, log out
-  everywhere, delete account. Appearance: theme and app style, applied at
+- **Account** — tabs kept in `?tab=`: Profile (name, timezone, language),
+  Appearance, Sign-in & security (emails and phones, linked Google,
+  password, sessions, log out everywhere) and Danger zone (delete account). Appearance: theme and app style, applied at
   once and saved in this browser.
 
 ### Device settings and owner actions in the client

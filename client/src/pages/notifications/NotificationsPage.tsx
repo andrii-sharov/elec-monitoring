@@ -1,36 +1,153 @@
-import { BellRing, RotateCw } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { ChannelType } from '@elec/shared';
+import { useMutation } from '@tanstack/react-query';
+import { BellRing, Plus, RotateCw, Search } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { deleteChannel } from '@/api/endpoints';
-import { queryKeys, useChannels } from '@/api/queries';
+import { useSearchParams } from 'react-router';
+import { toast } from 'sonner';
+import { deleteChannel, patchChannel } from '@/api/endpoints';
+import { useChannels, useDevices } from '@/api/queries';
 import { useSession } from '@/api/session';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { selectTriggerClassName } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage } from '@/forms/errorMessage';
-import { FormAlert } from '@/forms/FormAlert';
+import { cn } from '@/lib/utils';
+import { ChannelRow, useChannelRefresh } from './ChannelRow';
+import { filterChannels, filterParams, readFilters, sorts, statuses } from './channelFilters';
+import { addableTypes, channelTypeInfo } from './channelTypes';
 import { TelegramConnect } from './TelegramConnect';
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: ReactNode;
+}) {
+  return (
+    <select
+      aria-label={label}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className={cn(selectTriggerClassName, 'h-8 w-auto pe-2 text-sm')}
+    >
+      {children}
+    </select>
+  );
+}
+
+function AddChannelMenu({ onAdd }: { onAdd: (type: ChannelType) => void }) {
+  const { t } = useTranslation();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button>
+            <Plus aria-hidden="true" />
+            {t('app.notifications.add')}
+          </Button>
+        }
+      />
+      <DropdownMenuContent align="end" className="min-w-48">
+        {addableTypes.map((type) => {
+          const { icon: Icon, available } = channelTypeInfo[type];
+          return (
+            <DropdownMenuItem key={type} disabled={!available} onClick={() => onAdd(type)}>
+              <Icon aria-hidden="true" />
+              {t(`app.channel.type.${type}`)}
+              {available ? null : (
+                <span className="ms-auto text-xs text-muted-foreground">
+                  {t('app.notifications.comingSoon')}
+                </span>
+              )}
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 export function NotificationsPage() {
   const { t } = useTranslation();
   const { api } = useSession();
-  const queryClient = useQueryClient();
+  const refresh = useChannelRefresh();
   const channels = useChannels();
+  const devices = useDevices();
+  const [params, setParams] = useSearchParams();
+  const filters = readFilters(params);
+  const [adding, setAdding] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
 
-  const remove = useMutation({
-    mutationFn: (id: string) => deleteChannel(api, id),
+  const setFilter = (changes: Record<string, string>) =>
+    setParams(
+      (previous) => {
+        const next = new URLSearchParams(previous);
+        for (const [key, value] of Object.entries(filterParams(changes))) {
+          if (value === null) next.delete(key);
+          else next.set(key, value);
+        }
+        return next;
+      },
+      { replace: true },
+    );
+
+  const bulk = useMutation({
+    mutationFn: (action: 'on' | 'off' | 'delete') =>
+      Promise.all(
+        selected.map((id) =>
+          action === 'delete'
+            ? deleteChannel(api, id)
+            : patchChannel(api, id, { enabled: action === 'on' }),
+        ),
+      ),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.channels }),
-        queryClient.invalidateQueries({ queryKey: ['deviceChannels'] }),
-      ]);
+      setSelected([]);
+      toast.success(t('app.notifications.bulkDone'));
+      await refresh();
+    },
+    onError: async (error) => {
+      toast.error(errorMessage(t, error));
+      await refresh();
     },
   });
 
+  const all = channels.data?.items ?? [];
+  const shown = filterChannels(all, filters);
+  const deviceList = devices.data?.items ?? [];
+  const types = [...new Set(all.map((channel) => channel.type))];
+  const showConnect = adding || (channels.data !== undefined && all.length === 0);
+  const allShownSelected = shown.length > 0 && shown.every((c) => selected.includes(c.id));
+
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-heading text-2xl font-semibold">{t('app.notifications.title')}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="font-heading text-2xl font-semibold">{t('app.notifications.title')}</h1>
+        <AddChannelMenu onAdd={(type) => setAdding(type === 'TELEGRAM_PLATFORM')} />
+      </div>
+      {showConnect ? (
+        <section
+          data-motion="enter"
+          className="rounded-lg border border-border bg-card p-4"
+          aria-label={t('app.notifications.connect')}
+        >
+          <TelegramConnect />
+        </section>
+      ) : null}
       <section aria-labelledby="channels-title" className="flex flex-col gap-3">
         <h2
           id="channels-title"
@@ -38,8 +155,12 @@ export function NotificationsPage() {
         >
           <BellRing aria-hidden="true" className="size-4" />
           {t('app.notifications.list')}
+          {all.length > 0 ? (
+            <span className="text-sm font-normal text-muted-foreground">
+              {t('app.notifications.count', { shown: shown.length, total: all.length })}
+            </span>
+          ) : null}
         </h2>
-        <FormAlert message={remove.error ? errorMessage(t, remove.error) : null} />
         {channels.isPending ? (
           <output aria-label={t('app.common.loading')} className="flex flex-col gap-3">
             <Skeleton className="h-12" />
@@ -52,47 +173,148 @@ export function NotificationsPage() {
               {t('app.common.retry')}
             </Button>
           </div>
-        ) : channels.data.items.length === 0 ? (
+        ) : all.length === 0 ? (
           <p className="text-muted-foreground">{t('app.notifications.empty')}</p>
         ) : (
-          <ul className="flex flex-col gap-2">
-            {channels.data.items.map((channel) => (
-              <li
-                key={channel.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border p-3"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium">{channel.name}</span>
-                  <Badge variant="secondary">{t(`app.channel.type.${channel.type}`)}</Badge>
-                  <Badge variant="outline">
-                    {channel.enabled
-                      ? t('app.notifications.enabled')
-                      : t('app.notifications.disabled')}
-                  </Badge>
-                  {channel.disabled_reason ? (
-                    <Badge variant="outline" className="text-danger">
-                      {t(`app.channel.reason.${channel.disabled_reason}`)}
-                    </Badge>
-                  ) : null}
-                </div>
-                <ConfirmDialog
-                  trigger={
-                    <Button variant="outline" size="sm">
-                      {t('app.notifications.remove')}
-                    </Button>
-                  }
-                  title={t('app.notifications.removeTitle')}
-                  body={t('app.notifications.removeBody')}
-                  confirmLabel={t('app.notifications.remove')}
-                  destructive
-                  onConfirm={() => remove.mutate(channel.id)}
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative grow basis-48">
+                <Search
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
                 />
-              </li>
-            ))}
-          </ul>
+                <Input
+                  type="search"
+                  aria-label={t('app.notifications.search')}
+                  placeholder={t('app.notifications.search')}
+                  value={filters.query}
+                  onChange={(event) => setFilter({ q: event.target.value })}
+                  className="h-8 ps-8"
+                />
+              </div>
+              {types.length > 1 ? (
+                <FilterSelect
+                  label={t('app.notifications.filterType')}
+                  value={filters.type}
+                  onChange={(type) => setFilter({ type })}
+                >
+                  <option value="all">{t('app.notifications.allTypes')}</option>
+                  {types.map((type) => (
+                    <option key={type} value={type}>
+                      {t(`app.channel.type.${type}`)}
+                    </option>
+                  ))}
+                </FilterSelect>
+              ) : null}
+              <FilterSelect
+                label={t('app.notifications.filterDevice')}
+                value={filters.device}
+                onChange={(device) => setFilter({ device })}
+              >
+                <option value="all">{t('app.notifications.allDevices')}</option>
+                {deviceList.map((device) => (
+                  <option key={device.id} value={device.id}>
+                    {device.name}
+                  </option>
+                ))}
+              </FilterSelect>
+              <FilterSelect
+                label={t('app.notifications.filterStatus')}
+                value={filters.status}
+                onChange={(status) => setFilter({ status })}
+              >
+                {statuses.map((status) => (
+                  <option key={status} value={status}>
+                    {t(`app.notifications.status.${status}`)}
+                  </option>
+                ))}
+              </FilterSelect>
+              <FilterSelect
+                label={t('app.notifications.sortBy')}
+                value={filters.sort}
+                onChange={(sort) => setFilter({ sort })}
+              >
+                {sorts.map((sort) => (
+                  <option key={sort} value={sort}>
+                    {t(`app.notifications.sort.${sort}`)}
+                  </option>
+                ))}
+              </FilterSelect>
+            </div>
+            <div className="flex min-h-8 flex-wrap items-center gap-2 text-sm">
+              <Checkbox
+                checked={allShownSelected}
+                onCheckedChange={(checked) =>
+                  setSelected(checked ? shown.map((channel) => channel.id) : [])
+                }
+                aria-label={t('app.notifications.selectAll')}
+              />
+              {selected.length > 0 ? (
+                <>
+                  <span>{t('app.notifications.selected', { count: selected.length })}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={bulk.isPending}
+                    onClick={() => bulk.mutate('on')}
+                  >
+                    {t('app.notifications.turnOn')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={bulk.isPending}
+                    onClick={() => bulk.mutate('off')}
+                  >
+                    {t('app.notifications.turnOff')}
+                  </Button>
+                  <ConfirmDialog
+                    trigger={
+                      <Button variant="outline" size="sm" disabled={bulk.isPending}>
+                        {t('app.notifications.delete')}
+                      </Button>
+                    }
+                    title={t('app.notifications.bulkDeleteTitle', { count: selected.length })}
+                    body={t('app.notifications.removeBody')}
+                    confirmLabel={t('app.notifications.delete')}
+                    destructive
+                    onConfirm={() => bulk.mutate('delete')}
+                  />
+                </>
+              ) : (
+                <span className="text-muted-foreground">{t('app.notifications.selectAll')}</span>
+              )}
+            </div>
+            {shown.length === 0 ? (
+              <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
+                <span>{t('app.notifications.noMatch')}</span>
+                <Button variant="ghost" size="sm" onClick={() => setParams({}, { replace: true })}>
+                  {t('app.notifications.clearFilters')}
+                </Button>
+              </div>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {shown.map((channel, index) => (
+                  <ChannelRow
+                    key={channel.id}
+                    channel={channel}
+                    devices={deviceList}
+                    index={index}
+                    selected={selected.includes(channel.id)}
+                    onSelect={(value) =>
+                      setSelected(
+                        value
+                          ? [...selected, channel.id]
+                          : selected.filter((id) => id !== channel.id),
+                      )
+                    }
+                  />
+                ))}
+              </ul>
+            )}
+          </>
         )}
       </section>
-      <TelegramConnect />
     </div>
   );
 }

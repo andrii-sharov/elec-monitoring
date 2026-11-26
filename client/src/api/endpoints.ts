@@ -3,6 +3,9 @@ import {
   createInviteBodySchema,
   channelIdsSchema,
   channelListSchema,
+  channelPatchSchema,
+  channelSchema,
+  deviceIdsSchema,
   createDeviceBodySchema,
   createDeviceResponseSchema,
   deviceListSchema,
@@ -20,6 +23,7 @@ import {
   outagesPageSchema,
   pairingCodeSchema,
   putChannelIdsSchema,
+  putDeviceIdsSchema,
   resetBodySchema,
   sessionSchema,
   signupBodySchema,
@@ -174,6 +178,33 @@ export function createTelegramLink(api: ApiClient) {
 
 export function deleteChannel(api: ApiClient, id: string) {
   return api.request(`/api/v1/channels/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+export function patchChannel(api: ApiClient, id: string, body: Body<typeof channelPatchSchema>) {
+  return api.request(`/api/v1/channels/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body,
+    schema: channelSchema,
+  });
+}
+
+export function putChannelDevices(
+  api: ApiClient,
+  id: string,
+  body: Body<typeof putDeviceIdsSchema>,
+) {
+  return api.request(`/api/v1/channels/${encodeURIComponent(id)}/devices`, {
+    method: 'PUT',
+    body,
+    schema: deviceIdsSchema,
+  });
+}
+
+export function testChannel(api: ApiClient, id: string) {
+  return api.request(`/api/v1/channels/${encodeURIComponent(id)}/test`, {
+    method: 'POST',
+    schema: channelSchema,
+  });
 }
 
 export function getDeviceChannels(api: ApiClient, id: string) {
