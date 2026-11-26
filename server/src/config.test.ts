@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { parseEnv } from 'node:util';
-import { expect, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import {
   ConfigError,
   loadConfig,
@@ -19,10 +19,21 @@ function catchError(fn: () => unknown): ConfigError {
   throw new Error('expected ConfigError');
 }
 
+const encryptionKey = Buffer.alloc(32, 7);
+
+const workerEnv: NodeJS.ProcessEnv = {
+  DATABASE_URL: 'postgres://u:p@h:5432/db',
+  ENCRYPTION_KEY: encryptionKey.toString('base64'),
+  CLIENT_URL: 'https://example.com',
+  EMAIL_TRANSPORT: 'log',
+  EMAIL_FROM: 'Electricity Monitor <noreply@example.com>',
+};
+
 const validEnv: NodeJS.ProcessEnv = {
   DATABASE_URL: 'postgres://u:p@h:5432/db',
   PORT: '8080',
   JWT_SECRET: 'x'.repeat(32),
+  ENCRYPTION_KEY: encryptionKey.toString('base64'),
   CLIENT_URL: 'https://example.com',
   ADMIN_URL: 'https://admin.example.com',
   API_URL: 'https://api.example.com',
@@ -42,6 +53,7 @@ test('loads valid env', () => {
     databaseUrl: 'postgres://u:p@h:5432/db',
     port: 8080,
     jwtSecret: 'x'.repeat(32),
+    encryptionKey,
     urls: {
       client: 'https://example.com',
       admin: 'https://admin.example.com',
@@ -204,33 +216,81 @@ test('loadDatabaseConfig needs only DATABASE_URL', () => {
 });
 
 test('worker config requires a bot token for the telegram transport', () => {
-  const err = catchError(() => loadWorkerConfig({ DATABASE_URL: 'postgres://u:p@h:5432/db' }));
+  const err = catchError(() => loadWorkerConfig(workerEnv));
   expect(err.keys).toEqual(['TELEGRAM_PLATFORM_BOT_TOKEN']);
 });
 
-test('worker config with the telegram transport', () => {
+test('worker config with the telegram and resend transports', () => {
   expect(
     loadWorkerConfig({
-      DATABASE_URL: 'postgres://u:p@h:5432/db',
+      ...workerEnv,
+      EMAIL_TRANSPORT: undefined,
+      RESEND_API_KEY: 're_123',
       TELEGRAM_PLATFORM_BOT_TOKEN: '123:abc',
     }),
   ).toEqual({
     databaseUrl: 'postgres://u:p@h:5432/db',
     telegram: { transport: 'telegram', botToken: '123:abc' },
+    encryptionKey,
+    urls: { client: 'https://example.com' },
+    email: {
+      transport: 'resend',
+      resendApiKey: 're_123',
+      from: 'Electricity Monitor <noreply@example.com>',
+    },
   });
 });
 
-test('worker config with the log transport needs no token or auth secrets', () => {
-  expect(
-    loadWorkerConfig({ DATABASE_URL: 'postgres://u:p@h:5432/db', TELEGRAM_TRANSPORT: 'log' }),
-  ).toEqual({ databaseUrl: 'postgres://u:p@h:5432/db', telegram: { transport: 'log' } });
+test('worker config with the log transports needs no tokens or auth secrets', () => {
+  expect(loadWorkerConfig({ ...workerEnv, TELEGRAM_TRANSPORT: 'log' })).toEqual({
+    databaseUrl: 'postgres://u:p@h:5432/db',
+    telegram: { transport: 'log' },
+    encryptionKey,
+    urls: { client: 'https://example.com' },
+    email: { transport: 'log', from: 'Electricity Monitor <noreply@example.com>' },
+  });
 });
 
 test('worker config rejects an unknown transport', () => {
-  const err = catchError(() =>
-    loadWorkerConfig({ DATABASE_URL: 'postgres://u:p@h:5432/db', TELEGRAM_TRANSPORT: 'smoke' }),
-  );
+  const err = catchError(() => loadWorkerConfig({ ...workerEnv, TELEGRAM_TRANSPORT: 'smoke' }));
   expect(err.keys).toEqual(['TELEGRAM_TRANSPORT']);
+});
+
+test('the worker needs RESEND_API_KEY for the resend transport', () => {
+  const env = { ...workerEnv, TELEGRAM_TRANSPORT: 'log', EMAIL_TRANSPORT: 'resend' };
+  expect(catchError(() => loadWorkerConfig(env)).keys).toEqual(['RESEND_API_KEY']);
+});
+
+test.each(['CLIENT_URL', 'EMAIL_FROM'])('the worker needs %s', (key) => {
+  const env = { ...workerEnv, TELEGRAM_TRANSPORT: 'log', [key]: undefined };
+  expect(catchError(() => loadWorkerConfig(env)).keys).toEqual([key]);
+});
+
+describe.each([
+  ['API', (env: NodeJS.ProcessEnv) => loadConfig({ ...validEnv, ...env })],
+  [
+    'worker',
+    (env: NodeJS.ProcessEnv) =>
+      loadWorkerConfig({ ...workerEnv, TELEGRAM_TRANSPORT: 'log', ...env }),
+  ],
+])('%s ENCRYPTION_KEY', (_name, load) => {
+  test('is required', () => {
+    expect(catchError(() => load({ ENCRYPTION_KEY: undefined })).keys).toEqual(['ENCRYPTION_KEY']);
+  });
+
+  test.each([
+    ['31 bytes', Buffer.alloc(31, 7).toString('base64')],
+    ['33 bytes', Buffer.alloc(33, 7).toString('base64')],
+    ['not base64', `${'!'.repeat(4)}${encryptionKey.toString('base64')}`],
+  ])('rejects %s without printing it', (_case, value) => {
+    const err = catchError(() => load({ ENCRYPTION_KEY: value }));
+    expect(err.keys).toEqual(['ENCRYPTION_KEY']);
+    expect(err.message).not.toContain(value);
+  });
+
+  test('decodes to 32 bytes', () => {
+    expect(load({}).encryptionKey).toHaveLength(32);
+  });
 });
 
 test('strips a leading @ from the bot username', () => {

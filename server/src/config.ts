@@ -59,21 +59,49 @@ function requireBotToken(env: TelegramEnv, ctx: z.RefinementCtx): void {
   }
 }
 
-const workerEnvSchema = databaseEnvSchema.extend(telegramEnvShape).superRefine(requireBotToken);
+const encryptionKeySchema = z
+  .base64()
+  .transform((value) => Buffer.from(value, 'base64'))
+  .refine((key) => key.length === 32);
+
+const emailEnvShape = {
+  EMAIL_TRANSPORT: z.enum(['resend', 'log']).default('resend'),
+  RESEND_API_KEY: z.string().min(1).optional(),
+  EMAIL_FROM: z.string().min(1),
+};
+
+type EmailEnv = z.output<z.ZodObject<typeof emailEnvShape>>;
+
+function requireResendKey(env: EmailEnv, ctx: z.RefinementCtx): void {
+  if (env.EMAIL_TRANSPORT === 'resend' && !env.RESEND_API_KEY) {
+    ctx.addIssue({ code: 'custom', path: ['RESEND_API_KEY'], message: 'Required' });
+  }
+}
+
+const workerEnvSchema = databaseEnvSchema
+  .extend({
+    ENCRYPTION_KEY: encryptionKeySchema,
+    CLIENT_URL: originUrl,
+    ...emailEnvShape,
+    ...telegramEnvShape,
+  })
+  .superRefine((env, ctx) => {
+    requireBotToken(env, ctx);
+    requireResendKey(env, ctx);
+  });
 
 const envSchema = databaseEnvSchema
   .extend({
     PORT: z.coerce.number().int().min(1).max(65535).default(3000),
     HOST: z.string().min(1).optional(),
     JWT_SECRET: z.string().min(32),
+    ENCRYPTION_KEY: encryptionKeySchema,
     CLIENT_URL: originUrl,
     ADMIN_URL: originUrl,
     API_URL: originUrl,
     GOOGLE_CLIENT_ID: z.string().min(1),
     GOOGLE_CLIENT_SECRET: z.string().min(1),
-    EMAIL_TRANSPORT: z.enum(['resend', 'log']).default('resend'),
-    RESEND_API_KEY: z.string().min(1).optional(),
-    EMAIL_FROM: z.string().min(1),
+    ...emailEnvShape,
     TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
     TELEGRAM_PLATFORM_BOT_USERNAME: z
       .string()
@@ -86,13 +114,7 @@ const envSchema = databaseEnvSchema
   .superRefine((env, ctx) => {
     requireFirmwareKeys(env, ctx);
     requireBotToken(env, ctx);
-    if (env.EMAIL_TRANSPORT === 'resend' && !env.RESEND_API_KEY) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['RESEND_API_KEY'],
-        message: 'Required',
-      });
-    }
+    requireResendKey(env, ctx);
   });
 
 export type AppUrls = { client: string; admin: string; api: string };
@@ -114,6 +136,7 @@ export type Config = {
   port: number;
   host?: string;
   jwtSecret: string;
+  encryptionKey: Buffer;
   urls: AppUrls;
   google: { clientId: string; clientSecret: string };
   email: EmailConfig;
@@ -126,7 +149,13 @@ export type DatabaseConfig = { databaseUrl: string };
 
 export type FirmwareReleaseConfig = { databaseUrl: string; firmware: FirmwareStoreConfig };
 
-export type WorkerConfig = { databaseUrl: string; telegram: TelegramTransportConfig };
+export type WorkerConfig = {
+  databaseUrl: string;
+  telegram: TelegramTransportConfig;
+  encryptionKey: Buffer;
+  urls: Pick<AppUrls, 'client'>;
+  email: EmailConfig;
+};
 
 export class ConfigError extends Error {
   readonly keys: string[];
@@ -142,7 +171,7 @@ function failedKeys(error: z.ZodError): string[] {
   return [...new Set(error.issues.map((issue) => String(issue.path[0])))].toSorted();
 }
 
-function toEmailConfig(env: z.output<typeof envSchema>): EmailConfig {
+function toEmailConfig(env: EmailEnv): EmailConfig {
   if (env.EMAIL_TRANSPORT === 'log') return { transport: 'log', from: env.EMAIL_FROM };
   return {
     transport: 'resend',
@@ -175,6 +204,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
     port: data.PORT,
     host: data.HOST,
     jwtSecret: data.JWT_SECRET,
+    encryptionKey: data.ENCRYPTION_KEY,
     urls: { client: data.CLIENT_URL, admin: data.ADMIN_URL, api: data.API_URL },
     google: {
       clientId: data.GOOGLE_CLIENT_ID,
@@ -207,7 +237,13 @@ export function loadWorkerConfig(env: NodeJS.ProcessEnv): WorkerConfig {
   const result = workerEnvSchema.safeParse(env);
   if (!result.success) throw new ConfigError(failedKeys(result.error));
   const data = result.data;
-  return { databaseUrl: data.DATABASE_URL, telegram: toTelegramTransport(data) };
+  return {
+    databaseUrl: data.DATABASE_URL,
+    telegram: toTelegramTransport(data),
+    encryptionKey: data.ENCRYPTION_KEY,
+    urls: { client: data.CLIENT_URL },
+    email: toEmailConfig(data),
+  };
 }
 
 function exitOnConfigError<T>(load: () => T): T {

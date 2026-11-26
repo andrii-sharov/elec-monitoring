@@ -17,6 +17,7 @@ export const testConfig: Config = {
   databaseUrl: 'postgres://localhost/test',
   port: 0,
   jwtSecret: 'x'.repeat(32),
+  encryptionKey: Buffer.alloc(32, 1),
   urls: { client: 'https://app.test', admin: 'https://admin.test', api: 'https://api.test' },
   google: { clientId: 'google-client-id', clientSecret: 'google-client-secret' },
   email: { transport: 'log', from: 'Electricity Monitor <noreply@app.test>' },

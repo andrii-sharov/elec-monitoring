@@ -983,17 +983,17 @@ own host and Elastic IP.
 ```
 DATABASE_URL=...
 JWT_SECRET=...                     # at least 32 characters
-ENCRYPTION_KEY=...                 # 32 bytes, base64 (M8)
+ENCRYPTION_KEY=...                 # API and worker; 32 bytes, base64
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
-EMAIL_TRANSPORT=resend             # resend (default) | log
+EMAIL_TRANSPORT=resend             # API and worker; resend (default) | log
 RESEND_API_KEY=...                 # required when EMAIL_TRANSPORT=resend
-EMAIL_FROM=...
+EMAIL_FROM=...                     # API and worker
 TELEGRAM_PLATFORM_BOT_TOKEN=...    # API and worker
 TELEGRAM_PLATFORM_BOT_USERNAME=... # API, without @
 TELEGRAM_WEBHOOK_SECRET=...        # API, 32-256 chars of A-Z a-z 0-9 _ -
 TELEGRAM_TRANSPORT=telegram        # API and worker; telegram (default) | log
-CLIENT_URL=https://<domain>        # origin only, no path
+CLIENT_URL=https://<domain>        # API and worker; origin only, no path
 ADMIN_URL=https://admin.<domain>
 API_URL=https://api.<domain>
 TRUST_PROXY_HOPS=0                 # 1 when Caddy is the only proxy
@@ -1018,10 +1018,12 @@ for local runs; the token is required when `telegram`).
 
 The API validates these with Zod at startup and exits on a missing or
 invalid value. App URLs must be origins: `https`, or `http` for
-`localhost` and `127.0.0.1`; a trailing slash is removed. The worker and
-`db:migrate` need only `DATABASE_URL`. The API reads firmware images
-through the Supabase Storage REST API with the secret key, so there is no
-SDK dependency. `FIRMWARE_STORE=fs` serves them from a local folder for
+`localhost` and `127.0.0.1`; a trailing slash is removed. `db:migrate`
+needs only `DATABASE_URL`. The worker needs `DATABASE_URL`,
+`ENCRYPTION_KEY`, `CLIENT_URL` and the email and Telegram transport keys,
+validated like the API's. The API reads firmware images through the
+Supabase Storage REST API with the secret key, so there is no SDK
+dependency. `FIRMWARE_STORE=fs` serves them from a local folder for
 local runs. Each milestone adds its keys when
 its code first reads them.
 
