@@ -21,6 +21,7 @@ import { phonePaths, phoneRouter } from './auth/phone.ts';
 import { sessionPaths, sessionRouter } from './auth/session.ts';
 import { signupPaths, signupRouter } from './auth/signup.ts';
 import { channelsPaths, channelsRouter } from './channels/channels.ts';
+import { deliveriesPaths, deliveriesRouter } from './channels/deliveries.ts';
 import { claimPaths, claimRouter } from './device/claim.ts';
 import { pingPaths, pingRouter } from './device/ping.ts';
 import { devicesPaths, devicesRouter } from './devices/devices.ts';
@@ -67,7 +68,7 @@ export function apiDocument(): OpenApiDocument {
     {
       tag: 'Notifications',
       description: 'Notification channels and which devices use them',
-      paths: [channelsPaths],
+      paths: [channelsPaths, deliveriesPaths],
     },
     {
       tag: 'Sharing',
@@ -102,6 +103,7 @@ export function createApp(deps: AppDeps, extraRoutes?: (app: Express) => void): 
   app.use(pingRouter(deps));
   app.use(historyRouter(deps));
   app.use(channelsRouter(deps));
+  app.use(deliveriesRouter(deps));
   app.use(sharingRouter(deps));
   app.use(firmwareRouter(deps));
   app.use(telegramWebhookRouter(deps));

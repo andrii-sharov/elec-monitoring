@@ -93,6 +93,7 @@ Validation errors add `details`:
 | Resend verification             | 3 / h per user                 |
 | Device invites                  | 10 / h per user                |
 | Channel test message            | 5 / min per user               |
+| Redeliver                       | 30 / min per user              |
 | Change password, delete account | 10 / 15 min per user           |
 
 Responses include `Retry-After` on `429`; CORS exposes it to the app origins.
@@ -874,8 +875,25 @@ A platform channel's `config` is `{ "chat_id": "-1001234567890" }`.
 }
 ```
 
-`status`: `QUEUED` | `SENT` | `RETRYING` | `FAILED`. `redeliver` queues
-the same delivery ID again (`202`).
+Works for any channel type. Newest first (`created_at`, then `id`, both
+descending). `limit` defaults to 20, max 100. `device_id` is the device of
+the outage. `status`: `QUEUED` | `SENT` | `RETRYING` | `FAILED`. An invalid
+`cursor` is `400 validation_error` with detail
+`{ "path": "cursor", "code": "invalid_cursor" }`. A missing channel or
+another user's channel is `404 not_found`.
+
+`POST /deliveries/:id/redeliver` → `202` with the delivery item. It queues
+the same delivery ID again: `status: "QUEUED"`, `attempts: 0`,
+`last_error: null`, sent as soon as possible with a fresh retry schedule.
+
+- The caller must own the delivery's channel, otherwise `404 not_found`.
+- The channel must be a webhook, otherwise `409 conflict`.
+- The channel must be enabled, otherwise `409 conflict`
+  "Turn the channel on first".
+- The delivery must be `SENT` or `FAILED`. `QUEUED` or `RETRYING` is
+  `409 conflict`.
+
+Rate limit: 30 / min per user.
 
 ### Account
 

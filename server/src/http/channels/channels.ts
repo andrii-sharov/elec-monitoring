@@ -37,7 +37,7 @@ import { bearer, deviceIdParam, deviceNotFound, unauthorized } from '../devices/
 import { HttpError, errorResponse } from '../errors.ts';
 import { rateLimit } from '../rateLimit.ts';
 
-const channelParamsSchema = z.object({ id: z.uuid() });
+export const channelParamsSchema = z.object({ id: z.uuid() });
 
 const channelNotFound = () => new HttpError(404, 'not_found', 'Not found');
 const needsTestFirst = () =>
@@ -219,7 +219,7 @@ async function deviceIdsByChannel(db: Executor, channelIds: string[]) {
   return byChannel;
 }
 
-async function myChannel(db: Executor, userId: string, id: string): Promise<ChannelRow> {
+export async function myChannel(db: Executor, userId: string, id: string): Promise<ChannelRow> {
   const [row] = await db
     .select()
     .from(notificationChannel)

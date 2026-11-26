@@ -15,8 +15,8 @@ import { deviceBoot, deviceDiagnostic, outage } from '../../db/schema/index.ts';
 import { getAccessibleDevice } from '../../devices/access.ts';
 import type { AppDeps } from '../app.ts';
 import { getAuth, requireUser } from '../auth/middleware.ts';
-import { HttpError, errorResponse } from '../errors.ts';
-import { decodeCursor, encodeCursor } from '../pagination.ts';
+import { errorResponse } from '../errors.ts';
+import { cursorDateSchema, encodeCursor, parseCursor } from '../pagination.ts';
 import { bearer, deviceIdParam, deviceNotFound, ownerOnly, unauthorized } from './devices.ts';
 import { toOutageItem } from './views.ts';
 
@@ -38,17 +38,6 @@ const diagnosticItemSchema = z
     boot_wifi_evicted: z.number().int(),
   })
   .meta({ id: 'DiagnosticItem' });
-
-const cursorDate = z.iso.datetime({ offset: true });
-
-function parseCursor<T extends z.ZodTuple>(cursor: string, shape: T): z.infer<T> {
-  const parsed = shape.safeParse(decodeCursor(cursor, shape.def.items.length));
-  if (!parsed.success)
-    throw new HttpError(400, 'validation_error', 'Invalid cursor', [
-      { path: 'cursor', code: 'invalid_cursor' },
-    ]);
-  return parsed.data;
-}
 
 function outageRange(q: Range): SQL[] {
   const conditions: SQL[] = [];
@@ -117,7 +106,7 @@ export function historyRouter(deps: AppDeps): Router {
     if (q.cause) conditions.push(eq(outage.cause, q.cause));
     if (q.kind) conditions.push(eq(outage.kind, q.kind));
     if (q.cursor) {
-      const [startedAt, outageId] = parseCursor(q.cursor, z.tuple([cursorDate, z.uuid()]));
+      const [startedAt, outageId] = parseCursor(q.cursor, z.tuple([cursorDateSchema, z.uuid()]));
       conditions.push(
         sql`(${outage.startedAt}, ${outage.id}) < (${new Date(startedAt)}, ${outageId})`,
       );
@@ -150,7 +139,7 @@ export function historyRouter(deps: AppDeps): Router {
       const [startedAt, bootId, localId] = parseCursor(
         q.cursor,
         z.tuple([
-          cursorDate,
+          cursorDateSchema,
           z.uuid(),
           z
             .string()
