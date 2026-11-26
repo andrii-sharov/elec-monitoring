@@ -249,6 +249,7 @@ export const ru: Dictionary = {
       },
       phone: {
         identifier: 'Email или телефон',
+        identifierWords: { email: 'Email', or: 'или', phone: 'Телефон' },
         number: 'Номер телефона',
         confirmTitle: 'Подтвердите в Telegram',
         confirmHint: 'Откройте бота, нажмите Start и поделитесь своим номером.',

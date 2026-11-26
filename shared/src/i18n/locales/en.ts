@@ -238,6 +238,7 @@ export const en = {
       },
       phone: {
         identifier: 'Email or phone',
+        identifierWords: { email: 'Email', or: 'or', phone: 'Phone' },
         number: 'Phone number',
         confirmTitle: 'Confirm in Telegram',
         confirmHint: 'Open the bot, press Start and share your number.',

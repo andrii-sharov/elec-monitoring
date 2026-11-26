@@ -243,6 +243,7 @@ export const uk: Dictionary = {
       },
       phone: {
         identifier: 'Email або телефон',
+        identifierWords: { email: 'Email', or: 'або', phone: 'Телефон' },
         number: 'Номер телефону',
         confirmTitle: 'Підтвердіть у Telegram',
         confirmHint: 'Відкрийте бота, натисніть Start і поділіться своїм номером.',

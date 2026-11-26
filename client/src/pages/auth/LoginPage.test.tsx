@@ -158,3 +158,17 @@ test('an incomplete email is caught before sending', async () => {
   expect(await screen.findByText('Enter a valid email address')).toBeInTheDocument();
   expect(spy).not.toHaveBeenCalled();
 });
+
+test('the label lights up Email or Phone as the field recognises the value', async () => {
+  const { user } = renderRoute('/login');
+  const field = await screen.findByLabelText('Email or phone');
+  const words = () => document.querySelector('[data-kind]');
+  const active = () => words()?.querySelector('[data-active]')?.textContent;
+  expect(words()).toHaveAttribute('data-kind', 'empty');
+  expect(active()).toBeUndefined();
+  await user.type(field, 'johnny@');
+  expect(active()).toBe('Email');
+  await user.clear(field);
+  await user.type(field, '050');
+  expect(active()).toBe('Phone');
+});

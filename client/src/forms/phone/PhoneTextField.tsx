@@ -12,6 +12,7 @@ import type { FieldError as HookFormError } from 'react-hook-form';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
 import { CountryPicker } from './CountryPicker';
+import { IdentifierWords } from './IdentifierLabel';
 import {
   applyEdit,
   defaultCountry,
@@ -107,7 +108,18 @@ export function PhoneTextField({
 
   return (
     <Field data-invalid={error ? true : undefined}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      {mode === 'identifier' ? (
+        <>
+          <FieldLabel htmlFor={id} className="sr-only">
+            {label}
+          </FieldLabel>
+          <FieldLabel htmlFor={id} aria-hidden="true">
+            <IdentifierWords kind={state.kind} />
+          </FieldLabel>
+        </>
+      ) : (
+        <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      )}
       <InputGroup data-disabled={disabled ? true : undefined}>
         <InputGroupInput
           id={id}
