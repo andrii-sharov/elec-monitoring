@@ -67,6 +67,17 @@ changing behaviour, and update the spec if a decision changes.
     change through `useStateChange`, never on mount.
   - `client/src/appStyles/motion.test.tsx` enforces this. Extend its
     ambient list only for motion that `theme.md` allows.
+- Client base controls: pages and features build every control from
+  `client/src/components/ui` and never restyle its padding, size or motion.
+  - Dropdowns use `Select`, or `PickerField` when they need search. Both
+    share the `select*ClassName` look.
+  - Segmented button groups use `SegmentedControl` and `Segment`, which
+    share the pill look and sliding indicator of `TabsList variant="pill"`.
+  - Popovers and menus use the `Popover` and `DropdownMenu` wrappers.
+  - A missing control or variant goes into `components/ui` first.
+  - `client/src/components/ui/consistency.test.ts` enforces this. It
+    rejects Base UI imports, raw form elements and hand-rolled
+    popup or pressed-state classes outside `components/ui`.
 - `shared/` is an npm workspace for code used by the server and both React
   apps: the translation dictionaries and shared enums.
 - Generate the public OpenAPI document from API schemas and serve it through

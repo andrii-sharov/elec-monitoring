@@ -1,11 +1,11 @@
-import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
 import { CalendarRange, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PopoverContent } from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Segment, SegmentedControl } from '@/components/ui/segmented-control';
 import { useFormatters } from '@/lib/format';
 import {
   containsToday,
@@ -20,9 +20,6 @@ import { cn } from '@/lib/utils';
 import { addDays, diffDays, type LocalDate } from '@/lib/week';
 
 type Props = { range: Range; today: LocalDate; onChange: (range: Range) => void };
-
-const segment =
-  'h-7 rounded-md px-2.5 text-xs font-medium text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-sm';
 
 function useRangeLabel(range: Range): string {
   const format = useFormatters();
@@ -59,14 +56,11 @@ function CustomRange({ range, today, onChange }: Props) {
   }
 
   return (
-    <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
-      <PopoverPrimitive.Trigger
-        aria-pressed={range.period === 'custom'}
-        className={cn(segment, 'flex items-center gap-1')}
-      >
-        <CalendarRange aria-hidden="true" className="size-3.5" />
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger render={<Segment aria-pressed={range.period === 'custom'} />}>
+        <CalendarRange aria-hidden="true" />
         {t('app.history.periods.custom')}
-      </PopoverPrimitive.Trigger>
+      </PopoverTrigger>
       <PopoverContent align="end" className="w-72">
         <form onSubmit={submit} className="flex flex-col gap-3">
           <p className="font-medium">{t('app.history.custom.title')}</p>
@@ -101,7 +95,7 @@ function CustomRange({ range, today, onChange }: Props) {
           </Button>
         </form>
       </PopoverContent>
-    </PopoverPrimitive.Root>
+    </Popover>
   );
 }
 
@@ -109,23 +103,20 @@ export function PeriodSelect({ range, today, onChange }: Props) {
   const { t } = useTranslation();
   const choose = (period: Exclude<Period, 'custom'>) => onChange(periodRange(period, today));
   return (
-    <fieldset className="flex w-fit flex-wrap items-center gap-0.5 rounded-lg bg-secondary p-0.5">
-      <legend className="sr-only">{t('app.history.period')}</legend>
+    <SegmentedControl label={t('app.history.period')}>
       {periods
         .filter((period) => period !== 'custom')
         .map((period) => (
-          <button
+          <Segment
             key={period}
-            type="button"
             aria-pressed={range.period === period}
             onClick={() => choose(period as Exclude<Period, 'custom'>)}
-            className={segment}
           >
             {t(`app.history.periods.${period}`)}
-          </button>
+          </Segment>
         ))}
       <CustomRange range={range} today={today} onChange={onChange} />
-    </fieldset>
+    </SegmentedControl>
   );
 }
 

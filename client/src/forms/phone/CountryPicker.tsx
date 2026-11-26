@@ -50,7 +50,7 @@ export function CountryPicker({ country, onChange, disabled }: CountryPickerProp
       <PopoverContent
         align="start"
         data-look="select-content"
-        className={cn(selectPopupClassName, 'flex w-80 flex-col gap-1 p-1')}
+        className={cn(selectPopupClassName, 'flex w-80 flex-col gap-1')}
         onClick={(event) => event.stopPropagation()}
       >
         <PickerList

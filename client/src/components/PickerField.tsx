@@ -57,7 +57,7 @@ export function PickerField<T extends string>({
         <PopoverContent
           align="start"
           data-look="select-content"
-          className={cn(selectPopupClassName, 'flex flex-col gap-1 p-1')}
+          className={cn(selectPopupClassName, 'flex flex-col gap-1')}
         >
           <PickerList value={value} options={options} onChoose={choose} search={search} />
         </PopoverContent>

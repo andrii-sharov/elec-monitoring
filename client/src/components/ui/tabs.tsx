@@ -3,6 +3,18 @@ import { cn } from 'cn';
 
 type Variant = 'line' | 'pill';
 
+export const pillListClassName =
+  'relative z-0 flex w-fit items-center gap-0.5 rounded-lg bg-secondary p-0.5';
+
+export const indicatorClassName =
+  'absolute left-(--active-tab-left) w-(--active-tab-width) transition-[left,width] duration-(--app-motion-duration) ease-(--app-motion-ease) motion-reduce:transition-none';
+
+export const pillIndicatorClassName =
+  'top-(--active-tab-top) -z-1 h-(--active-tab-height) rounded-md bg-card shadow-sm';
+
+export const tabClassName =
+  'flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-active:text-foreground [&_svg]:size-4 [&_svg]:shrink-0';
+
 function Tabs({ className, ...props }: TabsPrimitive.Root.Props) {
   return (
     <TabsPrimitive.Root
@@ -24,10 +36,9 @@ function TabsList({
       data-slot="tabs-list"
       data-variant={variant}
       className={cn(
-        'relative z-0 flex items-center',
         variant === 'line'
-          ? 'gap-1 overflow-x-auto border-b border-border'
-          : 'w-fit gap-0.5 rounded-lg bg-secondary p-0.5',
+          ? 'relative z-0 flex items-center gap-1 overflow-x-auto border-b border-border'
+          : pillListClassName,
         className,
       )}
       {...props}
@@ -36,10 +47,8 @@ function TabsList({
       <TabsPrimitive.Indicator
         data-slot="tabs-indicator"
         className={cn(
-          'absolute left-(--active-tab-left) w-(--active-tab-width) transition-[left,width] duration-(--app-motion-duration) ease-(--app-motion-ease) motion-reduce:transition-none',
-          variant === 'line'
-            ? 'bottom-0 h-0.5 rounded-full bg-primary'
-            : 'top-(--active-tab-top) -z-1 h-(--active-tab-height) rounded-md bg-card shadow-sm',
+          indicatorClassName,
+          variant === 'line' ? 'bottom-0 h-0.5 rounded-full bg-primary' : pillIndicatorClassName,
         )}
       />
     </TabsPrimitive.List>
@@ -50,11 +59,7 @@ function TabsTab({ className, ...props }: TabsPrimitive.Tab.Props) {
   return (
     <TabsPrimitive.Tab
       data-slot="tabs-tab"
-      className={cn(
-        'flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-active:text-foreground [&_svg]:size-4 [&_svg]:shrink-0',
-        'in-data-[variant=pill]:py-1.5',
-        className,
-      )}
+      className={cn(tabClassName, 'in-data-[variant=pill]:py-1.5', className)}
       {...props}
     />
   );

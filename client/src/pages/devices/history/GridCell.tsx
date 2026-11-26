@@ -1,12 +1,11 @@
 import type { OutageItem } from '@elec/shared/api';
-import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
 import { ZapOff } from 'lucide-react';
 import type { KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { Duration, Moment, MomentRange } from '@/components/Moment';
 import { OutageTags } from '@/components/OutageTags';
-import { PopoverContent } from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useFormatters } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { outagesIn, type HourCell } from '@/lib/week';
@@ -62,8 +61,8 @@ export function GridCell({
   const touching = outagesIn(cell, outages, now);
 
   return (
-    <PopoverPrimitive.Root>
-      <PopoverPrimitive.Trigger
+    <Popover>
+      <PopoverTrigger
         openOnHover
         delay={250}
         closeDelay={100}
@@ -102,7 +101,7 @@ export function GridCell({
             className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-warning"
           />
         ) : null}
-      </PopoverPrimitive.Trigger>
+      </PopoverTrigger>
       <PopoverContent side="top" className="w-80 gap-3">
         <p className="font-heading font-medium">{label}</p>
         {cell.future ? (
@@ -156,7 +155,7 @@ export function GridCell({
           </button>
         ) : null}
       </PopoverContent>
-    </PopoverPrimitive.Root>
+    </Popover>
   );
 }
 

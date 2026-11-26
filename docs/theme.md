@@ -84,7 +84,13 @@ the `:root` defaults.
   an open outage in the timeline, the looping promo video on auth pages,
   and the entrance (`data-motion="enter"`, staggered by `--i`) of lists,
   the device hero, history rows, channel rows and member rows.
-  The tab indicator slides with the motion tokens.
+  The tab indicator slides with the motion tokens, and so does the
+  `SegmentedControl` indicator.
+- Base controls look and move the same on every page. All dropdown
+  popups (`Select`, `PickerField`, `CountryPicker`) share one padded popup
+  with the same open and close animation. Segmented groups share the pill
+  tab look. Pages never restyle a control from `components/ui`;
+  `components/ui/consistency.test.ts` enforces this.
 - Entrance lasts `--app-enter-duration` (`min(2 × --app-motion-duration,
   240ms)`), starts at 40% opacity, and its stagger is
   `min(--i, 8) × 30ms`. Tab and view panels only fade
