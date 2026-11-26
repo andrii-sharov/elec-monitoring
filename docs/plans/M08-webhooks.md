@@ -131,8 +131,8 @@ Each task records its decisions in the spec. Task 7 marks them in the ROADMAP.
   ```ts
   const body =
     '{"event":"device.offline","device":{"id":"0190a000-0000-7000-8000-000000000001","name":"Home"},"outage":{"id":"0190a000-0000-7000-8000-000000000002","type":"OUTAGE","started_at":"2026-11-21T16:42:00.000Z","ended_at":null,"duration_s":null,"cause":null,"kind":null,"ota_attempt_id":null},"sent_at":"2026-11-21T16:42:05.000Z"}';
-  expect(signBody("whsec_test_secret", body)).toBe(
-    "sha256=41fb456c5318b16f0baa3c41640285a49ce87998d07c8aa1c696762012939f71",
+  expect(signBody('whsec_test_secret', body)).toBe(
+    'sha256=41fb456c5318b16f0baa3c41640285a49ce87998d07c8aa1c696762012939f71',
   );
   ```
 - [ ] **Step 2: Sender tests** against an in-process `http.createServer` on `127.0.0.1`, with `request: http.request` and `isAllowed: () => true` unless stated:

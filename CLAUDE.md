@@ -34,6 +34,21 @@ changing behaviour, and update the spec if a decision changes.
   [PROJECT_V2.md §12](docs/PROJECT_V2.md). Keep `server/.env.example` valid:
   the API must start with it as-is.
 
+## Tests in CI
+
+CI runs each workspace's tests in parallel on a 4-vCPU runner. PGlite and
+jsdom tests are CPU-bound, so there they run 5–10× slower than a single
+test file run locally.
+
+- Timeouts are set once per workspace in the Vitest config (30 s). Never
+  add a per-test timeout or raise the limit to fix a CI failure. A test
+  that hits 30 s hangs or does too much work. Fix the test.
+- Keep each test under about 1 s when run alone. Seed workload tests
+  (hundreds of rows) with bulk inserts, not a helper call per row.
+- No real timers or sleeps. Use `FakeClock` and injected `sleep`.
+- Contention only shows in the full run. Before calling test work done,
+  run the full `npm test` from the repo root, not just the changed file.
+
 ## v2 design
 
 - `server/` contains the Node.js/Express API and the background worker.

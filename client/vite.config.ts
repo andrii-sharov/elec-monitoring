@@ -12,6 +12,8 @@ export default defineConfig({
   ssr: { resolve: { conditions: ['source', ...defaultServerConditions] } },
   test: {
     environment: 'jsdom',
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
     setupFiles: ['test/setup.ts'],
     server: { deps: { inline: [/@elec\/shared/] } },
   },

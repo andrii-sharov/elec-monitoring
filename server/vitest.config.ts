@@ -5,6 +5,8 @@ export default defineConfig({
   ssr: { resolve: { conditions: ['source'] } },
   test: {
     environment: 'node',
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
     server: { deps: { inline: [/@elec\/shared/] } },
   },
 });
