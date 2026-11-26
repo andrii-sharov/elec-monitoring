@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="{{lang}}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
+    <title>{{subject}}</title>
+    <style>
+      @media (prefers-color-scheme: dark) {
+        .em-page {
+          background: #101d24 !important;
+        }
+        .em-card {
+          background: #192c36 !important;
+          border-color: #405965 !important;
+        }
+        .em-text {
+          color: #e6f1f5 !important;
+        }
+        .em-muted {
+          color: #b2c8d1 !important;
+        }
+        .em-brand {
+          color: #92cbe6 !important;
+        }
+        .em-button {
+          background: #92cbe6 !important;
+        }
+        .em-button a {
+          color: #102530 !important;
+        }
+        .em-link {
+          color: #92cbe6 !important;
+        }
+      }
+      @media (max-width: 620px) {
+        .em-card td {
+          padding-left: 24px !important;
+          padding-right: 24px !important;
+        }
+      }
+    </style>
+  </head>
+  <body style="margin: 0; padding: 0; background: #dbe9ee">
+    <div style="display: none; max-height: 0; overflow: hidden; opacity: 0">{{preheader}}</div>
+    <table
+      role="presentation"
+      class="em-page"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background: #dbe9ee"
+    >
+      <tr>
+        <td align="center" style="padding: 32px 12px">
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="max-width: 560px"
+          >
+            <tr>
+              <td style="padding: 0 4px 20px">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="padding-right: 12px">
+                      <img
+                        src="{{logoUrl}}"
+                        width="40"
+                        height="40"
+                        alt=""
+                        style="display: block; border: 0; border-radius: 9px"
+                      />
+                    </td>
+                    <td
+                      class="em-brand"
+                      style="
+                        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+                        font-size: 17px;
+                        font-weight: 600;
+                        color: #166088;
+                      "
+                    >
+                      {{appName}}
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <table
+                  role="presentation"
+                  class="em-card"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  style="background: #ffffff; border: 1px solid #b6cbd4; border-radius: 16px"
+                >
+                  <tr>
+                    <td
+                      class="em-text"
+                      style="
+                        padding: 32px 40px 8px;
+                        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+                        font-size: 16px;
+                        line-height: 24px;
+                        color: #203844;
+                      "
+                    >
+                      <p style="margin: 0 0 24px">{{intro}}</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 0 40px 24px">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td class="em-button" style="background: #166088; border-radius: 10px">
+                            <a
+                              href="{{link}}"
+                              style="
+                                display: inline-block;
+                                padding: 12px 22px;
+                                font-family:
+                                  system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+                                font-size: 15px;
+                                font-weight: 600;
+                                line-height: 20px;
+                                color: #ffffff;
+                                text-decoration: none;
+                                border-radius: 10px;
+                              "
+                              >{{action}}</a
+                            >
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      class="em-muted"
+                      style="
+                        padding: 0 40px 32px;
+                        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+                        font-size: 14px;
+                        line-height: 21px;
+                        color: #476471;
+                      "
+                    >
+                      <!-- {{#notes}} one <p> per note -->
+                      <p style="margin: 0 0 12px">{{note}}</p>
+                      <!-- {{/notes}} -->
+                      <p style="margin: 16px 0 0; word-break: break-all">
+                        {{linkHint}}<br /><a class="em-link" href="{{link}}" style="color: #166088"
+                          >{{link}}</a
+                        >
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td
+                class="em-muted"
+                align="center"
+                style="
+                  padding: 20px 12px 0;
+                  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+                  font-size: 12px;
+                  line-height: 18px;
+                  color: #476471;
+                "
+              >
+                {{footer}}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

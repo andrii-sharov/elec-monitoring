@@ -1,7 +1,7 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
 from text2path import text_path
-from gen import BOLT, C
+from brand import BOLT, C
 O='fonts/fontsource-onest-5.3.1/package/files/onest-'
 def on(w): return [O+f'latin-{w}-normal.woff2', O+f'cyrillic-{w}-normal.woff2']
 U='fonts/fontsource-unbounded-5.3.0/package/files/unbounded-'

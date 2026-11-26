@@ -1,0 +1,101 @@
+:root {
+  color-scheme: light dark;
+  --bg: #dbe9ee;
+  --card: #fff;
+  --fg: #203844;
+  --mut: #476471;
+  --pri: #166088;
+  --on-pri: #fff;
+  --in: #738e9b;
+  --bad: #a43042;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101d24;
+    --card: #192c36;
+    --fg: #e6f1f5;
+    --mut: #b2c8d1;
+    --pri: #92cbe6;
+    --on-pri: #102530;
+    --in: #64808d;
+    --bad: #ffa0ac;
+  }
+}
+body {
+  font-family: system-ui, sans-serif;
+  max-width: 26rem;
+  margin: 1.5rem auto;
+  padding: 0 1rem;
+  background: var(--bg);
+  color: var(--fg);
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+header h1 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+form {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 0.5rem 1.25rem 1.25rem;
+  margin-top: 1rem;
+}
+label {
+  display: block;
+  margin-top: 1rem;
+  font-weight: 600;
+}
+input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem;
+  font-size: 1rem;
+  margin-top: 0.3rem;
+  border: 1px solid var(--in);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--fg);
+}
+input:focus {
+  outline: 2px solid var(--pri);
+  outline-offset: 1px;
+}
+input[aria-invalid] {
+  border: 2px solid var(--bad);
+}
+button {
+  margin-top: 1.5rem;
+  width: 100%;
+  padding: 0.8rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 0;
+  border-radius: 10px;
+  background: var(--pri);
+  color: var(--on-pri);
+}
+button:disabled {
+  opacity: 0.6;
+}
+small {
+  display: block;
+  color: var(--mut);
+  margin-top: 0.3rem;
+}
+.err {
+  color: var(--bad);
+  font-weight: 600;
+}
+#m {
+  margin-top: 1rem;
+  font-weight: 600;
+}
+nav a {
+  margin-right: 0.8rem;
+  color: var(--pri);
+}

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="em-ill" viewBox="0 0 240 160" width="240" height="160" role="img" aria-label="No notification channel yet">
+  <style>.em-ill{--em-a:#166088;--em-f:#203844;--em-m:#476471;--em-s:#FFFFFF;--em-b:#B6CBD4;--em-on:#146847;--em-off:#A43042;--em-pend:#56657A;--em-w:#855A12}@media (prefers-color-scheme:dark){.em-ill{--em-a:#92CBE6;--em-f:#E6F1F5;--em-m:#B2C8D1;--em-s:#192C36;--em-b:#405965;--em-on:#79DEB2;--em-off:#FFA0AC;--em-pend:#A5B4CA;--em-w:#F1C677}}.dark .em-ill{--em-a:#92CBE6;--em-f:#E6F1F5;--em-m:#B2C8D1;--em-s:#192C36;--em-b:#405965;--em-on:#79DEB2;--em-off:#FFA0AC;--em-pend:#A5B4CA;--em-w:#F1C677}.em-ill .a{fill:var(--primary,var(--em-a))}.em-ill .a-s{stroke:var(--primary,var(--em-a))}.em-ill .f{fill:var(--foreground,var(--em-f))}.em-ill .f-s{stroke:var(--foreground,var(--em-f))}.em-ill .m{fill:var(--muted-foreground,var(--em-m))}.em-ill .m-s{stroke:var(--muted-foreground,var(--em-m))}.em-ill .s{fill:var(--surface,var(--em-s))}.em-ill .s-s{stroke:var(--surface,var(--em-s))}.em-ill .b{fill:var(--border,var(--em-b))}.em-ill .b-s{stroke:var(--border,var(--em-b))}.em-ill .on{fill:var(--status-online,var(--em-on))}.em-ill .on-s{stroke:var(--status-online,var(--em-on))}.em-ill .off{fill:var(--status-offline,var(--em-off))}.em-ill .off-s{stroke:var(--status-offline,var(--em-off))}.em-ill .pend{fill:var(--status-pending,var(--em-pend))}.em-ill .pend-s{stroke:var(--status-pending,var(--em-pend))}.em-ill .w{fill:var(--warning,var(--em-w))}.em-ill .w-s{stroke:var(--warning,var(--em-w))}</style>
+  <defs><linearGradient id="channels-emptybg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1D78A8"/><stop offset="1" stop-color="#0F4664"/></linearGradient></defs>
+  <g fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path fill="url(#channels-emptybg)" d="M52 46 H92 A16 16 0 0 1 108 62 V84 A16 16 0 0 1 92 100 H70 L46 116 L52 100 A16 16 0 0 1 36 84 V62 A16 16 0 0 1 52 46 Z"/>
+    <path transform="translate(48.24 49.96) scale(0.72)" d="M36 9 L23 36 H32 L28 55 L43 27 H34 Z" fill="#F1C677" stroke="#F1C677" stroke-width="2.5"/>
+    <path class="m-s" d="M118 73 H142" stroke-dasharray="1 7"/>
+    <circle class="b-s" cx="176" cy="73" r="26" stroke-dasharray="6 6"/>
+    <path class="a-s" d="M176 62 V84 M165 73 H187"/>
+  </g>
+</svg>

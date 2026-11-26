@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="em-ill" viewBox="0 0 240 160" width="240" height="160" role="img" aria-label="A calm week with no outages">
+  <style>.em-ill{--em-a:#166088;--em-f:#203844;--em-m:#476471;--em-s:#FFFFFF;--em-b:#B6CBD4;--em-on:#146847;--em-off:#A43042;--em-pend:#56657A;--em-w:#855A12}@media (prefers-color-scheme:dark){.em-ill{--em-a:#92CBE6;--em-f:#E6F1F5;--em-m:#B2C8D1;--em-s:#192C36;--em-b:#405965;--em-on:#79DEB2;--em-off:#FFA0AC;--em-pend:#A5B4CA;--em-w:#F1C677}}.dark .em-ill{--em-a:#92CBE6;--em-f:#E6F1F5;--em-m:#B2C8D1;--em-s:#192C36;--em-b:#405965;--em-on:#79DEB2;--em-off:#FFA0AC;--em-pend:#A5B4CA;--em-w:#F1C677}.em-ill .a{fill:var(--primary,var(--em-a))}.em-ill .a-s{stroke:var(--primary,var(--em-a))}.em-ill .f{fill:var(--foreground,var(--em-f))}.em-ill .f-s{stroke:var(--foreground,var(--em-f))}.em-ill .m{fill:var(--muted-foreground,var(--em-m))}.em-ill .m-s{stroke:var(--muted-foreground,var(--em-m))}.em-ill .s{fill:var(--surface,var(--em-s))}.em-ill .s-s{stroke:var(--surface,var(--em-s))}.em-ill .b{fill:var(--border,var(--em-b))}.em-ill .b-s{stroke:var(--border,var(--em-b))}.em-ill .on{fill:var(--status-online,var(--em-on))}.em-ill .on-s{stroke:var(--status-online,var(--em-on))}.em-ill .off{fill:var(--status-offline,var(--em-off))}.em-ill .off-s{stroke:var(--status-offline,var(--em-off))}.em-ill .pend{fill:var(--status-pending,var(--em-pend))}.em-ill .pend-s{stroke:var(--status-pending,var(--em-pend))}.em-ill .w{fill:var(--warning,var(--em-w))}.em-ill .w-s{stroke:var(--warning,var(--em-w))}</style>
+  <defs><linearGradient id="history-emptybg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1D78A8"/><stop offset="1" stop-color="#0F4664"/></linearGradient></defs>
+  <g fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path class="a-s" d="M28 62 H58 L66 50 L74 62 H98 M142 62 H212"/>
+    <circle class="on" cx="120" cy="62" r="18"/>
+    <path class="s-s" stroke-width="4" d="M111 62 L117.5 68.5 L130 55.5"/>
+    <rect class="on" x="28" y="104" width="23" height="24" rx="6" fill-opacity="0.55"/>
+    <rect class="on" x="55" y="104" width="23" height="24" rx="6" fill-opacity="0.62"/>
+    <rect class="on" x="82" y="104" width="23" height="24" rx="6" fill-opacity="0.69"/>
+    <rect class="on" x="109" y="104" width="23" height="24" rx="6" fill-opacity="0.76"/>
+    <rect class="on" x="136" y="104" width="23" height="24" rx="6" fill-opacity="0.83"/>
+    <rect class="on" x="163" y="104" width="23" height="24" rx="6" fill-opacity="0.90"/>
+    <rect class="on" x="190" y="104" width="23" height="24" rx="6" fill-opacity="0.97"/>
+  </g>
+</svg>
