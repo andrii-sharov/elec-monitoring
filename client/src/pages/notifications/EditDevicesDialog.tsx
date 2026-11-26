@@ -23,7 +23,7 @@ import { useChannelRefresh } from './useChannelRefresh';
 type Props = { channel: Channel; devices: DeviceListItem[] };
 type ContentProps = Props & { onSaved: () => void };
 
-export function DevicesDialogContent({ channel, devices, onSaved }: ContentProps) {
+function DevicesPicker({ channel, devices, onSaved }: ContentProps) {
   const { t } = useTranslation();
   const { api } = useSession();
   const refresh = useChannelRefresh();
@@ -42,7 +42,7 @@ export function DevicesDialogContent({ channel, devices, onSaved }: ContentProps
   );
 
   return (
-    <DialogContent className="max-h-[calc(100dvh-2rem)] gap-4 overflow-y-auto sm:max-w-md">
+    <>
       <DialogHeader>
         <DialogTitle>{t('app.notifications.editDevicesTitle', { name: channel.name })}</DialogTitle>
       </DialogHeader>
@@ -76,6 +76,14 @@ export function DevicesDialogContent({ channel, devices, onSaved }: ContentProps
       >
         {t('app.channel.save')}
       </Button>
+    </>
+  );
+}
+
+export function DevicesDialogContent(props: ContentProps) {
+  return (
+    <DialogContent className="max-h-[calc(100dvh-2rem)] gap-4 overflow-y-auto sm:max-w-md">
+      <DevicesPicker {...props} />
     </DialogContent>
   );
 }

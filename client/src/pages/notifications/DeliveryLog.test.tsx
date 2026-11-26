@@ -136,6 +136,23 @@ test('a refused redeliver explains why', async () => {
   expect(await screen.findByText('This delivery is still in progress.')).toBeInTheDocument();
 });
 
+test('a redeliver refused because the webhook was turned off updates the row', async () => {
+  let items = [hook];
+  server.use(
+    http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items })),
+    http.post(`${base}/api/v1/deliveries/${failed.id}/redeliver`, () => {
+      items = [webhookFixture({ enabled: false, disabled_reason: 'TOO_MANY_FAILURES' })];
+      return HttpResponse.json({ error: { code: 'conflict', message: 'x' } }, { status: 409 });
+    }),
+  );
+  deliveries(() => ({ items: [failed], next_cursor: null }));
+  const { user, log } = await openLog();
+  await user.click(await within(log).findByRole('button', { name: 'Redeliver' }));
+  expect(await screen.findByText('Turn the channel on first.')).toBeInTheDocument();
+  expect(screen.getByText('Failing', { selector: '[data-slot="tag"]' })).toBeInTheDocument();
+  expect(within(log).getByRole('button', { name: 'Redeliver' })).toBeDisabled();
+});
+
 test('a turned off webhook cannot redeliver', async () => {
   server.use(
     http.get(`${base}/api/v1/channels`, () =>

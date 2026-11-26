@@ -41,10 +41,20 @@ function DeliveryRow({ channel, delivery, deviceName, index }: RowProps) {
   const again = useMutation({
     mutationFn: () => redeliver(api, delivery.id),
     onSuccess: () => toast.success(t('app.notifications.webhook.redelivered')),
-    onError: (error) => {
-      if (!isApiError(error, 'conflict')) toast.error(errorMessage(t, error));
-      else if (channel.enabled) toast.error(t('app.notifications.webhook.inProgress'));
-      else toast.error(t('app.notifications.webhook.turnOnFirst'));
+    onError: async (error) => {
+      if (!isApiError(error, 'conflict')) {
+        toast.error(errorMessage(t, error));
+        return;
+      }
+      await queryClient.invalidateQueries({ queryKey: queryKeys.channels });
+      const fresh = queryClient
+        .getQueryData<{ items: Channel[] }>(queryKeys.channels)
+        ?.items.find((item) => item.id === channel.id);
+      toast.error(
+        fresh?.enabled === false
+          ? t('app.notifications.webhook.turnOnFirst')
+          : t('app.notifications.webhook.inProgress'),
+      );
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.deliveries(channel.id) }),
   });

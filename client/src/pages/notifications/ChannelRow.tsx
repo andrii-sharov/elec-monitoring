@@ -210,7 +210,14 @@ export function ChannelRow({ channel, devices, selected, onSelect, index, onSecr
               <EditDevicesDialog channel={channel} devices={devices} />
               {webhook ? (
                 <>
-                  <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setRenaming(false);
+                      setEditing(true);
+                    }}
+                  >
                     {t('app.notifications.webhook.edit')}
                   </Button>
                   <ConfirmDialog
@@ -245,7 +252,14 @@ export function ChannelRow({ channel, devices, selected, onSelect, index, onSecr
                   {t('app.notifications.test')}
                 </Button>
               ) : null}
-              <Button variant="outline" size="sm" onClick={() => setRenaming(true)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setName(channel.name);
+                  setRenaming(true);
+                }}
+              >
                 {t('app.notifications.rename')}
               </Button>
               <ConfirmDialog

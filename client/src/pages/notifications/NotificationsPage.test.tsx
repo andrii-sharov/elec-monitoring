@@ -342,3 +342,53 @@ test('a failed webhook test says the receiver did not accept it', async () => {
   await user.click(screen.getByRole('button', { name: 'Send test' }));
   expect(await screen.findByText('The receiver did not accept the test.')).toBeInTheDocument();
 });
+
+test('edit devices drops a cancelled change and a stale search on reopen', async () => {
+  let items = [channelFixture({ ...home, device_ids: [homeDevice.id] })];
+  server.use(http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items })));
+  const bodies = captureJson('put', `/api/v1/channels/${home.id}/devices`, () =>
+    HttpResponse.json({ error: { code: 'internal', message: 'x' } }, { status: 500 }),
+  );
+  const { user, queryClient } = renderRoute('/notifications', { me: meFixture() });
+  await expand(user, 'Home chat');
+  await user.click(screen.getByRole('button', { name: 'Edit devices' }));
+  let dialog = within(await screen.findByRole('dialog'));
+  await user.click(dialog.getByRole('checkbox', { name: 'Dacha' }));
+  await user.click(dialog.getByRole('button', { name: 'Save channels' }));
+  expect(await dialog.findByRole('alert')).toBeInTheDocument();
+  await user.type(dialog.getByRole('searchbox', { name: 'Search devices' }), 'dach');
+  await user.keyboard('{Escape}');
+  await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+  items = [channelFixture({ ...home, device_ids: [dacha.id] })];
+  await queryClient.invalidateQueries({ queryKey: ['channels'] });
+  await user.click(screen.getByRole('button', { name: 'Edit devices' }));
+  dialog = within(await screen.findByRole('dialog'));
+  expect(dialog.getByRole('searchbox', { name: 'Search devices' })).toHaveValue('');
+  expect(dialog.queryByRole('alert')).toBeNull();
+  expect(dialog.getByRole('checkbox', { name: 'Home' })).not.toBeChecked();
+  expect(dialog.getByRole('checkbox', { name: 'Dacha' })).toBeChecked();
+  expect(bodies).toHaveLength(1);
+});
+
+test('rename starts from the current name after the webhook was edited', async () => {
+  let items = [webhookFixture()];
+  server.use(
+    http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items })),
+    http.patch(`${base}/api/v1/channels/${webhookFixture().id}`, () => {
+      items = [webhookFixture({ name: 'Relay' })];
+      return HttpResponse.json(items[0]);
+    }),
+  );
+  const { user } = renderRoute('/notifications', { me: meFixture() });
+  await expand(user, 'Automation');
+  await user.click(screen.getByRole('button', { name: 'Edit webhook' }));
+  const form = within(await screen.findByRole('dialog', { name: 'Edit webhook' }));
+  await user.clear(form.getByRole('textbox', { name: 'Name' }));
+  await user.type(form.getByRole('textbox', { name: 'Name' }), 'Relay');
+  await user.click(form.getByRole('button', { name: 'Save' }));
+  await screen.findByText('Relay');
+  await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  await user.click(screen.getByRole('button', { name: 'Rename' }));
+  expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Relay');
+});
