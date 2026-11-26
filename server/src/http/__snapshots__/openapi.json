@@ -2585,7 +2585,7 @@
       },
       "post": {
         "summary": "Add a webhook",
-        "description": "The `secret` that signs requests is returned only here and by rotate. The new channel is attached to no devices. At most 10 webhooks per user.",
+        "description": "The `secret` that signs requests is returned only here and by rotate. The new channel is attached to no devices. At most 10 webhooks per user. Creating a webhook and changing a webhook URL share a limit of 10 per minute.",
         "security": [
           {
             "bearerAuth": []
@@ -2689,6 +2689,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -2696,7 +2706,7 @@
     "/api/v1/channels/{id}": {
       "patch": {
         "summary": "Edit, turn on or turn off one of my channels",
-        "description": "Turning a channel off sets `disabled_reason: USER`. Turning a disabled channel on resets its failure count. A channel turned off after too many failures turns back on only through a successful test message. `url` and `events` apply to webhooks only. Editing them keeps the channel state and failure count.",
+        "description": "Turning a channel off sets `disabled_reason: USER`, except that a channel disabled after too many failures keeps `TOO_MANY_FAILURES`. Turning a disabled channel on resets its failure count. A channel turned off after too many failures turns back on only through a successful test message. `url` and `events` apply to webhooks only. Editing them keeps the channel state and failure count. Changing `url` shares a limit of 10 per minute with adding a webhook.",
         "security": [
           {
             "bearerAuth": []
@@ -2808,6 +2818,16 @@
           },
           "409": {
             "description": "Disabled after failures: send a test message instead",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
             "content": {
               "application/json": {
                 "schema": {

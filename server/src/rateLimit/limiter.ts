@@ -19,6 +19,7 @@ export const REAUTH_PER_USER: RateRule = { limit: 10, windowS: 900 };
 export const TELEGRAM_LINK_PER_USER: RateRule = { limit: 10, windowS: 900 };
 export const INVITE_PER_USER: RateRule = { limit: 10, windowS: 3600 };
 export const CHANNEL_TEST_PER_USER: RateRule = { limit: 5, windowS: 60 };
+export const WEBHOOK_URL_PER_USER: RateRule = { limit: 10, windowS: 60 };
 export const REDELIVER_PER_USER: RateRule = { limit: 30, windowS: 60 };
 export const DEVICE_CHECKIN: RateRule = { limit: 20, windowS: 60 };
 export const FIRMWARE_DOWNLOAD_PER_IP: RateRule = { limit: 20, windowS: 60 };

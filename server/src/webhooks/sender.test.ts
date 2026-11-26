@@ -5,7 +5,7 @@ import type { AddressInfo, LookupFunction } from 'node:net';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { FakeWebhookSender } from '../../test/fakes.ts';
 import { createWebhookSender, signBody, type WebhookRequest } from './sender.ts';
-import type { LookupAll } from './ssrf.ts';
+import { limitLookups, type LookupAll } from './ssrf.ts';
 
 type Received = { method?: string; url?: string; headers: http.IncomingHttpHeaders; body: string };
 
@@ -187,6 +187,32 @@ describe('send', () => {
     await new Promise((resolve) => setImmediate(resolve));
     expect(request).not.toHaveBeenCalled();
   });
+
+  test.each(['send', 'check'] as const)(
+    'a %s that times out waiting for a DNS slot fails without a lookup',
+    async (method) => {
+      const resolved = Promise.withResolvers<Awaited<ReturnType<LookupAll>>>();
+      const lookup = vi.fn<LookupAll>(() => resolved.promise);
+      const sender = localSender({
+        lookup: limitLookups(lookup),
+        timeoutMs: 20,
+        checkTimeoutMs: 20,
+      });
+      await Promise.all([sender.send(webhook(443)), sender.send(webhook(443))]);
+
+      const result =
+        method === 'send'
+          ? await sender.send(webhook(443))
+          : await sender.check('https://hooks.example.com/');
+
+      expect(result).toEqual(
+        method === 'send' ? { type: 'FAILED', error: 'timeout' } : { ok: false, reason: 'dns' },
+      );
+      resolved.resolve([{ address: '127.0.0.1', family: 4 }]);
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(lookup).toHaveBeenCalledTimes(2);
+    },
+  );
 
   test('reports a refused connection as a network error', async () => {
     const result = await localSender().send(webhook(await closedPort()));

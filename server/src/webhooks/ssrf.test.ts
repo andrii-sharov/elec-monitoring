@@ -1,6 +1,6 @@
 import { lookup as dnsLookup } from 'node:dns/promises';
 import { describe, expect, test, vi } from 'vitest';
-import { checkWebhookUrl, isPublicAddress, type LookupAll } from './ssrf.ts';
+import { checkWebhookUrl, isPublicAddress, limitLookups, type LookupAll } from './ssrf.ts';
 
 vi.mock('node:dns/promises', () => ({
   lookup: vi.fn<() => Promise<Address[]>>(async () => [{ address: '1.2.3.4', family: 4 }]),
@@ -190,7 +190,7 @@ describe('checkWebhookUrl', () => {
       url: new URL('https://example.com:8123/hook'),
       addresses,
     });
-    expect(lookup).toHaveBeenCalledExactlyOnceWith('example.com');
+    expect(lookup).toHaveBeenCalledExactlyOnceWith('example.com', undefined);
   });
 
   test.each([
@@ -235,5 +235,114 @@ describe('checkWebhookUrl', () => {
       all: true,
       verbatim: true,
     });
+  });
+});
+
+const nextTurn = () => new Promise<void>((resolve) => setImmediate(resolve));
+
+function heldLookup() {
+  const held: PromiseWithResolvers<Address[]>[] = [];
+  const hosts: string[] = [];
+  const lookup = (host: string) => {
+    hosts.push(host);
+    const pending = Promise.withResolvers<Address[]>();
+    held.push(pending);
+    return pending.promise;
+  };
+  const answer = (index: number) => held[index]!.resolve([v4('1.2.3.4')]);
+  return { lookup, hosts, held, answer };
+}
+
+describe('limitLookups', () => {
+  test('runs two lookups at once and starts the next when one settles', async () => {
+    const { lookup, hosts, held, answer } = heldLookup();
+    const limited = limitLookups(lookup);
+    const first = limited('a.test');
+    const second = limited('b.test').catch(() => 'failed');
+    const third = limited('c.test');
+    const fourth = limited('d.test');
+    await nextTurn();
+    expect(hosts).toEqual(['a.test', 'b.test']);
+
+    answer(0);
+    await first;
+    await nextTurn();
+    expect(hosts).toEqual(['a.test', 'b.test', 'c.test']);
+
+    held[1]!.reject(new Error('ENOTFOUND'));
+    expect(await second).toBe('failed');
+    await nextTurn();
+    expect(hosts).toEqual(['a.test', 'b.test', 'c.test', 'd.test']);
+
+    answer(2);
+    answer(3);
+    expect(await Promise.all([third, fourth])).toHaveLength(2);
+  });
+
+  test('never starts a lookup for a caller that gave up while waiting', async () => {
+    const { lookup, hosts, answer } = heldLookup();
+    const limited = limitLookups(lookup);
+    void limited('a.test');
+    void limited('b.test');
+    const controller = new AbortController();
+    const abandoned = limited('c.test', controller.signal);
+    const next = limited('d.test');
+    controller.abort(new Error('gave up'));
+    await expect(abandoned).rejects.toThrow('gave up');
+
+    answer(0);
+    await nextTurn();
+    expect(hosts).toEqual(['a.test', 'b.test', 'd.test']);
+    answer(2);
+    await next;
+  });
+
+  test('does not start a lookup for an already aborted caller', async () => {
+    const { lookup, hosts } = heldLookup();
+    const aborted = AbortSignal.abort(new Error('gave up'));
+    await expect(limitLookups(lookup)('a.test', aborted)).rejects.toThrow('gave up');
+    expect(hosts).toEqual([]);
+  });
+
+  test('keeps the slot of an abandoned lookup until it settles', async () => {
+    const { lookup, hosts, answer } = heldLookup();
+    const limited = limitLookups(lookup);
+    const controller = new AbortController();
+    const first = limited('a.test', controller.signal);
+    void limited('b.test');
+    await nextTurn();
+    controller.abort();
+    const third = limited('c.test');
+    await nextTurn();
+    expect(hosts).toEqual(['a.test', 'b.test']);
+
+    answer(0);
+    await first;
+    await nextTurn();
+    expect(hosts).toEqual(['a.test', 'b.test', 'c.test']);
+    answer(2);
+    await third;
+  });
+
+  test('limits the default DNS lookup across callers', async () => {
+    const release = Promise.withResolvers<void>();
+    vi.mocked(dnsLookup).mockClear();
+    vi.mocked(dnsLookup).mockImplementation((async () => {
+      await release.promise;
+      return [v4('1.2.3.4')];
+    }) as unknown as typeof dnsLookup);
+
+    const checks = ['a', 'b', 'c', 'd'].map((name) => checkWebhookUrl(`https://${name}.test/`));
+    await nextTurn();
+    expect(dnsLookup).toHaveBeenCalledTimes(2);
+
+    release.resolve();
+    expect((await Promise.all(checks)).map((result) => result.ok)).toEqual([
+      true,
+      true,
+      true,
+      true,
+    ]);
+    expect(dnsLookup).toHaveBeenCalledTimes(4);
   });
 });

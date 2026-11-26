@@ -522,6 +522,7 @@ export const en = {
       delete: 'Delete',
       bulkDeleteTitle: 'Delete {{count}} channels?',
       bulkDone: 'Channels updated',
+      bulkNeedsTest: 'Send a test message to turn these back on: {{names}}',
       sendAlerts: 'Send alerts to {{name}}',
       details: 'Details for {{name}}',
       noDevices: 'No devices send here',

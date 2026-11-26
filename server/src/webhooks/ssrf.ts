@@ -1,13 +1,17 @@
 import { lookup as dnsLookup } from 'node:dns/promises';
 import { BlockList, isIP } from 'node:net';
 
-export type LookupAll = (host: string) => Promise<{ address: string; family: 4 | 6 }[]>;
+export type LookupAll = (
+  host: string,
+  signal?: AbortSignal,
+) => Promise<{ address: string; family: 4 | 6 }[]>;
 
 type Addresses = Awaited<ReturnType<LookupAll>>;
 
 type Rejection = 'scheme' | 'credentials' | 'too_long' | 'invalid' | 'dns' | 'address';
 
 const maxUrlLength = 2048;
+const maxConcurrentLookups = 2;
 
 const blockedIpv4 = new BlockList();
 for (const [network, prefix] of [
@@ -83,14 +87,60 @@ export function isPublicAddress(ip: string): boolean {
   return false;
 }
 
-const lookupAll: LookupAll = async (host) =>
-  (await dnsLookup(host, { all: true, verbatim: true })) as Addresses;
+export function limitLookups(lookup: LookupAll): LookupAll {
+  let running = 0;
+  const waiting: (() => void)[] = [];
 
-async function resolveHost(host: string, lookup: LookupAll): Promise<Addresses> {
+  const acquire = (signal?: AbortSignal) =>
+    new Promise<void>((resolve, reject) => {
+      signal?.throwIfAborted();
+      if (running < maxConcurrentLookups) {
+        running += 1;
+        resolve();
+        return;
+      }
+      const giveUp = () => {
+        waiting.splice(waiting.indexOf(grant), 1);
+        reject(signal!.reason);
+      };
+      const grant = () => {
+        signal?.removeEventListener('abort', giveUp);
+        resolve();
+      };
+      waiting.push(grant);
+      signal?.addEventListener('abort', giveUp, { once: true });
+    });
+
+  const release = () => {
+    const next = waiting.shift();
+    if (next) next();
+    else running -= 1;
+  };
+
+  return async (host, signal) => {
+    await acquire(signal);
+    try {
+      signal?.throwIfAborted();
+      return await lookup(host);
+    } finally {
+      release();
+    }
+  };
+}
+
+const lookupAll = limitLookups(
+  async (host) => (await dnsLookup(host, { all: true, verbatim: true })) as Addresses,
+);
+
+async function resolveHost(
+  host: string,
+  lookup: LookupAll,
+  signal?: AbortSignal,
+): Promise<Addresses> {
   const family = isIP(host);
   if (family === 4 || family === 6) return [{ address: host, family }];
   try {
-    return await lookup(host);
+    return await lookup(host, signal);
   } catch {
     return [];
   }
@@ -100,6 +150,7 @@ export async function checkWebhookUrl(
   url: string,
   lookup: LookupAll = lookupAll,
   isAllowed: (ip: string) => boolean = isPublicAddress,
+  signal?: AbortSignal,
 ): Promise<{ ok: true; url: URL; addresses: Addresses } | { ok: false; reason: Rejection }> {
   if (url.length > maxUrlLength) return { ok: false, reason: 'too_long' };
   const parsed = URL.parse(url);
@@ -108,7 +159,7 @@ export async function checkWebhookUrl(
   if (parsed.username || parsed.password) return { ok: false, reason: 'credentials' };
 
   const host = parsed.hostname.replace(/^\[|\]$/g, '');
-  const addresses = await resolveHost(host, lookup);
+  const addresses = await resolveHost(host, lookup, signal);
   if (addresses.length === 0) return { ok: false, reason: 'dns' };
   if (!addresses.every(({ address }) => isAllowed(address))) {
     return { ok: false, reason: 'address' };

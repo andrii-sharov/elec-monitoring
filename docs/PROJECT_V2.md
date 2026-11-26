@@ -614,7 +614,11 @@ same way: one channel, attached to every device the user owns or views.
   error, blocked address), and any `2xx` resets the count. At 20 failures
   in a row the webhook is disabled and the user gets one email, in their
   language, with a link to the webhooks on the Notifications page. Users
-  without an email get none.
+  without an email get none. Turning such a webhook off by hand doesn't
+  change why it is off: only a successful test turns it back on.
+- Each webhook gets at most one send per worker batch, so one slow receiver
+  doesn't fill the batch. A user can add webhooks or change their URLs 10
+  times a minute.
 - A webhook gets `device.offline` even if the outage has already closed,
   and quiet hours don't apply.
 - "Send test" and "Redeliver" buttons in the client app. The test sends a
@@ -637,6 +641,9 @@ same way: one channel, attached to every device the user owns or views.
     connects only to the addresses it checked. At create or edit a blocked
     address or DNS failure is `400 url_not_allowed`; at send time it is a
     failed attempt (`address not allowed` or `DNS lookup failed`).
+  - A process runs at most 2 webhook DNS lookups at once, so slow name
+    servers can't take every resolver thread. Waiting for a slot counts
+    toward the 5 s check and the 10 s send.
 
 ### Message texts
 

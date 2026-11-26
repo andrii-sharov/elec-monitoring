@@ -120,10 +120,11 @@ export function createWebhookSender(
 ): WebhookSender {
   const { lookup, isAllowed, request = https.request, timeoutMs = defaultTimeoutMs } = opts;
   const { checkTimeoutMs = defaultCheckTimeoutMs } = opts;
-  const checkUrl = (url: string) => checkWebhookUrl(url, lookup, isAllowed);
+  const checkUrl = (url: string, signal: AbortSignal) =>
+    checkWebhookUrl(url, lookup, isAllowed, signal);
 
   async function deliver(req: WebhookRequest, signal: AbortSignal): Promise<WebhookResult> {
-    const checked = await checkUrl(req.url);
+    const checked = await checkUrl(req.url, signal);
     signal.throwIfAborted();
     if (!checked.ok) {
       return failed(checked.reason === 'dns' ? 'DNS lookup failed' : 'address not allowed');
@@ -133,10 +134,9 @@ export function createWebhookSender(
 
   return {
     check(url) {
-      const timedOut = rejectOnAbort(AbortSignal.timeout(checkTimeoutMs)).catch(
-        () => ({ ok: false, reason: 'dns' }) as const,
-      );
-      return Promise.race([checkUrl(url), timedOut]);
+      const signal = AbortSignal.timeout(checkTimeoutMs);
+      const timedOut = rejectOnAbort(signal).catch(() => ({ ok: false, reason: 'dns' }) as const);
+      return Promise.race([checkUrl(url, signal), timedOut]);
     },
     async send(req) {
       const signal = AbortSignal.timeout(timeoutMs);

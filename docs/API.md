@@ -94,6 +94,7 @@ Validation errors add `details`:
 | Device invites                  | 10 / h per user                |
 | Channel test message            | 5 / min per user               |
 | Redeliver                       | 30 / min per user              |
+| Webhook create or URL change    | 10 / min per user              |
 | Change password, delete account | 10 / 15 min per user           |
 
 Responses include `Retry-After` on `429`; CORS exposes it to the app origins.
@@ -744,13 +745,16 @@ channel, oldest link first.
 least one; name 1–64 chars, trimmed) → `200` with the channel.
 `enabled: false` sets `disabled_reason: "USER"`, `enabled: true` clears
 it. Turning a disabled channel on resets its failure count. A channel
-disabled with `TOO_MANY_FAILURES` returns `409 conflict` on
-`enabled: true`; a successful test message turns it back on.
+disabled with `TOO_MANY_FAILURES` keeps that reason on `enabled: false`
+(also when the worker disables it while the request runs) and returns
+`409 conflict` on `enabled: true`; a successful test message turns it back
+on.
 
 `url` and `events` follow the rules of `POST /channels` and apply to
 webhooks only. On a Telegram channel they are `400 validation_error` with
 detail `{ "path": "url" | "events", "code": "not_allowed" }`. A changed URL
-is checked like a new one (`400 url_not_allowed`). Editing does not
+is checked like a new one (`400 url_not_allowed`) and counts against the
+webhook URL rate limit (below, `429`); other edits don't. Editing does not
 re-enable the channel or reset its failure count.
 
 `PUT /channels/:id/devices` `{ "device_ids": [...] }` (at most 100) →
@@ -815,12 +819,16 @@ most 2048 chars and is stored as sent.
 `201` returns the channel plus `secret` (`whsec_…`) **once**; only rotate
 returns a secret again. The new channel is attached to no devices. A user
 can have at most 10 webhooks; the 11th is `409 conflict`
-"Webhook limit reached".
+"Webhook limit reached", answered before the URL is checked.
+
+Creating a webhook and changing a webhook URL share one limit of 10 / min
+per user (`429` with `Retry-After`).
 
 A URL that is not `https`, carries credentials, does not resolve, or
 resolves to any non-public address is `400 url_not_allowed` (rules in
 [PROJECT_V2.md §7](PROJECT_V2.md#webhooks)). The DNS check gives up after
-5 s.
+5 s. A process runs at most 2 webhook DNS lookups at once; waiting for a
+free slot counts toward the 5 s of a check and the 10 s of a send.
 
 Channel object:
 

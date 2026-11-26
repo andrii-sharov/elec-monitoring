@@ -531,6 +531,7 @@ export const uk: Dictionary = {
       delete: 'Видалити',
       bulkDeleteTitle: 'Видалити каналів: {{count}}?',
       bulkDone: 'Канали оновлено',
+      bulkNeedsTest: 'Щоб знову увімкнути, надішліть тестове повідомлення: {{names}}',
       sendAlerts: 'Надсилати сповіщення в {{name}}',
       details: 'Деталі {{name}}',
       noDevices: 'Жоден пристрій сюди не надсилає',

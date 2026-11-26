@@ -669,8 +669,8 @@ create index delivery_due_idx on delivery (next_attempt_at) where status in ('QU
   `consecutive_failures`; there is no immediate `FAILED`. The update that
   turns `enabled` off at 20 emails the channel's owner once, if they have
   an email. Right before each send the worker re-reads the channel's
-  `enabled`, URL and secret, so later rows of a claimed batch never use a
-  rotated secret or a replaced URL, and none are sent once the channel is
+  `enabled`, URL and secret, so a claimed row never uses a
+  rotated secret or a replaced URL, and is not sent once the channel is
   off (`skipped: channel disabled`). An unexpected error while handling a
   webhook delivery is a counted failed attempt too. The exception is a
   secret that can't be decrypted, which is a server fault: it follows
@@ -684,9 +684,12 @@ create index delivery_due_idx on delivery (next_attempt_at) where status in ('QU
   - The Telegram loop claims up to 30 due rows and takes a token from a
     30 messages/s pacer before every send. It beats `worker_heartbeat`
     under the name `delivery`.
-  - The webhook loop claims up to 10 due rows. Even if all belong to one
-    channel and each send takes the full 10 s, the batch ends within the
-    lease, so no second worker claims them again.
+  - The webhook loop claims up to 10 due rows, at most one per channel:
+    the oldest by `next_attempt_at`, `created_at`, `id` (a `not exists`
+    anti-join, still `for update skip locked`). A channel with a backlog
+    or a hanging receiver gets one send per batch and can't fill the
+    batch for other channels. All rows of a batch are sent at once, so it
+    ends within the lease and no second worker claims them again.
   - On shutdown both loops finish the sends in flight and release the
     claimed rows they haven't started, without counting an attempt.
 - Emails (verification, reset, invites, "webhook disabled") go straight to

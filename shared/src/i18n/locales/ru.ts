@@ -540,6 +540,7 @@ export const ru: Dictionary = {
       delete: 'Удалить',
       bulkDeleteTitle: 'Удалить каналов: {{count}}?',
       bulkDone: 'Каналы обновлены',
+      bulkNeedsTest: 'Чтобы снова включить, отправьте тестовое сообщение: {{names}}',
       sendAlerts: 'Отправлять уведомления в {{name}}',
       details: 'Детали {{name}}',
       noDevices: 'Ни одно устройство сюда не отправляет',

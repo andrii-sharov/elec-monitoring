@@ -26,7 +26,7 @@ import {
   oneTimeToken,
 } from '../../db/schema/index.ts';
 import { decrypt, sha256 } from '../../lib/crypto.ts';
-import type { RateLimiter } from '../../rateLimit/limiter.ts';
+import { createPgRateLimiter, type RateLimiter } from '../../rateLimit/limiter.ts';
 import { signBody } from '../../webhooks/sender.ts';
 
 let t: TestDb;
@@ -350,6 +350,21 @@ describe('channel management', () => {
     expect(user.id).toBe(row?.userId);
   });
 
+  test('turning off a failing channel keeps it behind the test message', async () => {
+    const { auth, channel } = await setup();
+    await t.db
+      .update(notificationChannel)
+      .set({ enabled: false, disabledReason: 'TOO_MANY_FAILURES', consecutiveFailures: 20 })
+      .where(eq(notificationChannel.id, channel.id));
+    const patch = (body: object) =>
+      request(app()).patch(`/api/v1/channels/${channel.id}`).set('Authorization', auth).send(body);
+
+    const off = await patch({ enabled: false });
+    expect(off.status).toBe(200);
+    expect(off.body).toMatchObject({ enabled: false, disabled_reason: 'TOO_MANY_FAILURES' });
+    expect((await patch({ enabled: true })).status).toBe(409);
+  });
+
   test('sending test messages is rate limited', async () => {
     const { auth, channel } = await setup();
     const res = await request(app(denyAll))
@@ -358,6 +373,9 @@ describe('channel management', () => {
     expect(res.status).toBe(429);
   });
 });
+
+const limitedApp = (webhooks: FakeWebhookSender) =>
+  testApp({ db: t.db, clock, webhooks, rateLimiter: createPgRateLimiter(t.db, clock) });
 
 async function stored(id: string) {
   const [row] = await t.db.select().from(notificationChannel).where(eq(notificationChannel.id, id));
@@ -631,6 +649,68 @@ describe('webhook channels', () => {
     expect(res.body).toMatchObject({ enabled: true, failures: 3 });
   });
 
+  describe('URL check limits', () => {
+    test('allows 10 creates and URL changes a minute per user, not other edits', async () => {
+      const { user, auth } = await authed();
+      const other = await authed({ email: 'jane@example.com' });
+      const channel = await createWebhookChannel(t.db, user.id);
+      const check = vi.spyOn(webhooks, 'check');
+      const post = (as: string) =>
+        request(limitedApp(webhooks))
+          .post('/api/v1/channels')
+          .set('Authorization', as)
+          .send(body());
+      const edit = (changes: object) =>
+        request(limitedApp(webhooks))
+          .patch(`/api/v1/channels/${channel.id}`)
+          .set('Authorization', auth)
+          .send(changes);
+
+      for (let i = 0; i < 5; i += 1) expect((await post(auth)).status).toBe(201);
+      for (let i = 0; i < 5; i += 1) {
+        expect((await edit({ url: `https://hooks.example.com/${i}` })).status).toBe(200);
+      }
+
+      for (const denied of [
+        await request(limitedApp(webhooks))
+          .post('/api/v1/channels')
+          .set('Authorization', auth)
+          .send(body()),
+        await edit({ url: 'https://hooks.example.com/more' }),
+      ]) {
+        expect(denied.status).toBe(429);
+        expect(denied.body.error.code).toBe('rate_limited');
+        expect(denied.headers['retry-after']).toBe('60');
+      }
+      expect(check).toHaveBeenCalledTimes(10);
+
+      expect((await edit({ name: 'Renamed' })).status).toBe(200);
+      expect((await edit({ name: 'Again', url: 'https://hooks.example.com/4' })).status).toBe(200);
+      expect(
+        (
+          await request(limitedApp(webhooks))
+            .post('/api/v1/channels')
+            .set('Authorization', other.auth)
+            .send(body())
+        ).status,
+      ).toBe(201);
+      clock.advance(60_000);
+      expect((await edit({ url: 'https://hooks.example.com/later' })).status).toBe(200);
+    });
+
+    test('refuses an eleventh webhook before any DNS check', async () => {
+      const { user, auth } = await authed();
+      for (let i = 0; i < 10; i += 1) await createWebhookChannel(t.db, user.id);
+      const check = vi.spyOn(webhooks, 'check');
+
+      const res = await create(auth);
+
+      expect(res.status).toBe(409);
+      expect(res.body.error.message).toBe('Webhook limit reached');
+      expect(check).not.toHaveBeenCalled();
+    });
+  });
+
   function duringCheck(change: () => Promise<unknown>) {
     const check = webhooks.check.bind(webhooks);
     vi.spyOn(webhooks, 'check').mockImplementation(async (target) => {
@@ -660,6 +740,24 @@ describe('webhook channels', () => {
       consecutiveFailures: 20,
       webhookUrl: url,
     });
+  });
+
+  test('turning off keeps a disable by failures that happens during the request', async () => {
+    const { user, auth } = await authed();
+    const channel = await createWebhookChannel(t.db, user.id);
+    duringCheck(() =>
+      t.db
+        .update(notificationChannel)
+        .set({ enabled: false, disabledReason: 'TOO_MANY_FAILURES', consecutiveFailures: 20 })
+        .where(eq(notificationChannel.id, channel.id)),
+    );
+    const res = await patch(auth, channel.id, {
+      enabled: false,
+      url: 'https://new.example.com/hook',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ enabled: false, disabled_reason: 'TOO_MANY_FAILURES' });
+    expect((await patch(auth, channel.id, { enabled: true })).status).toBe(409);
   });
 
   test.each([

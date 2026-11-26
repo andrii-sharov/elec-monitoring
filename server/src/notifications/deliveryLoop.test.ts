@@ -274,7 +274,10 @@ const sameChannel = (first: Seeded) => ({
   outageId: first.outageId,
 });
 
-async function twoRowsWithHook(afterFirstSend: (channelId: string) => Promise<unknown>) {
+async function twoRowsWithHook(
+  afterFirstSend: (channelId: string) => Promise<unknown>,
+  rowsLeft = 1,
+) {
   const first = await seedWebhookDelivery(t.db, {
     webhook: { url: 'https://hooks.example.com/old', secret: 'whsec_old' },
   });
@@ -288,7 +291,8 @@ async function twoRowsWithHook(afterFirstSend: (channelId: string) => Promise<un
     if (webhooks.sent.length === 1) await afterFirstSend(first.channel.id);
     return { type: 'SENT', status: 200 };
   };
-  expect(await processDueDeliveries(deps)).toBe(2);
+  expect(await processDueDeliveries(deps)).toBe(1);
+  expect(await processDueDeliveries(deps)).toBe(rowsLeft);
   return { first, second };
 }
 
@@ -391,13 +395,14 @@ describe('webhook deliveries', () => {
     expect(email.sent).toHaveLength(1);
   });
 
-  test('two due deliveries in one batch at 19 send exactly one email', async () => {
+  test('two due deliveries of a channel at 19 send exactly one email', async () => {
     const first = await seedWebhookDelivery(t.db);
     await seedDelivery(t.db, { ...sameChannel(first), event: 'device.online' });
     await setChannel(first.channel.id, { consecutiveFailures: 19 });
     webhooks.next = [failure, failure];
 
-    expect(await processDueDeliveries(deps)).toBe(2);
+    expect(await processDueDeliveries(deps)).toBe(1);
+    expect(await processDueDeliveries(deps)).toBe(1);
 
     expect((await channelState(first.channel.id)).enabled).toBe(false);
     expect(webhooks.sent).toHaveLength(1);
@@ -459,7 +464,7 @@ describe('webhook deliveries', () => {
     expect((await channelState(broken.channel.id)).consecutiveFailures).toBe(0);
   });
 
-  test('a later row of a batch uses the rotated secret and the new URL', async () => {
+  test('the next row of a channel uses the rotated secret and the new URL', async () => {
     await twoRowsWithHook((channelId) =>
       setChannel(channelId, {
         webhookUrl: 'https://hooks.example.com/new',
@@ -473,7 +478,7 @@ describe('webhook deliveries', () => {
     ]);
   });
 
-  test('a later row of a batch is skipped once the channel is disabled', async () => {
+  test('the next row of a channel is skipped once the channel is disabled', async () => {
     const { first, second } = await twoRowsWithHook((channelId) =>
       setChannel(channelId, { enabled: false, disabledReason: 'USER' }),
     );
@@ -485,9 +490,10 @@ describe('webhook deliveries', () => {
     });
   });
 
-  test('a channel deleted during a batch stops its sends without errors', async () => {
-    const { first } = await twoRowsWithHook((channelId) =>
-      t.db.delete(notificationChannel).where(eq(notificationChannel.id, channelId)),
+  test('a channel deleted during a send stops its sends without errors', async () => {
+    const { first } = await twoRowsWithHook(
+      (channelId) => t.db.delete(notificationChannel).where(eq(notificationChannel.id, channelId)),
+      0,
     );
 
     expect(webhooks.sent.map((r) => r.deliveryId)).toEqual([first.delivery.id]);
@@ -540,19 +546,55 @@ describe('webhook deliveries', () => {
 
   test('claims no more webhooks than one lease can cover', async () => {
     expect(WEBHOOK_BATCH * 10_000).toBeLessThan(LEASE_MS);
-    const first = await seedWebhookDelivery(t.db, { outageOverrides: closedOutage });
-    for (let i = 0; i < WEBHOOK_BATCH; i++) {
-      await seedDelivery(t.db, {
-        user: first.user,
-        device: first.device,
-        channel: first.channel,
-        outageOverrides: closedOutage,
-        createdAt: new Date(Date.parse('2026-11-21T16:45:00Z') + i * 1000),
-      });
+    for (let i = 0; i <= WEBHOOK_BATCH; i++) {
+      await seedWebhookDelivery(t.db, { userOverrides: { email: `john${i}@example.com` } });
     }
 
     expect(await processDueDeliveries(deps)).toBe(WEBHOOK_BATCH);
     expect(await processDueDeliveries(deps)).toBe(1);
+  });
+
+  test('a hanging channel gets one send per batch and does not hold back another', async () => {
+    const hanging = await seedWebhookDelivery(t.db, {
+      webhook: { url: 'https://hang.example.com/' },
+    });
+    const queued = [hanging.delivery.id];
+    for (let i = 1; i < 10; i++) {
+      const next = await seedWebhookDelivery(t.db, {
+        outageOverrides: closedOutage,
+        user: hanging.user,
+        device: hanging.device,
+        channel: hanging.channel,
+        createdAt: new Date(Date.parse('2026-11-21T16:44:00Z') + i * 1000),
+      });
+      queued.push(next.delivery.id);
+    }
+    const other = await seedWebhookDelivery(t.db, {
+      userOverrides: { email: 'mary@example.com' },
+      createdAt: new Date('2026-11-21T16:49:00Z'),
+    });
+    const hang = Promise.withResolvers<WebhookResult>();
+    webhooks.send = (request) => {
+      webhooks.sent.push(request);
+      return request.deliveryId === other.delivery.id
+        ? Promise.resolve({ type: 'SENT', status: 200 })
+        : hang.promise;
+    };
+
+    const batch = processDueDeliveries(deps);
+    await vi.waitFor(async () => expect((await stored(other.delivery.id)).status).toBe('SENT'));
+    expect(webhooks.sent.map((r) => r.deliveryId).toSorted()).toEqual(
+      [queued[0], other.delivery.id].toSorted(),
+    );
+    hang.resolve(failure);
+    expect(await batch).toBe(2);
+
+    for (const id of queued.slice(1)) {
+      expect(await stored(id)).toMatchObject({ status: 'QUEUED', attempts: 0 });
+      webhooks.sent = [];
+      expect(await processDueDeliveries(deps)).toBe(1);
+      expect(webhooks.sent.map((r) => r.deliveryId)).toEqual([id]);
+    }
   });
 });
 
@@ -609,7 +651,7 @@ describe('runDeliveryLoop with a hanging webhook', () => {
     expect((await stored(hook.delivery.id)).status).toBe('SENT');
   });
 
-  test('on abort finishes the send in flight and releases the rest of the batch', async () => {
+  test('on abort finishes the send in flight and starts nothing more', async () => {
     const release = hangingWebhooks();
     const first = await seedWebhookDelivery(t.db);
     const second = await seedDelivery(t.db, {
@@ -633,6 +675,26 @@ describe('runDeliveryLoop with a hanging webhook', () => {
     await running;
 
     expect(webhooks.sent).toHaveLength(1);
+    expect((await stored(first.delivery.id)).status).toBe('SENT');
+    expect(await stored(second.delivery.id)).toMatchObject({ status: 'QUEUED', attempts: 0 });
+  });
+
+  test('on abort releases the claimed rows of a chat that it has not started', async () => {
+    const first = await seedDelivery(t.db);
+    const second = await seedDelivery(t.db, {
+      ...sameChannel(first),
+      event: 'device.power_blip',
+      createdAt: new Date('2026-11-21T16:45:00Z'),
+    });
+    const controller = new AbortController();
+    const send = telegram.sendMessage.bind(telegram);
+    telegram.sendMessage = (...args) => {
+      controller.abort();
+      return send(...args);
+    };
+
+    await runDeliveryLoop({ ...deps, signal: controller.signal, beat: () => Promise.resolve() });
+
     expect((await stored(first.delivery.id)).status).toBe('SENT');
     expect(await stored(second.delivery.id)).toMatchObject({
       status: 'QUEUED',

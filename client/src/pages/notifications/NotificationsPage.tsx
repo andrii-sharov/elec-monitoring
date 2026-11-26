@@ -30,7 +30,14 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage } from '@/forms/errorMessage';
 import { ChannelRow } from './ChannelRow';
-import { filterChannels, filterParams, readFilters, sorts, statuses } from './channelFilters';
+import {
+  channelStatus,
+  filterChannels,
+  filterParams,
+  readFilters,
+  sorts,
+  statuses,
+} from './channelFilters';
 import { addableTypes, channelTypeInfo } from './channelTypes';
 import { DevicesDialogContent } from './EditDevicesDialog';
 import { TelegramConnect } from './TelegramConnect';
@@ -137,17 +144,35 @@ export function NotificationsPage() {
     );
 
   const bulk = useMutation({
-    mutationFn: (action: 'on' | 'off' | 'delete') =>
-      Promise.all(
-        selected.map((id) =>
-          action === 'delete'
-            ? deleteChannel(api, id)
-            : patchChannel(api, id, { enabled: action === 'on' }),
-        ),
-      ),
-    onSuccess: async () => {
+    mutationFn: async (action: 'on' | 'off' | 'delete') => {
+      const needTest =
+        action === 'on'
+          ? all.filter(
+              (channel) => selected.includes(channel.id) && channelStatus(channel) === 'failing',
+            )
+          : [];
+      const skipped = new Set(needTest.map((channel) => channel.id));
+      const results = await Promise.allSettled(
+        selected
+          .filter((id) => !skipped.has(id))
+          .map((id) =>
+            action === 'delete'
+              ? deleteChannel(api, id)
+              : patchChannel(api, id, { enabled: action === 'on' }),
+          ),
+      );
+      const failed = results.find((result) => result.status === 'rejected');
+      if (failed) throw failed.reason;
+      return needTest;
+    },
+    onSuccess: async (needTest) => {
       setSelected([]);
-      toast.success(t('app.notifications.bulkDone'));
+      if (needTest.length > 0) {
+        const names = needTest.map((channel) => channel.name).join(', ');
+        toast.error(t('app.notifications.bulkNeedsTest', { names }));
+      } else {
+        toast.success(t('app.notifications.bulkDone'));
+      }
       await refresh();
     },
     onError: async (error) => {

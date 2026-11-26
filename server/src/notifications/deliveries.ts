@@ -1,7 +1,8 @@
 import type { ChannelType, DeliveryEvent, Language } from '@elec/shared';
-import { and, asc, eq, inArray, lte, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, lte, notExists, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import type { Clock } from '../clock.ts';
-import type { Db } from '../db/client.ts';
+import type { Db, Executor } from '../db/client.ts';
 import { appUser, delivery, device, notificationChannel, outage } from '../db/schema/index.ts';
 import { canReadDevice } from '../devices/access.ts';
 import type { QuietHours } from './format.ts';
@@ -46,6 +47,26 @@ export type Outcome =
   | { type: 'SKIPPED'; reason: string }
   | { type: 'WEBHOOK_FAILED'; error: string };
 
+const waitingStatuses = ['QUEUED', 'RETRYING'];
+
+function oldestDueOfChannel(db: Executor, now: Date) {
+  const earlier = alias(delivery, 'earlier');
+  return notExists(
+    db
+      .select({ id: earlier.id })
+      .from(earlier)
+      .where(
+        and(
+          eq(earlier.channelId, delivery.channelId),
+          inArray(earlier.status, waitingStatuses),
+          lte(earlier.nextAttemptAt, now),
+          sql`(${earlier.nextAttemptAt}, ${earlier.createdAt}, ${earlier.id})
+            < (${delivery.nextAttemptAt}, ${delivery.createdAt}, ${delivery.id})`,
+        ),
+      ),
+  );
+}
+
 export async function claimDeliveries(
   db: Db,
   clock: Clock,
@@ -68,9 +89,10 @@ export async function claimDeliveries(
       .from(delivery)
       .where(
         and(
-          inArray(delivery.status, ['QUEUED', 'RETRYING']),
+          inArray(delivery.status, waitingStatuses),
           lte(delivery.nextAttemptAt, now),
           ofType,
+          type === 'WEBHOOK' ? oldestDueOfChannel(tx, now) : undefined,
         ),
       )
       .orderBy(asc(delivery.nextAttemptAt), asc(delivery.createdAt), asc(delivery.id))

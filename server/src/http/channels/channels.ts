@@ -30,7 +30,11 @@ import { accessibleDeviceIds } from '../../devices/queries.ts';
 import { createI18n } from '../../i18n.ts';
 import { encrypt, newId, randomToken } from '../../lib/crypto.ts';
 import { telegramT } from '../../telegram/html.ts';
-import { CHANNEL_TEST_PER_USER, TELEGRAM_LINK_PER_USER } from '../../rateLimit/limiter.ts';
+import {
+  CHANNEL_TEST_PER_USER,
+  TELEGRAM_LINK_PER_USER,
+  WEBHOOK_URL_PER_USER,
+} from '../../rateLimit/limiter.ts';
 import type { AppDeps } from '../app.ts';
 import { getAuth, requireUser, requireVerified } from '../auth/middleware.ts';
 import { bearer, deviceIdParam, deviceNotFound, unauthorized } from '../devices/devices.ts';
@@ -75,7 +79,7 @@ export const channelsPaths: ZodOpenApiPathsObject = {
     },
     post: {
       summary: 'Add a webhook',
-      description: `The \`secret\` that signs requests is returned only here and by rotate. The new channel is attached to no devices. At most ${MAX_WEBHOOKS} webhooks per user.`,
+      description: `The \`secret\` that signs requests is returned only here and by rotate. The new channel is attached to no devices. At most ${MAX_WEBHOOKS} webhooks per user. Creating a webhook and changing a webhook URL share a limit of ${WEBHOOK_URL_PER_USER.limit} per minute.`,
       security: bearer,
       requestBody: { content: json(createWebhookSchema) },
       responses: {
@@ -87,14 +91,14 @@ export const channelsPaths: ZodOpenApiPathsObject = {
         '401': unauthorized,
         '403': errorResponse('`not_verified`'),
         '409': errorResponse('Webhook limit reached'),
+        '429': errorResponse('Too many requests'),
       },
     },
   },
   '/api/v1/channels/{id}': {
     patch: {
       summary: 'Edit, turn on or turn off one of my channels',
-      description:
-        'Turning a channel off sets `disabled_reason: USER`. Turning a disabled channel on resets its failure count. A channel turned off after too many failures turns back on only through a successful test message. `url` and `events` apply to webhooks only. Editing them keeps the channel state and failure count.',
+      description: `Turning a channel off sets \`disabled_reason: USER\`, except that a channel disabled after too many failures keeps \`TOO_MANY_FAILURES\`. Turning a disabled channel on resets its failure count. A channel turned off after too many failures turns back on only through a successful test message. \`url\` and \`events\` apply to webhooks only. Editing them keeps the channel state and failure count. Changing \`url\` shares a limit of ${WEBHOOK_URL_PER_USER.limit} per minute with adding a webhook.`,
       security: bearer,
       requestParams: { path: channelParamsSchema },
       requestBody: { content: json(channelPatchSchema) },
@@ -105,6 +109,7 @@ export const channelsPaths: ZodOpenApiPathsObject = {
         '403': errorResponse('`not_verified`'),
         '404': errorResponse('Channel not found or not yours'),
         '409': errorResponse('Disabled after failures: send a test message instead'),
+        '429': errorResponse('Too many requests'),
       },
     },
     delete: {
@@ -228,6 +233,16 @@ export async function myChannel(db: Executor, userId: string, id: string): Promi
   return row;
 }
 
+async function assertWebhookRoom(db: Executor, userId: string) {
+  const [webhooks] = await db
+    .select({ n: count() })
+    .from(notificationChannel)
+    .where(and(eq(notificationChannel.userId, userId), eq(notificationChannel.type, 'WEBHOOK')));
+  if ((webhooks?.n ?? 0) >= MAX_WEBHOOKS) {
+    throw new HttpError(409, 'conflict', 'Webhook limit reached');
+  }
+}
+
 async function channelView(db: Executor, row: ChannelRow) {
   return toChannel(row, (await deviceIdsByChannel(db, [row.id])).get(row.id) ?? []);
 }
@@ -245,6 +260,7 @@ export function channelsRouter(deps: AppDeps): Router {
   const { db, clock, config } = deps;
   const auth = [requireUser(deps), requireVerified];
   const i18n = createI18n();
+  const limitUrlChecks = rateLimit(deps.rateLimiter, 'webhook-url', { user: WEBHOOK_URL_PER_USER });
 
   async function assertUrlAllowed(url: string) {
     const checked = await deps.webhooks.check(url);
@@ -313,9 +329,10 @@ export function channelsRouter(deps: AppDeps): Router {
     res.json({ items: rows.map((row) => toChannel(row, devices.get(row.id) ?? [])) });
   });
 
-  router.post('/api/v1/channels', ...auth, async (req, res) => {
+  router.post('/api/v1/channels', ...auth, limitUrlChecks, async (req, res) => {
     const { user } = getAuth(res);
     const body = createWebhookSchema.parse(req.body ?? {});
+    await assertWebhookRoom(db, user.id);
     await assertUrlAllowed(body.url);
     const secret = newWebhookSecret();
     const row = await db.transaction(async (tx) => {
@@ -324,15 +341,7 @@ export function channelsRouter(deps: AppDeps): Router {
         .from(appUser)
         .where(eq(appUser.id, user.id))
         .for('update');
-      const [webhooks] = await tx
-        .select({ n: count() })
-        .from(notificationChannel)
-        .where(
-          and(eq(notificationChannel.userId, user.id), eq(notificationChannel.type, 'WEBHOOK')),
-        );
-      if ((webhooks?.n ?? 0) >= MAX_WEBHOOKS) {
-        throw new HttpError(409, 'conflict', 'Webhook limit reached');
-      }
+      await assertWebhookRoom(tx, user.id);
       const [created] = await tx
         .insert(notificationChannel)
         .values({
@@ -371,10 +380,15 @@ export function channelsRouter(deps: AppDeps): Router {
     changes: Partial<ChannelRow>,
   ): Promise<ChannelRow> {
     const turningOn = changes.enabled === true;
+    const turningOff = changes.enabled === false;
     const [updated] = await db
       .update(notificationChannel)
       .set({
         ...changes,
+        ...(turningOff && {
+          disabledReason: sql`case when ${notificationChannel.disabledReason} = 'TOO_MANY_FAILURES'
+            then ${notificationChannel.disabledReason} else 'USER' end`,
+        }),
         ...(turningOn && {
           consecutiveFailures: sql`case when ${notificationChannel.enabled}
             then ${notificationChannel.consecutiveFailures} else 0 end`,
@@ -411,9 +425,10 @@ export function channelsRouter(deps: AppDeps): Router {
     }
     if (patch.enabled !== undefined) {
       changes.enabled = patch.enabled;
-      changes.disabledReason = patch.enabled ? null : 'USER';
+      if (patch.enabled) changes.disabledReason = null;
     }
     if (patch.url !== undefined && patch.url !== row.webhookUrl) {
+      await limitUrlChecks(req, res, () => {});
       await assertUrlAllowed(patch.url);
       changes.webhookUrl = patch.url;
     }

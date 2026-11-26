@@ -1,5 +1,6 @@
 import { screen, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
+import { toast } from 'sonner';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import {
   channelFixture,
@@ -296,6 +297,37 @@ test('bulk select turns several channels off', async () => {
   await user.click(screen.getByRole('button', { name: 'Turn off' }));
   await vi.waitFor(() => expect(patched.toSorted()).toEqual([home.id, office.id].toSorted()));
   expect(await screen.findByText('Channels updated')).toBeInTheDocument();
+});
+
+test('bulk turn on leaves failing channels alone and says how to turn them on', async () => {
+  const off = channelFixture({ ...home, enabled: false, disabled_reason: 'USER' });
+  const failing = channelFixture({
+    ...office,
+    enabled: false,
+    disabled_reason: 'TOO_MANY_FAILURES',
+  });
+  server.use(
+    http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items: [off, failing] })),
+  );
+  const patched: string[] = [];
+  server.use(
+    http.patch(`${base}/api/v1/channels/:id`, ({ params }) => {
+      patched.push(String(params.id));
+      return HttpResponse.json(home);
+    }),
+  );
+  const succeeded = vi.spyOn(toast, 'success');
+  const { user } = renderRoute('/notifications', { me: meFixture() });
+  await screen.findByText('Home chat');
+  await user.click(screen.getByRole('checkbox', { name: 'Select all shown' }));
+  await user.click(screen.getByRole('button', { name: 'Turn on' }));
+  expect(
+    await screen.findByText('Send a test message to turn these back on: Office'),
+  ).toBeInTheDocument();
+  expect(patched).toEqual([off.id]);
+  expect(screen.queryByText('2 selected')).toBeNull();
+  expect(succeeded).not.toHaveBeenCalled();
+  succeeded.mockRestore();
 });
 
 test('a webhook row shows the host, the events and the failures', async () => {
