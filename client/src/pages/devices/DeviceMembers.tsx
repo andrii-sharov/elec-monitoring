@@ -2,7 +2,7 @@ import type { Device, Invite, Member } from '@elec/shared/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Users } from 'lucide-react';
-import { useState } from 'react';
+import { type CSSProperties, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
@@ -98,8 +98,13 @@ function MemberList({ device, members }: { device: Device; members: Member[] }) 
   const { me } = useSession();
   return (
     <ul className="flex flex-col divide-y rounded-lg border">
-      {members.map((member) => (
-        <li key={member.user_id} className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3">
+      {members.map((member, index) => (
+        <li
+          key={member.user_id}
+          data-motion="enter"
+          style={{ '--i': index } as CSSProperties}
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3"
+        >
           <span className="font-medium">
             {member.name}
             {member.user_id === me?.id ? ` (${t('app.members.you')})` : null}
@@ -290,10 +295,15 @@ function PendingInvites({
     <div className="flex flex-col gap-2">
       <h3 className="font-medium">{t('app.members.pendingTitle')}</h3>
       <ul className="flex flex-col divide-y rounded-lg border">
-        {invites.map((invite) => {
+        {invites.map((invite, index) => {
           const expired = new Date(invite.expires_at).getTime() <= now;
           return (
-            <li key={invite.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3">
+            <li
+              key={invite.id}
+              data-motion="enter"
+              style={{ '--i': index } as CSSProperties}
+              className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3"
+            >
               <span>{invite.email ?? (invite.phone && storedPhone(invite.phone))}</span>
               {expired ? (
                 <Badge variant="outline">{t('app.members.expired')}</Badge>

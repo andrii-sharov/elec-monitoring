@@ -1,6 +1,6 @@
 import { BellRing } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { type CSSProperties, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
@@ -83,8 +83,13 @@ export function DeviceChannels({ deviceId }: { deviceId: string }) {
       {heading}
       <FormAlert message={save.error ? errorMessage(t, save.error) : null} />
       <ul className="flex flex-col gap-2">
-        {items.map((channel) => (
-          <li key={channel.id} className="flex items-center gap-2">
+        {items.map((channel, index) => (
+          <li
+            key={channel.id}
+            data-motion="enter"
+            style={{ '--i': index } as CSSProperties}
+            className="flex items-center gap-2"
+          >
             <Checkbox
               id={`channel-${channel.id}`}
               checked={selected.includes(channel.id)}
