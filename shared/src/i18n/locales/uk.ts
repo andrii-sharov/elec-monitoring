@@ -265,6 +265,7 @@ export const uk: Dictionary = {
       empty: 'Країн не знайдено',
     },
     validation: {
+      firmware_too_old: 'Пінги частіше ніж раз на {{min}} с потребують новішої прошивки пристрою',
       too_small_string: 'Щонайменше {{min}} символів',
       too_small_number: 'Щонайменше {{min}}',
       too_big_string: 'Щонайбільше {{max}} символів',

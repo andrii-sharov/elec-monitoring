@@ -1,7 +1,7 @@
 import { settingsPatchSchema } from '@elec/shared/api';
 import { describe, expect, test } from 'vitest';
 import type { DeviceRow } from './access.ts';
-import { applySettingsPatch } from './settings.ts';
+import { applySettingsPatch, supportsFastPing } from './settings.ts';
 
 const LAST_SEEN = new Date('2026-11-21T16:40:20Z');
 
@@ -151,9 +151,9 @@ describe('quiet hours', () => {
 
 describe('schema ranges', () => {
   test.each([
-    { ping_interval_s: 14 },
+    { ping_interval_s: 4 },
     { ping_interval_s: 601 },
-    { offline_timeout_s: 29 },
+    { offline_timeout_s: 9 },
     { offline_timeout_s: 3601 },
     { short_outage_threshold_s: 29 },
     { short_outage_threshold_s: 86_401 },
@@ -161,5 +161,41 @@ describe('schema ranges', () => {
     { unknown: true },
   ])('rejects %j', (body) => {
     expect(settingsPatchSchema.safeParse(body).success).toBe(false);
+  });
+});
+
+describe('pings under 15 s', () => {
+  test.each([
+    { fwVersion: null, ok: false },
+    { fwVersion: '2.0.0', ok: false },
+    { fwVersion: 'garbage', ok: false },
+    { fwVersion: '2.1.0', ok: true },
+    { fwVersion: '3.0.0', ok: true },
+    { fwVersion: '0.0.0-dev', ok: true },
+  ])('firmware $fwVersion supports fast pings: $ok', ({ fwVersion, ok }) => {
+    expect(supportsFastPing(fwVersion)).toBe(ok);
+  });
+
+  test('old firmware is refused a ping under 15 s', () => {
+    expect(
+      applySettingsPatch(row({ fwVersion: '2.0.0' }), {
+        ping_interval_s: 5,
+        offline_timeout_s: 10,
+      }),
+    ).toEqual({
+      error: { path: 'settings.ping_interval_s', code: 'firmware_too_old', min: 15 },
+    });
+  });
+
+  test('old firmware may still use 15 s and new firmware 5 s', () => {
+    expect(applySettingsPatch(row({ fwVersion: '2.0.0' }), { ping_interval_s: 15 })).toHaveProperty(
+      'changes',
+    );
+    expect(
+      applySettingsPatch(row({ fwVersion: '2.1.0' }), {
+        ping_interval_s: 5,
+        offline_timeout_s: 10,
+      }),
+    ).toHaveProperty('changes.pingIntervalS', 5);
   });
 });

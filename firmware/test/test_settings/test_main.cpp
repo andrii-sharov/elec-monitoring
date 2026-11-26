@@ -23,7 +23,7 @@ void test_parses_claim_response() {
 void test_clamps_parsed_settings() {
   auto result = parseClaimResponse(body(kToken, R"({"version":2,"ping_interval_s":1})").c_str());
   TEST_ASSERT_TRUE(result.has_value());
-  TEST_ASSERT_EQUAL_UINT32(30, result->settings.pingIntervalS);
+  TEST_ASSERT_EQUAL_UINT32(20, result->settings.pingIntervalS);
 }
 
 void test_rejects_missing_token() {
@@ -60,13 +60,13 @@ void test_rejects_invalid_json() {
 }
 
 void test_clamp_settings() {
-  DeviceSettings low = clampSettings({3, 5});
+  DeviceSettings low = clampSettings({3, 4});
   TEST_ASSERT_EQUAL_UINT32(3, low.version);
-  TEST_ASSERT_EQUAL_UINT32(30, low.pingIntervalS);
+  TEST_ASSERT_EQUAL_UINT32(20, low.pingIntervalS);
+  TEST_ASSERT_EQUAL_UINT32(5, clampSettings({3, 5}).pingIntervalS);
   TEST_ASSERT_EQUAL_UINT32(60, clampSettings({3, 60}).pingIntervalS);
-  TEST_ASSERT_EQUAL_UINT32(15, clampSettings({3, 15}).pingIntervalS);
   TEST_ASSERT_EQUAL_UINT32(600, clampSettings({3, 600}).pingIntervalS);
-  TEST_ASSERT_EQUAL_UINT32(30, clampSettings({3, 601}).pingIntervalS);
+  TEST_ASSERT_EQUAL_UINT32(20, clampSettings({3, 601}).pingIntervalS);
 }
 
 int main() {

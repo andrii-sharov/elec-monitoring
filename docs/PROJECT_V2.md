@@ -9,7 +9,7 @@ and flash our firmware. They connect it to their home Wi-Fi and get
 alerts when their device loses and restores contact. Advanced users get a REST
 API, their own Telegram bots, webhooks and more control.
 
-The device pings every 30 s by default. Missing pings indicate a loss of
+The device pings every 20 s by default. Missing pings indicate a loss of
 contact. The device also checks in immediately after boot, as soon as it
 can reach the API. The server uses boot information to estimate the cause
 of a gap and can record a suspected power blip even if the device never
@@ -222,7 +222,7 @@ authenticated HTTPS check-in to `POST /api/v1/device/ping`:
 | Type   | When                                                                                | What it tells the server                                           |
 | ------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `BOOT` | Immediately after Wi-Fi connects and the API is reachable on each boot              | The device started a new boot session and reports the reset reason |
-| `PING` | Every 30 s by default, and promptly after reconnecting within the same boot session | The device is reachable and reports telemetry                      |
+| `PING` | Every 20 s by default, and promptly after reconnecting within the same boot session | The device is reachable and reports telemetry                      |
 
 ```json
 {
@@ -292,9 +292,10 @@ settings in PostgreSQL. On its next check-in, the ESP fetches the current
 settings and reports what it applied. The client app shows pending and
 applied changes. Changes for an offline device wait for reconnection.
 
-The ping interval defaults to 30 s and can be changed by the owner. The
-server validates it against both the ping rate limit and the offline
-timeout. Until the device confirms the change, the server allows for both
+The ping interval defaults to 20 s and can be changed by the owner (5–600 s).
+The server validates it against both the ping rate limit and the offline
+timeout. A ping under 15 s needs firmware 2.1.0 or newer: older firmware
+ignores it and keeps 30 s, so the API refuses it for those devices. Until the device confirms the change, the server allows for both
 the previous and the new interval when checking for missed pings: the
 deadline is the later of the offline timeout and twice the previous
 interval. Server settings such as notification rules and the offline
@@ -417,8 +418,8 @@ stateDiagram-v2
 - `UPDATING` is shown while a confirmed OTA window is active. An ordinary
   check-in cannot end this state. The API and worker both apply the OTA
   deadline rules in §4 before processing recovery.
-- The worker checks every 10 s. An `ONLINE` device goes `OFFLINE` after
-  `offline_timeout` (default 120 s) since the last accepted check-in or
+- The worker checks every 2 s. An `ONLINE` device goes `OFFLINE` after
+  `offline_timeout` (default 40 s, minimum 10 s) since the last accepted check-in or
   the end of the OTA window reported by `update_finished`, whichever is
   later. The worker opens an outage and queues any due notification. The
   device's "state since" time is the missed deadline, not the time the
@@ -469,9 +470,13 @@ power blip.
 ### Device settings
 
 - Name.
-- Ping interval (30 s by default), applied by the device.
+- Ping interval (20 s by default, 5–600 s), applied by the device.
 - Automatic firmware updates (off by default).
-- Offline timeout (default 120 s).
+- Offline timeout (default 40 s, 10–3600 s). A short timeout alerts
+  sooner but also turns slow check-ins (TLS, a Wi-Fi hiccup) into alerts,
+  and turns more power flickers into outages instead of blips, because
+  boot, Wi-Fi and clock sync can take longer than the timeout.
+  Existing devices keep their settings; new devices get 20 s / 40 s.
 - Short-outage threshold (default 3 min).
 - Notify on short outages:
   - if off, queue the OFF alert once both the offline timeout and the
@@ -824,7 +829,7 @@ shared Zod schemas through the `app.validation.*` keys.
 
 Rough numbers to plan for:
 
-- 1 000 devices × 1 ping / 30 s ≈ **33 pings/s** → one small `UPDATE`
+- 1 000 devices × 1 ping / 20 s ≈ **50 pings/s** (200/s if all used 5 s) → one small `UPDATE`
   each. Fine for one server instance and Supabase.
 - 10 000 devices ≈ 330 pings/s → need several server instances and to
   check DB load. If needed, last-seen times can move to Redis later.

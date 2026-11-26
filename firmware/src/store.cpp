@@ -5,7 +5,7 @@
 namespace store {
 namespace {
 constexpr const char* kNamespace = "elec";
-constexpr uint32_t kDefaultPingS = 30;
+constexpr uint32_t kDefaultPingS = 20;
 }  // namespace
 
 StoredConfig load() {

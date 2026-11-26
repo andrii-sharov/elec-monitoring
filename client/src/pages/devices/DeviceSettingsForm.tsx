@@ -28,8 +28,8 @@ const timeOfDay = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
 export const deviceSettingsFormSchema = z
   .object({
     name: deviceNameSchema,
-    ping_interval_s: z.number().int().min(15).max(600),
-    offline_timeout_s: z.number().int().min(30).max(3600),
+    ping_interval_s: z.number().int().min(5).max(600),
+    offline_timeout_s: z.number().int().min(10).max(3600),
     short_outage_threshold_min: z.number().int().min(1).max(1440),
     notify_short_outages: z.boolean(),
     notify_network_outages: z.boolean(),

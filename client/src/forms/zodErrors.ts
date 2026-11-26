@@ -36,7 +36,11 @@ function translateDetail(detail: ApiError['details'][number], t: TFunction): str
   if (detail.code === 'too_small' && detail.min === 1) return t('app.validation.required');
   if (detail.code === 'too_small') return t('app.validation.too_small_number', { min: detail.min });
   if (detail.code === 'too_big') return t('app.validation.too_big_number', { max: detail.max });
-  return t(`app.validation.${detail.code}`, { defaultValue: t('app.validation.invalid') });
+  return t(`app.validation.${detail.code}`, {
+    min: detail.min,
+    max: detail.max,
+    defaultValue: t('app.validation.invalid'),
+  });
 }
 
 export function applyServerErrors(

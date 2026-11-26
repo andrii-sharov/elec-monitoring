@@ -1533,12 +1533,12 @@
                     "properties": {
                       "ping_interval_s": {
                         "type": "integer",
-                        "minimum": 15,
+                        "minimum": 5,
                         "maximum": 600
                       },
                       "offline_timeout_s": {
                         "type": "integer",
-                        "minimum": 30,
+                        "minimum": 10,
                         "maximum": 3600
                       },
                       "short_outage_threshold_s": {

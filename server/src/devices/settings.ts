@@ -2,6 +2,7 @@ import type { settingsPatchSchema } from '@elec/shared/api';
 import type { z } from 'zod';
 import type { device } from '../db/schema/index.ts';
 import type { ErrorDetail } from '../http/errors.ts';
+import { versionCode } from '../firmware/releases.ts';
 import { offlineDeadline } from '../monitoring/rules.ts';
 import type { DeviceRow } from './access.ts';
 
@@ -9,12 +10,34 @@ export type SettingsPatch = z.infer<typeof settingsPatchSchema>;
 
 type DeviceChanges = Partial<typeof device.$inferInsert>;
 
+export const LEGACY_MIN_PING_S = 15;
+export const FAST_PING_FIRMWARE = '2.1.0';
+
+export function supportsFastPing(fwVersion: string | null): boolean {
+  if (fwVersion === null) return false;
+  if (fwVersion.endsWith('-dev')) return true;
+  try {
+    return versionCode(fwVersion) >= versionCode(FAST_PING_FIRMWARE);
+  } catch {
+    return false;
+  }
+}
+
 export function applySettingsPatch(
   current: DeviceRow,
   patch: SettingsPatch,
 ): { changes: DeviceChanges } | { error: ErrorDetail } {
   const pingIntervalS = patch.ping_interval_s ?? current.pingIntervalS;
   const offlineTimeoutS = patch.offline_timeout_s ?? current.offlineTimeoutS;
+  if (
+    patch.ping_interval_s !== undefined &&
+    patch.ping_interval_s < LEGACY_MIN_PING_S &&
+    !supportsFastPing(current.fwVersion)
+  ) {
+    return {
+      error: { path: 'settings.ping_interval_s', code: 'firmware_too_old', min: LEGACY_MIN_PING_S },
+    };
+  }
   if (offlineTimeoutS < 2 * pingIntervalS) {
     return {
       error: { path: 'settings.offline_timeout_s', code: 'too_small', min: 2 * pingIntervalS },

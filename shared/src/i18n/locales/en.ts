@@ -260,6 +260,7 @@ export const en = {
       empty: 'No countries found',
     },
     validation: {
+      firmware_too_old: 'Pings under {{min}} s need newer device firmware',
       too_small_string: 'At least {{min}} characters',
       too_small_number: 'At least {{min}}',
       too_big_string: 'At most {{max}} characters',

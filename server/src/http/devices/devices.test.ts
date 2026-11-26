@@ -40,8 +40,8 @@ async function authed(overrides: Parameters<typeof createUser>[1] = {}) {
 }
 
 const defaultSettings = {
-  ping_interval_s: 30,
-  offline_timeout_s: 120,
+  ping_interval_s: 20,
+  offline_timeout_s: 40,
   short_outage_threshold_s: 180,
   notify_short_outages: true,
   notify_network_outages: true,
@@ -280,7 +280,7 @@ describe('PATCH /api/v1/devices/:id', () => {
     const res = await request(app())
       .patch(`/api/v1/devices/${row.id}`)
       .set('Authorization', auth)
-      .send({ settings: { ping_interval_s: 60 } });
+      .send({ settings: { ping_interval_s: 15 } });
     expect(res.body.settings_sync).toEqual({
       desired_version: 2,
       applied_version: null,

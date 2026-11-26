@@ -158,3 +158,29 @@ test('a viewer sees neither the settings form nor the danger zone', async () => 
   expect(screen.queryByLabelText('Ping interval (s)')).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Delete device' })).not.toBeInTheDocument();
 });
+
+test('a ping under 15 s on old firmware shows the firmware hint on the field', async () => {
+  serveDevice();
+  const bodies = capturePatch(() =>
+    HttpResponse.json(
+      {
+        error: {
+          code: 'validation_error',
+          message: 'x',
+          details: [{ path: 'settings.ping_interval_s', code: 'firmware_too_old', min: 15 }],
+        },
+      },
+      { status: 400 },
+    ),
+  );
+  const { user } = await renderOwner();
+  await user.clear(screen.getByLabelText('Offline timeout (s)'));
+  await user.type(screen.getByLabelText('Offline timeout (s)'), '10');
+  await user.clear(screen.getByLabelText('Ping interval (s)'));
+  await user.type(screen.getByLabelText('Ping interval (s)'), '5');
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+  expect(
+    await screen.findByText('Pings under 15 s need newer device firmware'),
+  ).toBeInTheDocument();
+  expect(bodies).toEqual([{ settings: { ping_interval_s: 5, offline_timeout_s: 10 } }]);
+});

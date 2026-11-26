@@ -271,6 +271,7 @@ export const ru: Dictionary = {
       empty: 'Страны не найдены',
     },
     validation: {
+      firmware_too_old: 'Пинги чаще чем раз в {{min}} с требуют более новой прошивки устройства',
       too_small_string: 'Не менее {{min}} символов',
       too_small_number: 'Не менее {{min}}',
       too_big_string: 'Не более {{max}} символов',

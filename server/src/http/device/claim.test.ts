@@ -48,6 +48,7 @@ test('claims the device and resets the boot baseline', async () => {
     seq: 40,
     settingsVersion: 3,
     pingIntervalS: 45,
+    offlineTimeoutS: 120,
   });
   const res = await claim({ pairing_code: 'K7Q2M9XD', fw: '2.0.0' });
   expect(res.status).toBe(200);

@@ -243,16 +243,16 @@ OpenAPI snapshot, API.md):
 | Ping interval   | 15–600 s, default 30   | **5–600 s, default 20**                              |
 | Offline timeout | 30–3600 s, default 120 | **10–3600 s, default 40**; still ≥ 2 × ping interval |
 
-- **Worker:** the offline check runs every **2 s** (its own loop, separate
-  from deliveries) so a 10 s timeout alerts within 10–12 s.
+- **Worker:** the offline check runs every **2 s** (its own loop; heartbeat
+  and cleanup stay at 10 s) so a 10 s timeout alerts within 10–12 s.
 - **Rate limit:** check-ins go from 6 to **20 per minute** per device.
 - **Firmware:** `kMinPingS` 5, default 20. Release a new firmware version;
   boards need a USB reflash until OTA (M11).
-- **Server guard:** a ping interval under 15 s is accepted only for a
-  device whose reported firmware supports it; otherwise `400` with detail
-  `{ code: "firmware_too_old", min_version }`, and the settings form says
-  "Update the firmware to use pings under 15 s". This stops old boards from
-  being marked offline over and over.
+- **Server guard:** a ping interval under 15 s is accepted only when the
+  device reports firmware 2.1.0 or newer (or a `-dev` build). Otherwise the
+  API returns detail `{ code: "firmware_too_old", min: 15 }` on
+  `settings.ping_interval_s`, and the form shows "Pings under 15 s need
+  newer device firmware".
 - **Existing devices** keep their current settings. Only new devices get
   20 / 40 (column defaults and the claim response).
 - **Side effects, to note in spec §5:**

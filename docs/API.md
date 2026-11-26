@@ -81,7 +81,7 @@ Validation errors add `details`:
 
 | Who                             | Limit                          |
 | ------------------------------- | ------------------------------ |
-| Device check-in                 | 6 / min per device             |
+| Device check-in                 | 20 / min per device            |
 | Client app JWT                  | 120 / min per user             |
 | Auth / claim                    | 10 / min per IP                |
 | Firmware image download         | 20 / min per IP                |
@@ -462,12 +462,14 @@ Device object (`GET /devices/:id`, items of `GET /devices`):
 Validation:
 
 - `name`: trimmed, 1–64 chars.
-- `ping_interval_s`: 15–600 (15 fits 6 pings/min with room for retries).
-  Default 30.
-- `offline_timeout_s`: 30–3600 and ≥ 2 × `ping_interval_s`, checked on
+- `ping_interval_s`: 5–600 (5 s is 12 check-ins/min, leaving room for
+  retries under the 20 / min limit). Default 20. Under 15 needs firmware
+  2.1.0 or newer (or a `-dev` build); otherwise detail
+  `{ "path": "settings.ping_interval_s", "code": "firmware_too_old", "min": 15 }`.
+- `offline_timeout_s`: 10–3600 and ≥ 2 × `ping_interval_s`, checked on
   the merged result. A violation returns detail
   `{ "path": "settings.offline_timeout_s", "code": "too_small", "min": <2 × interval> }`.
-  Default 120.
+  Default 40.
 - `short_outage_threshold_s`: 30–86400. Default 180.
 - `quiet_hours`: `{ "start": "HH:MM", "end": "HH:MM" }` (24 h, start ≠ end)
   or `null`.
@@ -976,8 +978,8 @@ in PROJECT_V2.md §3–§12. Section numbers below refer to PROJECT_V2.md.
   Proposed fields in [Outages and stats](#outages-and-stats).
 - ~~**Invites.**~~ ✅ Resolved (M6): invites and member removal need a
   signed-in user.
-- **Ping interval vs rate limit.** 6 pings/min allows 10 s, but boot
-  retries share the limit. A 15 s minimum leaves room.
+- **Ping interval vs rate limit.** 20 check-ins/min allows 3 s, but boot
+  retries share the limit. A 5 s minimum leaves room.
 
 ### Open questions (need a decision)
 

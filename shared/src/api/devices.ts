@@ -29,8 +29,8 @@ export const deviceSettingsSchema = z.object({
 });
 
 export const settingsPatchSchema = z.strictObject({
-  ping_interval_s: z.number().int().min(15).max(600).optional(),
-  offline_timeout_s: z.number().int().min(30).max(3600).optional(),
+  ping_interval_s: z.number().int().min(5).max(600).optional(),
+  offline_timeout_s: z.number().int().min(10).max(3600).optional(),
   short_outage_threshold_s: z.number().int().min(30).max(86_400).optional(),
   notify_short_outages: z.boolean().optional(),
   notify_network_outages: z.boolean().optional(),

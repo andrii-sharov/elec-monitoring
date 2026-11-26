@@ -258,9 +258,9 @@ create table device (
   rssi                     smallint,
   fw_version               text,
 
-  ping_interval_s          integer not null default 30,
+  ping_interval_s          integer not null default 20,
   previous_ping_interval_s integer,
-  offline_timeout_s        integer not null default 120,
+  offline_timeout_s        integer not null default 40,
   short_outage_threshold_s integer not null default 180,
   notify_short_outages     boolean not null default true,
   notify_network_outages   boolean not null default true,
@@ -273,7 +273,7 @@ create table device (
   created_at               timestamptz not null default now(),
   updated_at               timestamptz not null default now(),
 
-  check (ping_interval_s >= 15),
+  check (ping_interval_s >= 5),
   check (offline_timeout_s >= 2 * ping_interval_s),
   check (short_outage_threshold_s > 0),
   check ((quiet_hours_start is null) = (quiet_hours_end is null)),
@@ -715,17 +715,17 @@ resets `count` to 1. The worker deletes rows older than one day.
 
 Each query states the index it relies on.
 
-| Path                       | Query shape                                                                                                                 | Index                                              |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| Device check-in            | `select … from device where token_hash = $1 for update`                                                                     | `device.token_hash` unique                         |
-| Offline check (every 10 s) | `select id from device where state = 'ONLINE' and offline_at <= now() order by offline_at limit 100 for update skip locked` | `device_offline_at_idx`                            |
-| OTA deadline check         | `firmware_update_attempt where status = 'INSTALLING' and window_ends_at <= now()`, then lock the device                     | `firmware_update_attempt_window_idx`               |
-| Due OFF alerts             | `outage where ended_at is null and off_alert_queued_at is null and off_alert_due_at <= now()`                               | `outage_off_alert_due_idx`                         |
-| Delivery queue             | `delivery where status in ('QUEUED', 'RETRYING') and next_attempt_at <= now() … for update skip locked`                     | `delivery_due_idx`                                 |
-| My devices                 | `device where owner_id = $1` + `device_viewer where user_id = $1`                                                           | `device_owner_id_idx`, `device_viewer_user_id_idx` |
-| Outage history             | `where device_id = $1 and (started_at, id) < ($cursor) order by started_at desc, id desc limit $n`                          | `outage_device_started_idx`                        |
-| Stats                      | `where device_id = $1 and started_at < $to and (ended_at is null or ended_at > $from)`                                      | `outage_device_started_idx`                        |
-| Delivery log               | `where channel_id = $1 and (created_at, id) < ($cursor) order by created_at desc, id desc`                                  | `delivery_channel_created_idx`                     |
+| Path                      | Query shape                                                                                                                 | Index                                              |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Device check-in           | `select … from device where token_hash = $1 for update`                                                                     | `device.token_hash` unique                         |
+| Offline check (every 2 s) | `select id from device where state = 'ONLINE' and offline_at <= now() order by offline_at limit 100 for update skip locked` | `device_offline_at_idx`                            |
+| OTA deadline check        | `firmware_update_attempt where status = 'INSTALLING' and window_ends_at <= now()`, then lock the device                     | `firmware_update_attempt_window_idx`               |
+| Due OFF alerts            | `outage where ended_at is null and off_alert_queued_at is null and off_alert_due_at <= now()`                               | `outage_off_alert_due_idx`                         |
+| Delivery queue            | `delivery where status in ('QUEUED', 'RETRYING') and next_attempt_at <= now() … for update skip locked`                     | `delivery_due_idx`                                 |
+| My devices                | `device where owner_id = $1` + `device_viewer where user_id = $1`                                                           | `device_owner_id_idx`, `device_viewer_user_id_idx` |
+| Outage history            | `where device_id = $1 and (started_at, id) < ($cursor) order by started_at desc, id desc limit $n`                          | `outage_device_started_idx`                        |
+| Stats                     | `where device_id = $1 and started_at < $to and (ended_at is null or ended_at > $from)`                                      | `outage_device_started_idx`                        |
+| Delivery log              | `where channel_id = $1 and (created_at, id) < ($cursor) order by created_at desc, id desc`                                  | `delivery_channel_created_idx`                     |
 
 - **Lock order.** Always lock the `device` row first, then outages,
   attempts and deliveries. Check-in, OTA and worker handlers all follow it,

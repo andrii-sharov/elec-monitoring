@@ -15,7 +15,8 @@ import { defaultSleep, runLoop } from './worker/loop.ts';
 
 const MONITOR_NAME = 'main';
 const DELIVERY_NAME = 'delivery';
-const LOOP_INTERVAL_MS = 10_000;
+const OFFLINE_CHECK_INTERVAL_MS = 2_000;
+const HOUSEKEEPING_INTERVAL_MS = 10_000;
 const TELEGRAM_RATE_PER_S = 30;
 
 const config = loadWorkerConfigOrExit(process.env);
@@ -46,11 +47,18 @@ async function step(name: string, run: () => Promise<unknown>): Promise<void> {
 console.info(`worker started (${instanceId})`);
 await Promise.all([
   runLoop({
-    intervalMs: LOOP_INTERVAL_MS,
+    intervalMs: OFFLINE_CHECK_INTERVAL_MS,
     tick: async () => {
-      await step('heartbeat', () => beat(db, systemClock, MONITOR_NAME, instanceId));
       await step('offline check', () => checkOffline(monitorDeps));
       await step('OFF alerts', () => queueDueOffAlerts(monitorDeps));
+    },
+    signal: controller.signal,
+    logger,
+  }),
+  runLoop({
+    intervalMs: HOUSEKEEPING_INTERVAL_MS,
+    tick: async () => {
+      await step('heartbeat', () => beat(db, systemClock, MONITOR_NAME, instanceId));
       await step('rate limit cleanup', () => cleanupRateLimits(db, systemClock));
       await step('daily cleanup', dailyCleanup);
     },

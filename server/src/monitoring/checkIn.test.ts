@@ -65,7 +65,7 @@ test('the first check-in goes ONLINE and stores live state', async () => {
     state: 'ONLINE',
     stateSince: T,
     lastSeenAt: T,
-    offlineAt: new Date(T.getTime() + 120_000),
+    offlineAt: new Date(T.getTime() + 40_000),
     bootId: BOOT_A,
     seq: 1,
     uptimeS: 10,

@@ -3,9 +3,9 @@
 #include <ArduinoJson.h>
 
 namespace {
-constexpr uint32_t kMinPingS = 15;
+constexpr uint32_t kMinPingS = 5;
 constexpr uint32_t kMaxPingS = 600;
-constexpr uint32_t kDefaultPingS = 30;
+constexpr uint32_t kDefaultPingS = 20;
 
 bool isDeviceToken(const char* token) {
   if (token == nullptr) return false;

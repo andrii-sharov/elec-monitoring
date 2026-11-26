@@ -96,16 +96,16 @@ async function setup(deviceOverrides: Partial<typeof device.$inferInsert> = {}) 
 const texts = () => telegram.sent.map((s) => s.text);
 
 describe('sustained loss of contact', () => {
-  test('the OFF alert goes out at 120 s and only once', async () => {
+  test('the OFF alert goes out at 40 s and only once', async () => {
     const d = await setup();
     await d.boot(BOOT_A);
-    const sentBy120: number[] = [];
-    for (let s = 10; s <= 300; s += 10) {
+    const sentBy40: number[] = [];
+    for (let s = 2; s <= 300; s += 2) {
       clock.set(at(s));
       await tick();
-      if (s === 110 || s === 120) sentBy120.push(telegram.sent.length);
+      if (s === 38 || s === 40) sentBy40.push(telegram.sent.length);
     }
-    expect(sentBy120).toEqual([0, 1]);
+    expect(sentBy40).toEqual([0, 1]);
     expect(texts()).toEqual(['🔴 Home — device stopped checking in\nLast signal: 21 Nov 18:42']);
   });
 
