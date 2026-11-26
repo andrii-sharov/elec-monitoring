@@ -45,7 +45,7 @@ function serveOutages(items: ReturnType<typeof outageFixture>[]) {
 test('loads the current local week and shows an empty state', async () => {
   const requests = serveOutages([]);
   renderRoute(`/devices/${id}`, { me: meFixture() });
-  expect(await screen.findByText('No outages this week')).toBeInTheDocument();
+  expect(await screen.findByText('No outages in this period')).toBeInTheDocument();
   expect(screen.getByText('16 – 22 Nov 2026')).toBeInTheDocument();
   expect(requests[0]).toMatchObject({
     from: '2026-11-15T22:00:00.000Z',
@@ -92,7 +92,7 @@ test('an open outage is ongoing with a live duration', async () => {
 test('week navigation moves the range and keeps it in the URL', async () => {
   const requests = serveOutages([]);
   const { user, router } = renderRoute(`/devices/${id}`, { me: meFixture() });
-  await screen.findByText('No outages this week');
+  await screen.findByText('No outages in this period');
   await user.click(screen.getByRole('button', { name: 'Previous week' }));
   expect(await screen.findByText('9 – 15 Nov 2026')).toBeInTheDocument();
   expect(router.state.location.search).toContain('from=2026-11-09');
@@ -178,7 +178,7 @@ test('the table lists outages and the choice is remembered', async () => {
 test('the month period loads the whole local month', async () => {
   const requests = serveOutages([]);
   const { user, router } = renderRoute(`/devices/${id}`, { me: meFixture() });
-  await screen.findByText('No outages this week');
+  await screen.findByText('No outages in this period');
   await user.click(screen.getByRole('button', { name: 'Month' }));
   expect(await screen.findByText('November 2026')).toBeInTheDocument();
   expect(router.state.location.search).toContain('period=month');
@@ -210,7 +210,7 @@ test('a year loads month by month and the grid becomes a calendar', async () => 
 test('a custom range is picked with two dates', async () => {
   serveOutages([]);
   const { user, router } = renderRoute(`/devices/${id}`, { me: meFixture() });
-  await screen.findByText('No outages this week');
+  await screen.findByText('No outages in this period');
   await user.click(screen.getByRole('button', { name: 'Custom' }));
   const from = await screen.findByLabelText('From');
   fireEvent.change(from, { target: { value: '2026-11-01' } });

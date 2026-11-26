@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage } from '@/forms/errorMessage';
 import { FormAlert } from '@/forms/FormAlert';
+import { EmptyState } from '@/components/Illustration';
 
 export function DeviceChannels({ deviceId }: { deviceId: string }) {
   const { t } = useTranslation();
@@ -66,7 +67,9 @@ export function DeviceChannels({ deviceId }: { deviceId: string }) {
     return (
       <section aria-labelledby="channels-title" className="flex flex-col gap-3">
         {heading}
-        <p className="text-sm text-muted-foreground">{t('app.channel.none')}</p>
+        <EmptyState illustration="channelsEmpty" className="items-start py-2 text-start">
+          <p className="text-sm">{t('app.channel.none')}</p>
+        </EmptyState>
         <Link to="/notifications" className="underline">
           {t('app.channel.connectLink')}
         </Link>

@@ -81,3 +81,28 @@ describe('renderInviteEmail', () => {
     expect(email.text).toContain('<b>Дім & "Home"');
   });
 });
+
+describe('branded layout', () => {
+  const email = renderEmail(i18n, 'resetPassword', { lang: 'uk', name: 'John', link });
+
+  test('loads the PNG logo from the client and shows the app name', () => {
+    expect(email.html).toContain('src="https://app.test/email-logo.png"');
+    expect(email.html).toContain(resources.uk.translation.common.appName);
+    expect(email.html).toContain('<html lang="uk">');
+  });
+
+  test('has inbox preview text, the written-out link and a dark mode', () => {
+    expect(email.html).toMatch(/overflow:hidden;opacity:0">[^<]*John/);
+    expect(email.html).toContain(resources.uk.translation.email.linkHint);
+    expect(email.html).toContain('>https://app.test/verify-email?token=abc&amp;x=1</a>');
+    expect(email.html).toContain('prefers-color-scheme: dark');
+    expect(email.html).toContain('background:#166088');
+  });
+
+  test('puts the footer under the card and skips the expiry for an existing account', () => {
+    const exists = renderEmail(i18n, 'accountExists', { lang: 'en', name: 'John', link });
+    expect(exists.html).toContain(resources.en.translation.email.footer.replace("'", '&#39;'));
+    expect(exists.text.endsWith(resources.en.translation.email.footer)).toBe(true);
+    expect(exists.html).not.toContain('valid for');
+  });
+});

@@ -12,6 +12,7 @@ export const ru: Dictionary = {
     },
   },
   email: {
+    linkHint: 'Если кнопка не работает, откройте эту ссылку:',
     footer: 'Если вы этого не запрашивали, просто проигнорируйте это письмо.',
     verifyEmail: {
       subject: 'Подтвердите электронную почту',
@@ -623,7 +624,7 @@ export const ru: Dictionary = {
       views: { timeline: 'Лента', grid: 'Сетка', table: 'Таблица' },
       days: 'Дни недели',
       summary: 'Отключений {{outages}} · без света {{duration}}',
-      empty: 'На этой неделе отключений не было',
+      empty: 'За этот период отключений не было',
       day: 'День',
       hour: 'Час',
       off: '{{duration}} без света',

@@ -26,6 +26,7 @@ import { ChannelRow, useChannelRefresh } from './ChannelRow';
 import { filterChannels, filterParams, readFilters, sorts, statuses } from './channelFilters';
 import { addableTypes, channelTypeInfo } from './channelTypes';
 import { TelegramConnect } from './TelegramConnect';
+import { EmptyState } from '@/components/Illustration';
 
 function FilterSelect({
   label,
@@ -174,7 +175,9 @@ export function NotificationsPage() {
             </Button>
           </div>
         ) : all.length === 0 ? (
-          <p className="text-muted-foreground">{t('app.notifications.empty')}</p>
+          <EmptyState illustration="channelsEmpty">
+            <p>{t('app.notifications.empty')}</p>
+          </EmptyState>
         ) : (
           <>
             <div className="flex flex-wrap items-center gap-2">

@@ -97,6 +97,10 @@ the `:root` defaults.
   `prefers-reduced-motion: reduce` sets the motion tokens to `0ms`, turns
   off animation on every `[data-motion]` element and stops the promo
   video (poster with controls).
+- Illustrations (`assets/illustrations/`, `Illustration` and `EmptyState`
+  in the client) are inlined, so their `var(--primary, …)` style fills
+  follow the theme tokens and the light/dark toggle. They are decorative
+  (`aria-hidden`); the text next to them carries the meaning.
 - The brand mark (`BrandMark`, `assets/logo/`) keeps its own fixed colors
   from `assets/README.md` in every style and theme; it is the only hex
   in components.

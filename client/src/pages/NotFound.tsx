@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { buttonVariants } from '@/components/ui/button';
+import { Illustration } from '@/components/Illustration';
 
 export function NotFound() {
   const { t } = useTranslation();
@@ -10,6 +11,7 @@ export function NotFound() {
       <div className="absolute top-4 right-4">
         <LanguageSwitcher />
       </div>
+      <Illustration name="notFound" className="w-56" />
       <h1 className="font-heading text-2xl font-semibold">{t('app.notFound.title')}</h1>
       <p className="text-muted-foreground">{t('app.notFound.body')}</p>
       <Link to="/" className={buttonVariants()}>

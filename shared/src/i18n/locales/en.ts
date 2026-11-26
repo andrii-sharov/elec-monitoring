@@ -10,6 +10,7 @@ export const en = {
     },
   },
   email: {
+    linkHint: "If the button doesn't work, open this link:",
     footer: "If you didn't request this, ignore this email.",
     verifyEmail: {
       subject: 'Confirm your email',
@@ -604,7 +605,7 @@ export const en = {
       views: { timeline: 'Timeline', grid: 'Grid', table: 'Table' },
       days: 'Days of the week',
       summary: 'Outages {{outages}} · without power {{duration}}',
-      empty: 'No outages this week',
+      empty: 'No outages in this period',
       day: 'Day',
       hour: 'Hour',
       off: '{{duration}} without power',

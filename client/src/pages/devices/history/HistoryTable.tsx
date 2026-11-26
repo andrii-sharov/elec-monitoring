@@ -6,13 +6,18 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { LiveDuration } from './OutageRow';
 import { Duration, Moment } from '@/components/Moment';
+import { EmptyState } from '@/components/Illustration';
 
 const columns = ['start', 'end', 'duration', 'details'] as const;
 
 export function HistoryTable({ outages }: { outages: OutageItem[] }) {
   const { t } = useTranslation();
   if (outages.length === 0) {
-    return <p className="text-muted-foreground">{t('app.history.empty')}</p>;
+    return (
+      <EmptyState illustration="historyEmpty">
+        <p>{t('app.history.empty')}</p>
+      </EmptyState>
+    );
   }
   return (
     <div className="rounded-lg border border-border bg-card">

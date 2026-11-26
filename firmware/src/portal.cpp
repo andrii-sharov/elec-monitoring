@@ -72,14 +72,44 @@ void messages(String& page, const PortalStrings& s) {
 }
 
 const char* kStyle =
-    "body{font-family:system-ui,sans-serif;max-width:26rem;margin:1.5rem auto;padding:0 1rem}"
-    "label{display:block;margin-top:1rem;font-weight:600}"
-    "input{width:100%;box-sizing:border-box;padding:.6rem;font-size:1rem;margin-top:.3rem;"
-    "border:1px solid #888;border-radius:6px}"
-    "input[aria-invalid]{border:2px solid #b3261e}"
-    "button{margin-top:1.5rem;width:100%;padding:.8rem;font-size:1rem}"
-    "small{display:block;color:#555;margin-top:.3rem}.err{color:#b3261e;font-weight:600}"
-    "#m{margin-top:1rem;font-weight:600}nav a{margin-right:.8rem}";
+    ":root{color-scheme:light dark;--bg:#dbe9ee;--card:#fff;--fg:#203844;--mut:#476471;"
+    "--pri:#166088;--on-pri:#fff;--in:#738e9b;--bad:#a43042}"
+    "@media (prefers-color-scheme:dark){:root{--bg:#101d24;--card:#192c36;--fg:#e6f1f5;"
+    "--mut:#b2c8d1;--pri:#92cbe6;--on-pri:#102530;--in:#64808d;--bad:#ffa0ac}}"
+    "body{font-family:system-ui,sans-serif;max-width:26rem;margin:1.5rem auto;padding:0 1rem;"
+    "background:var(--bg);color:var(--fg)}header{display:flex;align-items:center;gap:0.75rem;"
+    "margin-top:1rem}header h1{margin:0;font-size:1.35rem}form{background:var(--card);"
+    "border-radius:16px;padding:0.5rem 1.25rem 1.25rem;margin-top:1rem}label{display:block;"
+    "margin-top:1rem;font-weight:600}input{width:100%;box-sizing:border-box;padding:0.6rem;"
+    "font-size:1rem;margin-top:0.3rem;border:1px solid var(--in);border-radius:10px;"
+    "background:var(--card);color:var(--fg)}input:focus{outline:2px solid var(--pri);"
+    "outline-offset:1px}input[aria-invalid]{border:2px solid var(--bad)}"
+    "button{margin-top:1.5rem;width:100%;padding:0.8rem;font-size:1rem;font-weight:600;"
+    "border:0;border-radius:10px;background:var(--pri);color:var(--on-pri)}"
+    "button:disabled{opacity:0.6}small{display:block;color:var(--mut);margin-top:0.3rem}"
+    ".err{color:var(--bad);font-weight:600}#m{margin-top:1rem;font-weight:600}"
+    "nav a{margin-right:0.8rem;color:var(--pri)}";
+
+const char* kMark =
+    R"svg(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true">
+<defs>
+<linearGradient id="pbg" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#1D78A8"/>
+<stop offset="1" stop-color="#0F4664"/>
+</linearGradient>
+</defs>
+<rect width="64" height="64" rx="15" fill="url(#pbg)"/>
+<mask id="pgap" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+<rect width="64" height="64" fill="#fff"/>
+<path d="M36 9 L23 36 H32 L28 55 L43 27 H34 Z" fill="#000" stroke="#000" stroke-width="6" stroke-linejoin="round"/>
+</mask>
+<g mask="url(#pgap)">
+<path d="M5 34 H30" fill="none" stroke="#92CBE6" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M34 34 H58" fill="none" stroke="#92CBE6" stroke-width="5.5" stroke-linecap="round"/>
+</g>
+<path d="M36 9 L23 36 H32 L28 55 L43 27 H34 Z" fill="#F1C677" stroke="#F1C677" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="51" cy="13" r="5.5" fill="#79DEB2"/>
+</svg>)svg";
 
 const char* kScript =
     "const f=document.getElementById('f'),m=document.getElementById('m'),b=f.querySelector('button');"
@@ -115,7 +145,7 @@ void handleRoot() {
   const PortalStrings& s = kPortalStrings[lang];
 
   String page;
-  page.reserve(6000);
+  page.reserve(8000);
   page += "<!doctype html><html lang=\"";
   page += kPortalLanguages[lang];
   page += "\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" "
@@ -133,9 +163,11 @@ void handleRoot() {
     page += kPortalLanguages[i];
     page += "</a>";
   }
-  page += "</nav><h1>";
+  page += "</nav><header>";
+  page += kMark;
+  page += "<h1>";
   page += s.title;
-  page += "</h1><form id=\"f\"><label for=\"ssid\">";
+  page += "</h1></header><form id=\"f\"><label for=\"ssid\">";
   page += s.wifiName;
   page += "</label><input id=\"ssid\" name=\"ssid\" list=\"nets\" maxlength=\"32\" "
           "autocomplete=\"off\" aria-describedby=\"h-ssid e-ssid\">";

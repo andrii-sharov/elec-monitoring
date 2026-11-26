@@ -12,6 +12,7 @@ export const uk: Dictionary = {
     },
   },
   email: {
+    linkHint: 'Якщо кнопка не працює, відкрийте це посилання:',
     footer: 'Якщо ви цього не запитували, просто проігноруйте цей лист.',
     verifyEmail: {
       subject: 'Підтвердіть електронну адресу',
@@ -614,7 +615,7 @@ export const uk: Dictionary = {
       views: { timeline: 'Стрічка', grid: 'Сітка', table: 'Таблиця' },
       days: 'Дні тижня',
       summary: 'Відключень {{outages}} · без світла {{duration}}',
-      empty: 'Цього тижня відключень не було',
+      empty: 'За цей період відключень не було',
       day: 'День',
       hour: 'Година',
       off: '{{duration}} без світла',

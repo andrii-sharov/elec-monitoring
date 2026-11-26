@@ -5,6 +5,7 @@ import { useFormatters } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { groupByDay, type Day } from '@/lib/week';
 import { OutageRail, OutageRow } from './OutageRow';
+import { EmptyState } from '@/components/Illustration';
 
 type Props = {
   days: Day[];
@@ -87,7 +88,9 @@ export function HistoryTimeline({
         </nav>
       ) : null}
       {filled.length === 0 ? (
-        <p className="text-muted-foreground">{t('app.history.empty')}</p>
+        <EmptyState illustration="historyEmpty">
+          <p>{t('app.history.empty')}</p>
+        </EmptyState>
       ) : (
         filled.map((day) => (
           <section

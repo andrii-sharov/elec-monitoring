@@ -163,6 +163,13 @@ only sends emails.
   disabled" notice.
 - Templates in all 3 languages. Choose the language using the recipient's
   profile preference or the default described in §9.
+- One branded layout (`server/src/email/templates.ts`, from
+  `assets/email/layout.html`): logo and app name on top, a white card, a
+  `#166088` button, the link written out under it, inbox preview text, a
+  dark version for mail apps that support it, and the footer under the
+  card. It is built from tables with inline styles. The logo is
+  `email-logo.png`, loaded from the client's public URL (the origin of the
+  email's link), because Gmail and Outlook drop SVG.
 
 ## 4. Device
 

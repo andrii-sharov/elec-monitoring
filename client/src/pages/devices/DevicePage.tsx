@@ -16,6 +16,7 @@ import { DeviceMembers } from './DeviceMembers';
 import { DeviceSettingsDialog } from './DeviceSettingsDialog';
 import { DeviceSetup } from './DeviceSetup';
 import { DeviceHistory } from './history/DeviceHistory';
+import { Illustration } from '@/components/Illustration';
 
 export function DevicePage() {
   const { t } = useTranslation();
@@ -63,6 +64,7 @@ function DeviceContent() {
     if (isApiError(device.error, 'not_found')) {
       return (
         <div className="flex flex-col items-start gap-3">
+          <Illustration name="notFound" className="w-44" />
           <h1 className="font-heading text-2xl font-semibold">{t('app.device.notFoundTitle')}</h1>
           <p className="text-muted-foreground">{t('app.device.notFoundBody')}</p>
         </div>
