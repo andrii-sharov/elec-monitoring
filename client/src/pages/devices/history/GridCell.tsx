@@ -24,6 +24,7 @@ type GridCellProps = {
   cols: number;
   focusable: boolean;
   onShowDay?: () => void;
+  fill?: 'bar' | 'tint';
   className?: string;
 };
 
@@ -44,6 +45,7 @@ export function GridCell({
   cols,
   focusable,
   onShowDay,
+  fill = 'bar',
   className,
 }: GridCellProps) {
   const { t } = useTranslation();
@@ -73,18 +75,26 @@ export function GridCell({
         className={cn(
           'relative flex h-8 w-full min-w-0 items-center justify-center overflow-hidden rounded-sm border outline-none focus-visible:ring-3 focus-visible:ring-ring/60',
           cell.future ? 'border-dashed border-border bg-transparent' : `border-border ${onTint}`,
+          fill === 'tint' && 'h-auto',
           current && 'ring-2 ring-primary',
           className,
         )}
       >
-        {cell.offMs > 0 ? (
+        {cell.offMs > 0 && fill === 'tint' ? (
+          <span
+            aria-hidden="true"
+            className="absolute inset-0 bg-status-offline"
+            style={{ opacity: 0.25 + share * 0.75 }}
+          />
+        ) : null}
+        {cell.offMs > 0 && fill === 'bar' ? (
           <span
             aria-hidden="true"
             className="absolute inset-x-0 bottom-0 bg-status-offline"
             style={{ height: `${Math.max(12, share * 100)}%` }}
           />
         ) : null}
-        {full ? (
+        {full && fill === 'bar' ? (
           <ZapOff aria-hidden="true" className="relative size-3.5 text-danger-foreground" />
         ) : null}
         {cell.blips > 0 ? (
@@ -171,7 +181,7 @@ export function gridKeyboard(event: KeyboardEvent<HTMLElement>, rows: number, co
     Math.min(rows - 1, Math.max(0, next[0])),
     Math.min(cols - 1, Math.max(0, next[1])),
   ];
-  const container = target.closest('table') ?? target.parentElement;
+  const container = target.closest('table, [data-grid]');
   const cell = container?.querySelector<HTMLElement>(`[data-row="${r}"][data-col="${c}"]`);
   if (!container || !cell) return;
   for (const other of container.querySelectorAll<HTMLElement>('[data-row]')) {

@@ -1,5 +1,5 @@
 import type { OutageItem } from '@elec/shared/api';
-import { ChevronLeft, ChevronRight, Grid3x3, List, RotateCw, Table2 } from 'lucide-react';
+import { Grid3x3, List, RotateCw, Table2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
@@ -12,10 +12,21 @@ import { useFormatters } from '@/lib/format';
 import { createPreference } from '@/lib/preference';
 import { useNow } from '@/lib/useNow';
 import { cn } from '@/lib/utils';
-import { addDays, hourCells, isWeekStart, weekDays, weekStart, type Day } from '@/lib/week';
+import {
+  containsToday,
+  GRID_MAX_DAYS,
+  monthChunks,
+  parseRange,
+  rangeParams,
+  todayIn,
+  type Range,
+} from '@/lib/period';
+import { addDays, daySummary, daysBetween, zonedTime, type Day, type LocalDate } from '@/lib/week';
 import { HistoryGrid } from './HistoryGrid';
+import { HistoryHeatmap } from './HistoryHeatmap';
 import { HistoryTable } from './HistoryTable';
 import { HistoryTimeline } from './HistoryTimeline';
+import { PeriodNav, PeriodSelect } from './PeriodControls';
 
 const views = ['timeline', 'grid', 'table'] as const;
 type View = (typeof views)[number];
@@ -28,29 +39,30 @@ const viewPreference = createPreference<View>({
   apply: () => {},
 });
 
-function useHistoryParams(current: string) {
+function useHistoryParams(today: LocalDate) {
   const [params, setParams] = useSearchParams();
   const [storedView, storeView] = viewPreference.use();
-  const week = params.get('week');
-  const monday = week && isWeekStart(week) && week < current ? week : current;
+  const range = parseRange(params, today);
   const view = views.find((choice) => choice === params.get('view')) ?? storedView;
-  const update = (key: string, value: string | null) =>
+  const update = (changes: Record<string, string | null>) =>
     setParams(
       (previous) => {
         const next = new URLSearchParams(previous);
-        if (value === null) next.delete(key);
-        else next.set(key, value);
+        for (const [key, value] of Object.entries(changes)) {
+          if (value === null) next.delete(key);
+          else next.set(key, value);
+        }
         return next;
       },
       { replace: true },
     );
   return {
-    monday,
+    range,
     view,
-    setWeek: (value: string) => update('week', value === current ? null : value),
+    setRange: (value: Range) => update(rangeParams(value, today)),
     setView: (value: View) => {
       storeView(value);
-      update('view', value);
+      update({ view: value });
     },
   };
 }
@@ -59,54 +71,31 @@ export function DeviceHistory({ deviceId }: { deviceId: string }) {
   const { t } = useTranslation();
   const format = useFormatters();
   const now = useNow(60_000);
-  const current = weekStart(now, format.timezone);
-  const { monday, view, setWeek, setView } = useHistoryParams(current);
-  const days = useMemo(() => weekDays(monday, format.timezone), [monday, format.timezone]);
-  const range = {
-    from: new Date(days[0]?.start ?? now).toISOString(),
-    to: new Date(days[6]?.end ?? now).toISOString(),
-  };
-  const live = monday === current;
-  const outages = useOutageRange(deviceId, range, live);
+  const today = todayIn(now, format.timezone);
+  const { range, view, setRange, setView } = useHistoryParams(today);
+  const days = useMemo(
+    () => daysBetween(range.from, range.to, format.timezone),
+    [range.from, range.to, format.timezone],
+  );
+  const toIso = (date: LocalDate) => new Date(zonedTime(date, 0, format.timezone)).toISOString();
+  const span = { from: toIso(range.from), to: toIso(addDays(range.to, 1)) };
+  const chunks = monthChunks(range).map((chunk) => ({
+    from: toIso(chunk.from),
+    to: toIso(addDays(chunk.to, 1)),
+  }));
+  const live = containsToday(range, today);
+  const outages = useOutageRange(deviceId, span, live, chunks);
   const [focusDay, setFocusDay] = useState<string | null>(null);
   const showDay = (date: string) => {
     setFocusDay(date);
     setView('timeline');
   };
+  const long = days.length > GRID_MAX_DAYS;
 
   return (
     <Tabs value={view} onValueChange={(value) => setView(value as View)} className="gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="icon-sm"
-            aria-label={t('app.history.previous')}
-            onClick={() => setWeek(addDays(monday, -7))}
-          >
-            <ChevronLeft aria-hidden="true" />
-          </Button>
-          <span
-            aria-live="polite"
-            className="min-w-36 text-center text-sm font-medium tabular-nums"
-          >
-            {format.days(monday, addDays(monday, 6))}
-          </span>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            aria-label={t('app.history.next')}
-            disabled={live}
-            onClick={() => setWeek(addDays(monday, 7))}
-          >
-            <ChevronRight aria-hidden="true" />
-          </Button>
-          {live ? null : (
-            <Button variant="ghost" size="sm" onClick={() => setWeek(current)}>
-              {t('app.history.current')}
-            </Button>
-          )}
-        </div>
+        <PeriodSelect range={range} today={today} onChange={setRange} />
         <TabsList variant="pill" aria-label={t('app.history.view')}>
           {views.map((choice) => {
             const Icon = viewIcons[choice];
@@ -119,6 +108,7 @@ export function DeviceHistory({ deviceId }: { deviceId: string }) {
           })}
         </TabsList>
       </div>
+      <PeriodNav range={range} today={today} onChange={setRange} />
       {outages.isPending ? (
         <output aria-label={t('app.common.loading')} className="flex flex-col gap-2">
           <Skeleton className="h-16" />
@@ -145,7 +135,16 @@ export function DeviceHistory({ deviceId }: { deviceId: string }) {
               {choice === 'timeline' ? (
                 <HistoryTimeline days={days} outages={outages.data} now={now} focusDay={focusDay} />
               ) : choice === 'grid' ? (
-                <HistoryGrid days={days} outages={outages.data} now={now} onShowDay={showDay} />
+                long ? (
+                  <HistoryHeatmap
+                    days={days}
+                    outages={outages.data}
+                    now={now}
+                    onShowDay={showDay}
+                  />
+                ) : (
+                  <HistoryGrid days={days} outages={outages.data} now={now} onShowDay={showDay} />
+                )
               ) : (
                 <HistoryTable outages={outages.data} />
               )}
@@ -161,7 +160,7 @@ function Summary({ days, outages, now }: { days: Day[]; outages: OutageItem[]; n
   const { t } = useTranslation();
   const format = useFormatters();
   const offMs = days
-    .flatMap((day) => hourCells(day, outages, now))
+    .map((day) => daySummary(day, outages, now))
     .reduce((total, cell) => total + cell.offMs, 0);
   const count = outages.filter((outage) => outage.type === 'OUTAGE').length;
   return (

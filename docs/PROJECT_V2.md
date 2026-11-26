@@ -716,11 +716,15 @@ Pages:
   outages (time before the oldest loaded outage is unknown while more
   pages exist). Below the hero, tabs (kept in `?tab=`): **History**,
   **Notifications** (channels for this device), **Members** (members &
-  invites), later **Stats**. History shows one Monday–Sunday week in the
-  user's timezone (`?week=`, previous / next / This week) in three views
-  (`?view=`, last choice remembered): **Timeline** grouped by day with day
-  chips, **Grid** of 7 days × 24 hours filled by the time without power,
-  and **Table** (start, end, duration, type, cause, kind). An open outage
+  invites), later **Stats**. History shows one period in the user's timezone: **Day · Week · Month ·
+  Year · Custom** (up to 366 days), kept in the URL (`?period=&from=&to=`;
+  the old `?week=` still opens that week), with previous / next and a
+  button back to the current period. Three views (`?view=`, last choice
+  remembered): **Timeline** grouped by day with day chips (up to 31 days),
+  **Grid** of days × 24 hours filled by the time without power (a calendar
+  heatmap of days for longer ranges), and **Table**. Ranges over 31 days
+  load month by month in parallel; only a range that includes today polls.
+  An open outage
   shows a live duration that ticks every second. Then stats (day / week / month),
   settings and their applied status, firmware version, update availability,
   Install button, automatic update setting, queued and running updates,

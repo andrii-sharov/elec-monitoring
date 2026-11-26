@@ -76,11 +76,20 @@ export function useOutages(id: string) {
   });
 }
 
-export function useOutageRange(id: string, range: OutageRange, live: boolean) {
+export function useOutageRange(
+  id: string,
+  range: OutageRange,
+  live: boolean,
+  chunks: OutageRange[] = [range],
+) {
   const { api } = useSession();
   return useQuery({
     queryKey: queryKeys.outageRange(id, range.from, range.to),
-    queryFn: () => getAllOutages(api, id, range),
+    queryFn: async () => {
+      const pages = await Promise.all(chunks.map((chunk) => getAllOutages(api, id, chunk)));
+      const unique = new Map(pages.flat().map((outage) => [outage.id, outage]));
+      return [...unique.values()].toSorted((a, b) => b.started_at.localeCompare(a.started_at));
+    },
     placeholderData: keepPreviousData,
     refetchInterval: live ? pollMs.device : false,
   });

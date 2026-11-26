@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { act } from 'react';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
@@ -95,13 +95,13 @@ test('week navigation moves the range and keeps it in the URL', async () => {
   await screen.findByText('No outages this week');
   await user.click(screen.getByRole('button', { name: 'Previous week' }));
   expect(await screen.findByText('9 – 15 Nov 2026')).toBeInTheDocument();
-  expect(router.state.location.search).toContain('week=2026-11-09');
+  expect(router.state.location.search).toContain('from=2026-11-09');
   await vi.waitFor(() =>
     expect(requests.at(-1)).toMatchObject({ from: '2026-11-08T22:00:00.000Z' }),
   );
   await user.click(screen.getByRole('button', { name: 'This week' }));
   expect(await screen.findByText('16 – 22 Nov 2026')).toBeInTheDocument();
-  expect(router.state.location.search).not.toContain('week=');
+  expect(router.state.location.search).not.toContain('from=');
 });
 
 test('a future or malformed week falls back to the current week', async () => {
@@ -173,4 +173,59 @@ test('the table lists outages and the choice is remembered', async () => {
   expect(rows).toHaveLength(3);
   expect(within(rows[1] as HTMLElement).getByText('2 h 15 min')).toBeInTheDocument();
   expect(within(rows[2] as HTMLElement).getByText('Power blip')).toBeInTheDocument();
+});
+
+test('the month period loads the whole local month', async () => {
+  const requests = serveOutages([]);
+  const { user, router } = renderRoute(`/devices/${id}`, { me: meFixture() });
+  await screen.findByText('No outages this week');
+  await user.click(screen.getByRole('button', { name: 'Month' }));
+  expect(await screen.findByText('November 2026')).toBeInTheDocument();
+  expect(router.state.location.search).toContain('period=month');
+  await vi.waitFor(() =>
+    expect(requests.at(-1)).toMatchObject({
+      from: '2026-10-31T22:00:00.000Z',
+      to: '2026-11-30T22:00:00.000Z',
+    }),
+  );
+  expect(screen.getByRole('button', { name: 'Next month' })).toBeDisabled();
+  await user.click(screen.getByRole('button', { name: 'Previous month' }));
+  expect(await screen.findByText('October 2026')).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'This month' }));
+  expect(await screen.findByText('November 2026')).toBeInTheDocument();
+});
+
+test('a year loads month by month and the grid becomes a calendar', async () => {
+  const requests = serveOutages([outageFixture()]);
+  renderRoute(`/devices/${id}?period=year&view=grid`, { me: meFixture() });
+  const calendar = await screen.findByRole('region', { name: 'Grid' });
+  expect(within(calendar).getAllByRole('button')).toHaveLength(365);
+  expect(
+    within(calendar).getByRole('button', { name: 'Sat 21 Nov · 2 h 15 min without power' }),
+  ).toBeInTheDocument();
+  expect(new Set(requests.map((r) => r.from)).size).toBe(12);
+  expect(screen.queryByRole('navigation', { name: 'Days of the week' })).toBeNull();
+});
+
+test('a custom range is picked with two dates', async () => {
+  serveOutages([]);
+  const { user, router } = renderRoute(`/devices/${id}`, { me: meFixture() });
+  await screen.findByText('No outages this week');
+  await user.click(screen.getByRole('button', { name: 'Custom' }));
+  const from = await screen.findByLabelText('From');
+  fireEvent.change(from, { target: { value: '2026-11-01' } });
+  fireEvent.change(screen.getByLabelText('To'), { target: { value: '2026-11-10' } });
+  await user.click(screen.getByRole('button', { name: 'Show' }));
+  expect(await screen.findByText('1 – 10 Nov 2026')).toBeInTheDocument();
+  expect(router.state.location.search).toContain('period=custom');
+  expect(router.state.location.search).toContain('to=2026-11-10');
+  expect(screen.getByRole('button', { name: 'Custom' })).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('the day period shows one row of hours', async () => {
+  serveOutages([outageFixture()]);
+  renderRoute(`/devices/${id}?period=day&view=grid`, { me: meFixture() });
+  const grid = await screen.findByRole('table', { name: 'Grid' });
+  expect(within(grid).getAllByRole('row')).toHaveLength(2);
+  expect(screen.getByText('Sat, 21 Nov 2026')).toBeInTheDocument();
 });

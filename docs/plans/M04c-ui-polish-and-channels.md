@@ -130,8 +130,9 @@ Ukrainian.
   keeps `?period=day|week|month|year|custom&from=YYYY-MM-DD[&to=YYYY-MM-DD]`.
   The old `?week=` keeps working.
 - Previous / next / Today move by the selected period. Custom opens a
-  two-month range calendar (Base UI `Popover` with a small calendar of our
-  own, no new dependency), with a maximum of 366 days.
+  popover with two native date fields (from, to), with a maximum of 366
+  days. Native fields work with the keyboard, screen readers and phone date
+  pickers without a new dependency.
 - Views per period:
 
   | Period        | Timeline       | Grid                                                            | Table |

@@ -127,3 +127,20 @@ test('finds outages and blips that touch an hour', async () => {
     'open',
   ]);
 });
+
+test('sums a whole day without power and its blips', async () => {
+  const { daySummary } = await import('./week.ts');
+  const day = weekDays('2026-11-23', kyiv)[0];
+  if (!day) throw new Error('no day');
+  const summary = daySummary(
+    day,
+    [
+      outageFixture({ started_at: '2026-11-22T21:00:00Z', ended_at: '2026-11-22T23:00:00Z' }),
+      outageFixture({ id: 'b', type: 'POWER_BLIP', started_at: '2026-11-23T08:00:00Z' }),
+    ],
+    Date.parse('2026-11-24T00:00:00Z'),
+  );
+  expect(summary.offMs).toBe(60 * 60_000);
+  expect(summary.blips).toBe(1);
+  expect(summary.future).toBe(false);
+});

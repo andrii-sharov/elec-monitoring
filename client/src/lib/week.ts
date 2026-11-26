@@ -79,7 +79,7 @@ export function addDays(date: LocalDate, days: number): LocalDate {
   return toDate(Date.UTC(year, month - 1, day) + days * dayMs);
 }
 
-function weekdayOf(date: LocalDate): number {
+export function weekdayOf(date: LocalDate): number {
   const { year, month, day } = parseDate(date);
   return (new Date(Date.UTC(year, month - 1, day)).getUTCDay() + 6) % 7;
 }
@@ -97,17 +97,27 @@ export function isWeekStart(value: string): boolean {
   );
 }
 
+export function diffDays(from: LocalDate, to: LocalDate): number {
+  return Math.round((Date.parse(to) - Date.parse(from)) / dayMs);
+}
+
+function buildDay(date: LocalDate, timezone: string): Day {
+  const start = zonedTime(date, 0, timezone);
+  const end = zonedTime(addDays(date, 1), 0, timezone);
+  const hours = Array.from({ length: 24 }, (_slot, hour) => ({
+    start: Math.max(start, zonedTime(date, hour, timezone)),
+    end: Math.min(end, hour === 23 ? end : zonedTime(date, hour + 1, timezone)),
+  }));
+  return { date, weekday: weekdayOf(date), start, end, hours };
+}
+
+export function daysBetween(from: LocalDate, to: LocalDate, timezone: string): Day[] {
+  const count = Math.max(0, diffDays(from, to) + 1);
+  return Array.from({ length: count }, (_day, index) => buildDay(addDays(from, index), timezone));
+}
+
 export function weekDays(monday: LocalDate, timezone: string): Day[] {
-  return Array.from({ length: 7 }, (_day, weekday) => {
-    const date = addDays(monday, weekday);
-    const start = zonedTime(date, 0, timezone);
-    const end = zonedTime(addDays(date, 1), 0, timezone);
-    const hours = Array.from({ length: 24 }, (_slot, hour) => ({
-      start: Math.max(start, zonedTime(date, hour, timezone)),
-      end: Math.min(end, hour === 23 ? end : zonedTime(date, hour + 1, timezone)),
-    }));
-    return { date, weekday, start, end, hours };
-  });
+  return daysBetween(monday, addDays(monday, 6), timezone);
 }
 
 function overlap(a: Slot, b: Slot): number {
@@ -154,4 +164,24 @@ export function outagesIn(slot: Slot, outages: OutageItem[], now: number): Outag
     const span = outageSlot(outage, now);
     return span.start < slot.end && (span.end > slot.start || span.start >= slot.start);
   });
+}
+
+export function daySummary(day: Day, outages: OutageItem[], now: number): HourCell {
+  const off = outages.filter((outage) => outage.type === 'OUTAGE').map((o) => outageSlot(o, now));
+  const blips = outages.filter(
+    (outage) =>
+      outage.type === 'POWER_BLIP' &&
+      Date.parse(outage.started_at) >= day.start &&
+      Date.parse(outage.started_at) < day.end,
+  ).length;
+  return {
+    start: day.start,
+    end: day.end,
+    offMs: Math.min(
+      day.end - day.start,
+      off.reduce((total, outage) => total + overlap(outage, day), 0),
+    ),
+    blips,
+    future: day.start >= now,
+  };
 }
