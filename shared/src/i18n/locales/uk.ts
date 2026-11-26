@@ -358,6 +358,26 @@ export const uk: Dictionary = {
       notAllowed: 'Прошивка працює лише на захищеній (HTTPS) сторінці.',
     },
     device: {
+      details: {
+        show: 'Показати деталі',
+        hide: 'Сховати деталі',
+        lastSeen: 'Останній зв’язок',
+        signal: 'Сигнал Wi-Fi',
+        dbm: '{{value}} дБм',
+        uptime: 'Час роботи',
+        resetReason: 'Останній перезапуск',
+        firmware: 'Прошивка',
+        settings: 'Налаштування на пристрої',
+        settingsApplied: 'Застосовано',
+      },
+      resetReason: {
+        POWER_ON: 'Увімкнення живлення',
+        BROWNOUT: 'Просідання живлення',
+        SOFTWARE: 'Програмний перезапуск',
+        WATCHDOG: 'Сторожовий таймер',
+        PANIC: 'Збій',
+        UNKNOWN: 'Невідомо',
+      },
       duration: {
         online: 'Світло є вже {{duration}}',
         offline: 'Немає зв’язку вже {{duration}}',

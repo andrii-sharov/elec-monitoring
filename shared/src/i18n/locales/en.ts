@@ -350,6 +350,26 @@ export const en = {
       notAllowed: 'Flashing works only on a secure (HTTPS) page.',
     },
     device: {
+      details: {
+        show: 'Show details',
+        hide: 'Hide details',
+        lastSeen: 'Last seen',
+        signal: 'Wi-Fi signal',
+        dbm: '{{value}} dBm',
+        uptime: 'Uptime',
+        resetReason: 'Last restart',
+        firmware: 'Firmware',
+        settings: 'Settings on device',
+        settingsApplied: 'Applied',
+      },
+      resetReason: {
+        POWER_ON: 'Power on',
+        BROWNOUT: 'Power dip',
+        SOFTWARE: 'Software restart',
+        WATCHDOG: 'Watchdog',
+        PANIC: 'Crash',
+        UNKNOWN: 'Unknown',
+      },
       duration: {
         online: 'Power on for {{duration}}',
         offline: 'No contact for {{duration}}',

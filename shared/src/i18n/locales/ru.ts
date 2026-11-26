@@ -363,6 +363,26 @@ export const ru: Dictionary = {
       notAllowed: 'Прошивка работает только на защищённой (HTTPS) странице.',
     },
     device: {
+      details: {
+        show: 'Показать детали',
+        hide: 'Скрыть детали',
+        lastSeen: 'Последняя связь',
+        signal: 'Сигнал Wi-Fi',
+        dbm: '{{value}} дБм',
+        uptime: 'Время работы',
+        resetReason: 'Последний перезапуск',
+        firmware: 'Прошивка',
+        settings: 'Настройки на устройстве',
+        settingsApplied: 'Применены',
+      },
+      resetReason: {
+        POWER_ON: 'Включение питания',
+        BROWNOUT: 'Просадка питания',
+        SOFTWARE: 'Программный перезапуск',
+        WATCHDOG: 'Сторожевой таймер',
+        PANIC: 'Сбой',
+        UNKNOWN: 'Неизвестно',
+      },
       duration: {
         online: 'Свет есть уже {{duration}}',
         offline: 'Нет связи уже {{duration}}',

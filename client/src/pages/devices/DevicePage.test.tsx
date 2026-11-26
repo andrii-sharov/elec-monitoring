@@ -25,6 +25,10 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+function detail(label: string): string | null | undefined {
+  return screen.getByText(label).nextElementSibling?.textContent;
+}
+
 test('an online device shows badge, since and signal', async () => {
   server.use(
     http.get(`${base}/api/v1/devices/${id}`, () =>
@@ -38,12 +42,20 @@ test('an online device shows badge, since and signal', async () => {
       ),
     ),
   );
-  renderRoute(`/devices/${id}`, { me: meFixture() });
+  const { user } = renderRoute(`/devices/${id}`, { me: meFixture() });
   expect(await screen.findByRole('heading', { name: /Home/ })).toBeInTheDocument();
   expect(screen.getByText('Online')).toBeInTheDocument();
   expect(screen.getByText(/since 21 Nov 18:42/)).toBeInTheDocument();
-  expect(screen.getByText(/-61 dBm/)).toBeInTheDocument();
-  expect(screen.getByText(/2 h 37 min/)).toBeInTheDocument();
+  expect(screen.queryByText('-61 dBm')).toBeNull();
+  await user.click(screen.getByRole('button', { name: 'Show details' }));
+  expect(detail('Wi-Fi signal')).toBe('-61 dBm');
+  expect(detail('Uptime')).toBe('2 h 37 min');
+  expect(detail('Last restart')).toBe('Power on');
+  expect(detail('Firmware')).toBe('2.0.0');
+  expect(detail('Settings on device')).toBe('Applied');
+  expect(localStorage.getItem('em.deviceDetails')).toBe('open');
+  await user.click(screen.getByRole('button', { name: 'Hide details' }));
+  expect(screen.queryByText('Wi-Fi signal')).toBeNull();
 });
 
 test('last seen and uptime tick every second while online', async () => {
@@ -58,12 +70,14 @@ test('last seen and uptime tick every second while online', async () => {
       ),
     ),
   );
+  localStorage.setItem('em.deviceDetails', 'open');
   renderRoute(`/devices/${id}`, { me: meFixture() });
-  expect(await screen.findByText('Last seen 21 Nov 20:41 · 10 s')).toBeInTheDocument();
-  expect(screen.getByText('Uptime 40 s')).toBeInTheDocument();
+  await screen.findByText('Last seen');
+  expect(detail('Last seen')).toBe('21 Nov 20:41 · 10 s');
+  expect(detail('Uptime')).toBe('40 s');
   await act(() => vi.advanceTimersByTimeAsync(1000));
-  expect(screen.getByText('Last seen 21 Nov 20:41 · 11 s')).toBeInTheDocument();
-  expect(screen.getByText('Uptime 41 s')).toBeInTheDocument();
+  expect(detail('Last seen')).toBe('21 Nov 20:41 · 11 s');
+  expect(detail('Uptime')).toBe('41 s');
 });
 
 test('an offline device keeps the last reported uptime', async () => {
@@ -78,8 +92,10 @@ test('an offline device keeps the last reported uptime', async () => {
       ),
     ),
   );
+  localStorage.setItem('em.deviceDetails', 'open');
   renderRoute(`/devices/${id}`, { me: meFixture() });
-  expect(await screen.findByText('Uptime 1 min')).toBeInTheDocument();
+  await screen.findByText('Uptime');
+  expect(detail('Uptime')).toBe('1 min');
 });
 
 test('an offline device shows the open outage start', async () => {

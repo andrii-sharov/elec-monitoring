@@ -23,7 +23,7 @@ export function SwitchboardDeviceHero({ device }: DeviceHeroProps) {
         </div>
       </div>
       <PowerStrip deviceId={device.id} />
-      <DeviceTelemetry device={device} className="sm:flex-row sm:flex-wrap sm:gap-x-4" />
+      <DeviceTelemetry device={device} />
     </header>
   );
 }
