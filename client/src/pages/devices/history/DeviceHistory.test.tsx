@@ -131,8 +131,8 @@ test('the grid shows time without power per hour', async () => {
   const { user } = renderRoute(`/devices/${id}`, { me: meFixture() });
   await screen.findByText('Power outage');
   await user.click(screen.getByRole('tab', { name: 'Grid' }));
-  const grid = await screen.findByRole('table', { name: 'Grid' });
-  expect(within(grid).getAllByRole('row')).toHaveLength(8);
+  const grid = await screen.findByRole('region', { name: 'Grid' });
+  expect(within(grid).getAllByRole('button')).toHaveLength(7 * 24);
   const cell = (name: string) => within(grid).getByRole('button', { name });
   expect(cell('Sat 21 18:00–19:00 · 18 min without power')).toBeInTheDocument();
   expect(cell('Sat 21 19:00–20:00 · 1 h without power')).toBeInTheDocument();
@@ -143,7 +143,7 @@ test('the grid shows time without power per hour', async () => {
 test('a grid cell opens a card with its outages and arrow keys move between cells', async () => {
   serveOutages([outageFixture()]);
   const { user } = renderRoute(`/devices/${id}?view=grid`, { me: meFixture() });
-  const grid = await screen.findByRole('table', { name: 'Grid' });
+  const grid = await screen.findByRole('region', { name: 'Grid' });
   const first = within(grid).getByRole('button', { name: /^Mon 16 00:00–01:00/ });
   expect(first).toHaveAttribute('tabindex', '0');
   first.focus();
@@ -225,7 +225,7 @@ test('a custom range is picked with two dates', async () => {
 test('the day period shows one row of hours', async () => {
   serveOutages([outageFixture()]);
   renderRoute(`/devices/${id}?period=day&view=grid`, { me: meFixture() });
-  const grid = await screen.findByRole('table', { name: 'Grid' });
-  expect(within(grid).getAllByRole('row')).toHaveLength(2);
+  const grid = await screen.findByRole('region', { name: 'Grid' });
+  expect(within(grid).getAllByRole('button')).toHaveLength(24);
   expect(screen.getByText('Sat, 21 Nov 2026')).toBeInTheDocument();
 });

@@ -1,6 +1,6 @@
 import type { OutageItem } from '@elec/shared/api';
 import { ZapOff } from 'lucide-react';
-import type { CSSProperties, ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormatters } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -35,63 +35,54 @@ export function HistoryGrid({ days, outages, now, onShowDay }: Props) {
   const format = useFormatters();
   return (
     <div className="flex flex-col gap-3">
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
-        <table
-          aria-label={t('app.history.views.grid')}
-          className="w-full min-w-176 border-separate border-spacing-0 text-xs"
-        >
-          <thead>
-            <tr>
-              <th
-                scope="col"
-                className="sticky left-0 z-10 bg-card px-2 py-1.5 text-left font-medium text-muted-foreground"
-              >
-                {t('app.history.day')}
-              </th>
-              {hours.map((hour) => (
-                <th
-                  key={hour}
-                  scope="col"
-                  className="px-0.5 py-1.5 text-center font-normal text-muted-foreground tabular-nums"
-                >
-                  {hour}
-                </th>
+      <section
+        data-grid
+        data-motion="enter"
+        aria-label={t('app.history.views.grid')}
+        className="grid auto-cols-[minmax(0,1fr)] grid-flow-col grid-cols-[auto] grid-rows-[auto_repeat(24,1.25rem)] gap-0.5 rounded-lg border border-border bg-card p-2 text-xs sm:grid-flow-row sm:grid-cols-[auto_repeat(24,minmax(0,1fr))] sm:grid-rows-none"
+      >
+        <span aria-hidden="true" />
+        {hours.map((hour, index) => (
+          <span
+            key={hour}
+            aria-hidden="true"
+            className={cn(
+              'flex items-center justify-end pr-1 text-muted-foreground tabular-nums sm:justify-center sm:pr-0 sm:pb-1',
+              index % 3 !== 0 && 'sm:max-lg:invisible',
+            )}
+          >
+            {hour}
+          </span>
+        ))}
+        {days.map((day, index) => {
+          const weekday = format.day(day.date, { weekday: 'short', day: 'numeric' });
+          return (
+            <Fragment key={day.date}>
+              <span className="flex flex-col items-center justify-end pb-1 leading-tight font-medium capitalize sm:flex-row sm:justify-start sm:pr-2 sm:pb-0 sm:whitespace-nowrap">
+                <span className="sm:hidden">{format.day(day.date, { weekday: 'narrow' })}</span>
+                <span className="sm:hidden">{format.day(day.date, { day: 'numeric' })}</span>
+                <span className="hidden sm:inline">{weekday}</span>
+              </span>
+              {hourCells(day, outages, now).map((cell, hour) => (
+                <GridCell
+                  key={hours[hour]}
+                  cell={cell}
+                  now={now}
+                  outages={outages}
+                  row={index}
+                  col={hour}
+                  rows={days.length}
+                  cols={24}
+                  focusable={index === 0 && hour === 0}
+                  onShowDay={onShowDay ? () => onShowDay(day.date) : undefined}
+                  label={`${weekday} ${hours[hour]}:00–${hour === 23 ? '24' : hours[hour + 1]}:00`}
+                  className={cn('h-full sm:h-8', days.length === 1 && 'sm:h-14')}
+                />
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {days.map((day, index) => {
-              const weekday = format.day(day.date, { weekday: 'short', day: 'numeric' });
-              return (
-                <tr key={day.date} data-motion="enter" style={{ '--i': index } as CSSProperties}>
-                  <th
-                    scope="row"
-                    className="sticky left-0 z-10 bg-card px-2 text-left font-medium whitespace-nowrap capitalize"
-                  >
-                    {weekday}
-                  </th>
-                  {hourCells(day, outages, now).map((cell, hour) => (
-                    <td key={hours[hour]} className="p-0.5">
-                      <GridCell
-                        cell={cell}
-                        now={now}
-                        outages={outages}
-                        row={index}
-                        col={hour}
-                        rows={days.length}
-                        cols={24}
-                        focusable={index === 0 && hour === 0}
-                        onShowDay={onShowDay ? () => onShowDay(day.date) : undefined}
-                        label={`${weekday} ${hours[hour]}:00–${hour === 23 ? '24' : hours[hour + 1]}:00`}
-                      />
-                    </td>
-                  ))}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+            </Fragment>
+          );
+        })}
+      </section>
       <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground">
         <li className="flex items-center gap-2">
           <Swatch className={onTint} />

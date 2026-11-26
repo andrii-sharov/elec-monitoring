@@ -73,9 +73,8 @@ export function GridCell({
         onKeyDown={(event) => gridKeyboard(event, rows, cols)}
         aria-label={text}
         className={cn(
-          'relative flex h-8 w-full min-w-0 items-center justify-center overflow-hidden rounded-sm border outline-none focus-visible:ring-3 focus-visible:ring-ring/60',
+          'relative flex w-full min-w-0 items-center justify-center overflow-hidden rounded-sm border outline-none focus-visible:ring-3 focus-visible:ring-ring/60',
           cell.future ? 'border-dashed border-border bg-transparent' : `border-border ${onTint}`,
-          fill === 'tint' && 'h-auto',
           current && 'ring-2 ring-primary',
           className,
         )}
