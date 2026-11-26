@@ -63,16 +63,22 @@ developer machine. Only the public key is committed.
    `app.bin` at `0x10000`. It attaches six assets
    (`elec-fw-<version>-<env>-{app.bin,factory.bin,app.sig}`) to a draft
    GitHub Release.
-2. Download them: `gh release download fw-v2.0.0 -D /tmp/fw-2.0.0`.
-3. From the repo root, with the environment's `server/.env`:
+2. The same run then publishes the release to **staging**
+   (`.github/workflows/firmware-publish.yml`). It runs in the GitHub
+   environment `staging` and uses its secrets: `DATABASE_URL`,
+   `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (and an optional `FIRMWARE_BUCKET`
+   variable, default `firmware`). Re-running is safe: an existing identical
+   version is left as it is, and a different image under the same version
+   fails. Production publishing is added at launch (M12), as a second call
+   of the same workflow behind a required reviewer.
 
-   ```sh
-   npm run firmware:release -w server -- /tmp/fw-2.0.0 --version 2.0.0 --env staging
-   npm run firmware:release -w server -- /tmp/fw-2.0.0 --version 2.0.0 --env staging --publish
-   ```
+To publish by hand instead (for example to a local server), download the
+assets and run the script from the repo root with that environment's
+`server/.env`:
 
-   The first command uploads the files and adds a draft release. The second
-   publishes it, so the Flash firmware page offers it. Repeat with
-   `--env production` and the production `.env`.
+```sh
+gh release download fw-v2.0.0 -D /tmp/fw-2.0.0
+npm run firmware:release -w server -- /tmp/fw-2.0.0 --version 2.0.0 --env staging --publish
+```
 
 `scripts/release.test.sh` tests the signing and verify scripts.

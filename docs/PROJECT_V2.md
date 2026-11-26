@@ -331,9 +331,11 @@ firmware releases.
 - **Releases.** A `fw-v<MAJOR.MINOR.PATCH>` tag runs a workflow that builds
   the staging and production images, signs them, checks each signature
   against the committed public key and attaches them to a draft GitHub
-  Release. A server script, run once per environment, verifies the files,
-  uploads them and adds a draft `firmware_release` row, or publishes an
-  existing draft. `version_code = major × 1 000 000 + minor × 1 000 + patch`.
+  Release. The same workflow then runs the server script for staging (the
+  GitHub environment `staging` holds the database and storage secrets).
+  The script verifies the files, uploads them and publishes the
+  `firmware_release` row; it can also be run by hand. Production
+  publishing joins at launch (M12), behind a required reviewer. `version_code = major × 1 000 000 + minor × 1 000 + patch`.
   With one board type, every published `STABLE` release with a higher
   `version_code` is compatible.
 
@@ -970,8 +972,9 @@ own host and Elastic IP.
 - Firmware: CI runs the native unit tests, builds the staging and
   production images, tests the signing scripts and checks that the
   generated setup portal strings are up to date. A `fw-v*` tag builds, signs and attaches a draft
-  GitHub Release (see Firmware distribution in §4). Publishing to an
-  environment is the `firmware:release` server script.
+  GitHub Release, then publishes it to staging with the
+  `firmware:release` server script (see Firmware distribution in §4).
+  Production publishing is added in M12.
 - Keep deployment credentials in CI or provider secrets. Set the API base
   URL per Vercel environment. Browser builds contain public config only.
 

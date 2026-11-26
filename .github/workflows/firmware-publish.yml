@@ -1,0 +1,43 @@
+name: Firmware publish
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: firmware-${{ inputs.version }}
+          path: ${{ runner.temp }}/release
+      - name: Upload and publish
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          FIRMWARE_BUCKET: ${{ vars.FIRMWARE_BUCKET || 'firmware' }}
+          FIRMWARE_STORE: supabase
+          RELEASE_DIR: ${{ runner.temp }}/release
+          VERSION: ${{ inputs.version }}
+          TARGET: ${{ inputs.environment }}
+        run: >-
+          npm run firmware:release -w server --
+          "$RELEASE_DIR" --version "$VERSION" --env "$TARGET" --publish

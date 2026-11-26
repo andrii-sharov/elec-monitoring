@@ -10,6 +10,8 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v5
       - name: Version from tag
@@ -55,3 +57,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
         run: gh release create "$GITHUB_REF_NAME" --draft --title "Firmware $VERSION" "$RUNNER_TEMP"/release/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ steps.version.outputs.version }}
+          path: ${{ runner.temp }}/release/
+          if-no-files-found: error
+
+  staging:
+    needs: release
+    uses: ./.github/workflows/firmware-publish.yml
+    with:
+      environment: staging
+      version: ${{ needs.release.outputs.version }}
+    secrets: inherit
