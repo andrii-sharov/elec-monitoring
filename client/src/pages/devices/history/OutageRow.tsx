@@ -2,6 +2,7 @@ import type { OutageItem } from '@elec/shared/api';
 import { PlugZap, Zap } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
+import { OutageTags } from '@/components/OutageTags';
 import { useLiveDuration } from '@/components/StateDuration';
 import { useFormatters } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -54,14 +55,13 @@ export function OutageRow({ outage, index }: { outage: OutageItem; index: number
             ? format.range(outage.started_at, outage.ended_at)
             : t('app.outage.ongoingSince', { moment: format.moment(outage.started_at) })}
         </span>
-        <span className="flex flex-wrap gap-x-3 text-sm text-muted-foreground">
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-muted-foreground">
           {outage.duration_s === null ? (
             <LiveDuration since={outage.started_at} />
           ) : (
             <span>{format.duration(outage.duration_s)}</span>
           )}
-          {outage.cause ? <span>{t(`app.outage.cause.${outage.cause}`)}</span> : null}
-          {outage.kind ? <span>{t(`app.outage.kind.${outage.kind}`)}</span> : null}
+          <OutageTags outage={outage} showType={false} />
         </span>
       </div>
     </li>

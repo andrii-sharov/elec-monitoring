@@ -537,6 +537,7 @@ export const en = {
         future: 'Not yet',
       },
       columns: {
+        details: 'Details',
         start: 'Start',
         end: 'End',
         duration: 'Duration',

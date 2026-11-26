@@ -550,6 +550,7 @@ export const ru: Dictionary = {
         future: 'Ещё не наступило',
       },
       columns: {
+        details: 'Детали',
         start: 'Начало',
         end: 'Конец',
         duration: 'Длительность',

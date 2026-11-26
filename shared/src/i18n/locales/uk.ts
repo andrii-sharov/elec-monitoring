@@ -546,6 +546,7 @@ export const uk: Dictionary = {
         future: 'Ще не настало',
       },
       columns: {
+        details: 'Деталі',
         start: 'Початок',
         end: 'Кінець',
         duration: 'Тривалість',

@@ -1,12 +1,13 @@
 import type { OutageItem } from '@elec/shared/api';
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
+import { OutageTags } from '@/components/OutageTags';
 import { Badge } from '@/components/ui/badge';
 import { useFormatters } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { LiveDuration } from './OutageRow';
 
-const columns = ['start', 'end', 'duration', 'type', 'cause', 'kind'] as const;
+const columns = ['start', 'end', 'duration', 'details'] as const;
 
 export function HistoryTable({ outages }: { outages: OutageItem[] }) {
   const { t } = useTranslation();
@@ -16,7 +17,7 @@ export function HistoryTable({ outages }: { outages: OutageItem[] }) {
   }
   return (
     <div className="overflow-x-auto rounded-lg border border-border bg-card">
-      <table className="w-full min-w-xl text-sm">
+      <table className="w-full min-w-lg text-sm">
         <thead className="border-b border-border text-left text-muted-foreground">
           <tr>
             {columns.map((column) => (
@@ -59,14 +60,8 @@ export function HistoryTable({ outages }: { outages: OutageItem[] }) {
                     format.duration(outage.duration_s)
                   )}
                 </td>
-                <td className={cn('px-3 py-2', outage.type === 'POWER_BLIP' && 'text-warning')}>
-                  {t(`app.outage.type.${outage.type}`)}
-                </td>
                 <td className="px-3 py-2">
-                  {outage.cause ? t(`app.outage.cause.${outage.cause}`) : '—'}
-                </td>
-                <td className="px-3 py-2">
-                  {outage.kind ? t(`app.outage.kind.${outage.kind}`) : '—'}
+                  <OutageTags outage={outage} />
                 </td>
               </tr>
             );
