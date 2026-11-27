@@ -1,5 +1,6 @@
 import { Tabs as TabsPrimitive } from '@base-ui/react/tabs';
 import { cn } from 'cn';
+import { useEffect, useRef } from 'react';
 
 type Variant = 'line' | 'pill';
 
@@ -31,13 +32,26 @@ function TabsList({
   children,
   ...props
 }: TabsPrimitive.List.Props & { variant?: Variant }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const list = ref.current;
+    if (!list || variant !== 'line') return;
+    const reveal = () =>
+      list
+        .querySelector('[data-active]')
+        ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    const changed = new MutationObserver(reveal);
+    changed.observe(list, { subtree: true, attributeFilter: ['data-active'] });
+    return () => changed.disconnect();
+  }, [variant]);
   return (
     <TabsPrimitive.List
+      ref={ref}
       data-slot="tabs-list"
       data-variant={variant}
       className={cn(
         variant === 'line'
-          ? 'relative z-0 flex items-center gap-1 overflow-x-auto border-b border-border'
+          ? 'no-scrollbar relative z-0 flex items-center gap-1 overflow-x-auto border-b border-border'
           : pillListClassName,
         className,
       )}
@@ -62,7 +76,7 @@ function TabsTab({ className, ...props }: TabsPrimitive.Tab.Props) {
       className={cn(
         tabClassName,
         'in-data-[variant=pill]:min-h-10 in-data-[variant=pill]:py-1.5 compact:in-data-[variant=pill]:min-h-0',
-        'max-sm:in-data-[variant=line]:flex-1 max-sm:in-data-[variant=line]:flex-col max-sm:in-data-[variant=line]:gap-1 max-sm:in-data-[variant=line]:px-1 max-sm:in-data-[variant=line]:text-xs max-sm:in-data-[variant=line]:text-center max-sm:in-data-[variant=line]:whitespace-normal',
+        'max-sm:in-data-[variant=line]:px-3',
         className,
       )}
       {...props}

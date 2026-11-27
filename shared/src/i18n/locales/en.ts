@@ -466,8 +466,8 @@ export const en = {
         label: 'Account sections',
         profile: 'Profile',
         appearance: 'Appearance',
-        security: 'Sign-in & security',
-        danger: 'Danger zone',
+        security: 'Security',
+        danger: 'Delete account',
       },
       identifiers: {
         title: 'Email and phone',

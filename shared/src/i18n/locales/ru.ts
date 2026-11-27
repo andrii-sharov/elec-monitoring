@@ -189,7 +189,7 @@ export const ru: Dictionary = {
     },
     theme: {
       label: 'Тема',
-      system: 'Как в системе',
+      system: 'Системная',
       light: 'Светлая',
       dark: 'Тёмная',
     },
@@ -486,8 +486,8 @@ export const ru: Dictionary = {
         label: 'Разделы аккаунта',
         profile: 'Профиль',
         appearance: 'Внешний вид',
-        security: 'Вход и безопасность',
-        danger: 'Удаление аккаунта',
+        security: 'Безопасность',
+        danger: 'Удаление',
       },
       identifiers: {
         title: 'Почта и телефон',

@@ -189,7 +189,7 @@ export const uk: Dictionary = {
     },
     theme: {
       label: 'Тема',
-      system: 'Як у системі',
+      system: 'Системна',
       light: 'Світла',
       dark: 'Темна',
     },
@@ -485,8 +485,8 @@ export const uk: Dictionary = {
         label: 'Розділи облікового запису',
         profile: 'Профіль',
         appearance: 'Вигляд',
-        security: 'Вхід і безпека',
-        danger: 'Видалення облікового запису',
+        security: 'Безпека',
+        danger: 'Видалення',
       },
       identifiers: {
         title: 'Пошта й телефон',

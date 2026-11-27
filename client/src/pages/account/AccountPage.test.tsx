@@ -248,8 +248,8 @@ test('tabs split the account page and keep the choice in the URL', async () => {
   const { user, router } = await renderAccount();
   expect(screen.getByRole('tab', { name: 'Profile' })).toHaveAttribute('aria-selected', 'true');
   expect(screen.queryByRole('button', { name: 'Log out everywhere' })).toBeNull();
-  await user.click(screen.getByRole('tab', { name: 'Sign-in & security' }));
+  await user.click(screen.getByRole('tab', { name: 'Security' }));
   expect(router.state.location.search).toBe('?tab=security');
-  await user.click(screen.getByRole('tab', { name: 'Danger zone' }));
+  await user.click(screen.getByRole('tab', { name: 'Delete account' }));
   expect(await screen.findByRole('button', { name: 'Delete account' })).toBeInTheDocument();
 });

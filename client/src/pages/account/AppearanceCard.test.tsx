@@ -57,3 +57,17 @@ test('the profile form has no theme field and Save waits for a profile change', 
   await user.type(within(profile).getByRole('textbox', { name: 'Name' }), 'ny');
   expect(save).toBeEnabled();
 });
+
+test('the theme picker splits evenly with short labels on phones', async () => {
+  await renderAccount();
+  const theme = screen.getByRole('radiogroup', { name: 'Theme' });
+  expect(theme).toHaveClass('max-sm:grid', 'max-sm:grid-cols-3');
+  const system = within(theme).getByRole('radio', { name: 'System' });
+  expect(system).toHaveClass('max-sm:flex-col');
+});
+
+test('account tabs use short labels', async () => {
+  await renderAccount();
+  expect(screen.getByRole('tab', { name: 'Security' })).toBeInTheDocument();
+  expect(screen.getByRole('tab', { name: 'Delete account' })).toBeInTheDocument();
+});

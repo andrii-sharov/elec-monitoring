@@ -14,7 +14,7 @@ export function ThemeControl() {
     <div
       role="radiogroup"
       aria-label={t('app.theme.label')}
-      className="inline-flex self-start rounded-lg bg-secondary p-1 max-sm:flex max-sm:self-stretch"
+      className="inline-flex self-start rounded-lg bg-secondary p-1 max-sm:grid max-sm:grid-cols-3 max-sm:self-stretch"
     >
       {themeChoices.map((choice) => {
         const Icon = icons[choice];
@@ -24,7 +24,7 @@ export function ThemeControl() {
             type="button"
             {...itemProps(choice)}
             className={cn(
-              'flex min-h-10 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm max-sm:flex-1 compact:min-h-0 transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none',
+              'flex min-h-10 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm max-sm:min-h-14 max-sm:flex-col max-sm:gap-1 max-sm:px-1 max-sm:text-xs compact:min-h-0 transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none',
               choice === theme
                 ? 'bg-surface font-medium text-foreground shadow-sm'
                 : 'text-secondary-foreground hover:bg-surface/50',
