@@ -306,3 +306,25 @@ test('on a wide screen a month keeps the hour grid', async () => {
   const grid = await screen.findByRole('region', { name: 'Grid' });
   expect(within(grid).getAllByRole('button')).toHaveLength(30 * 24);
 });
+
+test('on a phone a custom range opens as a sheet with stacked dates', async () => {
+  const original = window.matchMedia;
+  phoneScreen();
+  try {
+    serveOutages([]);
+    const { user, router } = renderRoute(`/devices/${id}`, { me: meFixture() });
+    await screen.findByText('No outages in this period');
+    await user.click(screen.getByRole('button', { name: 'Custom' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Choose a date range' });
+    expect(sheet.closest('[data-slot="dialog-content"]') ?? sheet).toHaveAttribute(
+      'data-slot',
+      'dialog-content',
+    );
+    fireEvent.change(within(sheet).getByLabelText('From'), { target: { value: '2026-11-01' } });
+    fireEvent.change(within(sheet).getByLabelText('To'), { target: { value: '2026-11-10' } });
+    await user.click(within(sheet).getByRole('button', { name: 'Show' }));
+    expect(router.state.location.search).toContain('to=2026-11-10');
+  } finally {
+    vi.stubGlobal('matchMedia', original);
+  }
+});

@@ -1,7 +1,8 @@
 import { CalendarRange, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -16,6 +17,7 @@ import {
   type Period,
   type Range,
 } from '@/lib/period';
+import { useMediaQuery } from '@/lib/useMediaQuery';
 import { cn } from '@/lib/utils';
 import { addDays, diffDays, type LocalDate } from '@/lib/week';
 
@@ -40,9 +42,13 @@ function useRangeLabel(range: Range): string {
   }
 }
 
-function CustomRange({ range, today, onChange }: Props) {
+function RangeForm({
+  range,
+  today,
+  onChange,
+  title,
+}: Props & { title: (text: string) => ReactNode }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
   const [from, setFrom] = useState(range.from);
   const [to, setTo] = useState(range.to > today ? today : range.to);
   const tooLong = diffDays(from, to) + 1 > MAX_CUSTOM_DAYS;
@@ -52,48 +58,87 @@ function CustomRange({ range, today, onChange }: Props) {
     event.preventDefault();
     if (invalid) return;
     onChange({ period: 'custom', from, to });
-    setOpen(false);
   }
 
   return (
+    <form onSubmit={submit} className="flex flex-col gap-3">
+      {title(t('app.history.custom.title'))}
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="flex min-w-0 flex-col gap-1">
+          <Label htmlFor="history-from">{t('app.history.custom.from')}</Label>
+          <Input
+            id="history-from"
+            type="date"
+            value={from}
+            max={today}
+            onChange={(event) => setFrom(event.target.value)}
+          />
+        </div>
+        <div className="flex min-w-0 flex-col gap-1">
+          <Label htmlFor="history-to">{t('app.history.custom.to')}</Label>
+          <Input
+            id="history-to"
+            type="date"
+            value={to}
+            min={from}
+            max={addDays(from, MAX_CUSTOM_DAYS - 1)}
+            onChange={(event) => setTo(event.target.value)}
+          />
+        </div>
+      </div>
+      <p className={cn('text-xs', tooLong ? 'text-danger' : 'text-muted-foreground')}>
+        {t('app.history.custom.hint', { days: MAX_CUSTOM_DAYS })}
+      </p>
+      <Button type="submit" size="sm" disabled={invalid}>
+        {t('app.history.custom.apply')}
+      </Button>
+    </form>
+  );
+}
+
+function CustomRange({ range, today, onChange }: Props) {
+  const { t } = useTranslation();
+  const phone = useMediaQuery('(width < 40rem)');
+  const [open, setOpen] = useState(false);
+  const choose = (next: Range) => {
+    onChange(next);
+    setOpen(false);
+  };
+  const trigger = (
+    <>
+      <CalendarRange aria-hidden="true" />
+      <span className="max-sm:sr-only">{t('app.history.periods.custom')}</span>
+    </>
+  );
+  if (phone) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger render={<Segment aria-pressed={range.period === 'custom'} />}>
+          {trigger}
+        </DialogTrigger>
+        <DialogContent>
+          <RangeForm
+            range={range}
+            today={today}
+            onChange={choose}
+            title={(text) => <DialogTitle>{text}</DialogTitle>}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+  return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger render={<Segment aria-pressed={range.period === 'custom'} />}>
-        <CalendarRange aria-hidden="true" />
-        <span className="max-sm:sr-only">{t('app.history.periods.custom')}</span>
+        {trigger}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72">
-        <form onSubmit={submit} className="flex flex-col gap-3">
-          <p className="font-medium">{t('app.history.custom.title')}</p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="history-from">{t('app.history.custom.from')}</Label>
-              <Input
-                id="history-from"
-                type="date"
-                value={from}
-                max={today}
-                onChange={(event) => setFrom(event.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="history-to">{t('app.history.custom.to')}</Label>
-              <Input
-                id="history-to"
-                type="date"
-                value={to}
-                min={from}
-                max={addDays(from, MAX_CUSTOM_DAYS - 1)}
-                onChange={(event) => setTo(event.target.value)}
-              />
-            </div>
-          </div>
-          <p className={cn('text-xs', tooLong ? 'text-danger' : 'text-muted-foreground')}>
-            {t('app.history.custom.hint', { days: MAX_CUSTOM_DAYS })}
-          </p>
-          <Button type="submit" size="sm" disabled={invalid}>
-            {t('app.history.custom.apply')}
-          </Button>
-        </form>
+        <RangeForm
+          range={range}
+          today={today}
+          onChange={choose}
+          title={(text) => <p className="font-medium">{text}</p>}
+        />
       </PopoverContent>
     </Popover>
   );
