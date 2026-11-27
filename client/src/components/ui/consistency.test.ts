@@ -7,6 +7,7 @@ const uiDir = join(root, 'components', 'ui');
 
 const handRolled: [string, RegExp][] = [
   ['Base UI primitive import', /from ['"]@base-ui\/react/],
+  ['Recharts import', /from ['"]recharts['"]/],
   ['raw <select>', /<select[\s>]/],
   ['raw <input>', /<input[\s>]/],
   ['raw <textarea>', /<textarea[\s>]/],
