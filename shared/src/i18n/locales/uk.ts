@@ -798,11 +798,7 @@ export const uk: Dictionary = {
     },
     outage: {
       type: { OUTAGE: 'Відключення', POWER_BLIP: 'Збій живлення' },
-      cause: {
-        POWER: 'Імовірно, зникало світло',
-        NETWORK: 'Імовірний збій мережі',
-        UNKNOWN: 'Причина невідома',
-      },
+      cause: { POWER: 'Живлення', NETWORK: 'Мережа', UNKNOWN: 'Причина невідома' },
       kind: { SHORT: 'Коротке', LONG: 'Тривале' },
       ongoingSince: 'Триває з {{moment}}',
       empty: 'Відключень ще не було',

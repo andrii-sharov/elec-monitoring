@@ -798,11 +798,7 @@ export const ru: Dictionary = {
     },
     outage: {
       type: { OUTAGE: 'Отключение', POWER_BLIP: 'Сбой питания' },
-      cause: {
-        POWER: 'Вероятно, пропадал свет',
-        NETWORK: 'Вероятный сбой сети',
-        UNKNOWN: 'Причина неизвестна',
-      },
+      cause: { POWER: 'Питание', NETWORK: 'Сеть', UNKNOWN: 'Причина неизвестна' },
       kind: { SHORT: 'Короткое', LONG: 'Длительное' },
       ongoingSince: 'Длится с {{moment}}',
       empty: 'Отключений ещё не было',
