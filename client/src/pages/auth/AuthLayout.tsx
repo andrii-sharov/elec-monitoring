@@ -17,7 +17,7 @@ export function AuthLayout({ title, description, children, footer }: AuthLayoutP
   const { t } = useTranslation();
   const wide = useMediaQuery('(min-width: 64rem)');
   return (
-    <main className="flex min-h-svh items-center justify-center gap-12 p-6">
+    <main className="flex min-h-svh items-center justify-center gap-12 px-4 pt-20 pb-6 sm:p-6">
       <div className="absolute top-4 right-4">
         <LanguageSwitcher />
       </div>

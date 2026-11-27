@@ -711,6 +711,12 @@ language switcher shows only on signed-out pages; signed-in users change
 language in Account. Route changes crossfade with the View Transitions
 API where the browser supports it.
 
+Phones and tablets get the touch tier from [theme.md](theme.md#touch-tier):
+below 768 px wide or on a touch-first device, controls are at least 44 px
+tall (40 px for small ones), inputs use 16 px text so iOS doesn't zoom,
+and small text steps up to 13 and 15 px. Below 640 px, dialogs open as
+bottom sheets. Desktops with a mouse keep the compact sizes.
+
 Polling pauses in hidden tabs: devices list every 30 s, device page every
 15 s, add-device wizard every 3 s while the device is `PENDING`, Telegram
 connect every 3 s until a new channel appears or the link expires.
@@ -795,7 +801,14 @@ Pages:
   error, time; load more; redeliver for `SENT` and `FAILED` while the
   webhook is on). The signing secret is shown once, in a dialog, after
   create or a new secret, and the client doesn't store it. After create the
-  device picker opens for the new webhook.
+  device picker opens for the new webhook. The add form, the secret dialog
+  (in a new tab, so the secret stays on screen) and an expanded webhook
+  row link to the webhook guide.
+- **Webhook guide** (`/notifications/webhooks/guide`, signed in) — the
+  setup steps in order (receiver, add, save the signing secret, check the
+  signature, answer within 10 s, send a test), Node.js and Python samples
+  that check `X-Elec-Signature`, and a reference of the headers and a
+  `device.offline` body (§7 Webhooks, A §8).
 - **API docs** — Swagger UI backed by the generated OpenAPI document.
 - **Account** — tabs kept in `?tab=`: Profile (name, timezone, language),
   Appearance, Sign-in & security (emails and phones, linked Google,

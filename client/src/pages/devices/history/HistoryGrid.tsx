@@ -39,7 +39,7 @@ export function HistoryGrid({ days, outages, now, onShowDay }: Props) {
         data-grid
         data-motion="enter"
         aria-label={t('app.history.views.grid')}
-        className="grid auto-cols-[minmax(0,1fr)] grid-flow-col grid-cols-[auto] grid-rows-[auto_repeat(24,1.25rem)] gap-0.5 rounded-lg border border-border bg-card p-2 text-xs sm:grid-flow-row sm:grid-cols-[auto_repeat(24,minmax(0,1fr))] sm:grid-rows-none"
+        className="grid auto-cols-[minmax(0,1fr)] grid-flow-col grid-cols-[auto] grid-rows-[auto_repeat(24,1.5rem)] gap-0.5 rounded-lg border border-border bg-card p-2 text-xs sm:grid-flow-row sm:grid-cols-[auto_repeat(24,minmax(0,1fr))] sm:grid-rows-none"
       >
         <span aria-hidden="true" />
         {hours.map((hour, index) => (

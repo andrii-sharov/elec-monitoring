@@ -126,3 +126,31 @@ the `:root` defaults.
    import (Cyrillic included). Classic loads none.
 5. Import `style.css` from `client/src/styles.css`, after `classic`.
 6. Add `app.appStyle.<id>.name` and `.description` in `uk`, `en`, `ru`.
+
+## Touch tier
+
+Controls and small text have two sizes. The `compact` Tailwind variant
+(`styles.css`) is true at 768 px and wider **with** a fine pointer
+(mouse, trackpad). Everywhere else (phones, tablets, phones in
+landscape) the touch tier applies. Base classes in `components/ui` are
+the touch size, and `compact:` restores the desktop size.
+
+| Control                                 | Touch      | Compact    |
+| --------------------------------------- | ---------- | ---------- |
+| Button `default`, Input, Select trigger | 44 px      | 32 px      |
+| Button `lg`                             | 48 px      | 36 px      |
+| Button `sm`, `icon-sm`, pill tab        | 40 px      | 28–32 px   |
+| Button `xs`, `icon-xs`                  | 36 px      | 24 px      |
+| Select, menu, picker, command rows      | 44 px      | 28 px      |
+| Checkbox                                | 20 px      | 16 px      |
+| Switch                                  | 28 × 48 px | 18 × 32 px |
+| `text-xs` / `text-sm`                   | 13 / 15 px | 12 / 14 px |
+
+- Inputs and search fields use 16 px text in the touch tier, so iOS
+  Safari doesn't zoom on focus.
+- Below 640 px, dialogs and alert dialogs are bottom sheets: full width,
+  attached to the bottom, scrollable, padded for the home indicator.
+- Popovers are never wider than the screen.
+- Segmented controls scroll sideways on phones instead of wrapping.
+- Pages never set control heights or text smaller than `text-xs`;
+  `components/ui/consistency.test.ts` enforces both.

@@ -66,7 +66,7 @@ export function PickerList<T extends string>({
               )}
               onClick={() => onChoose(option.value)}
             >
-              <span className="flex flex-1 shrink-0 items-center gap-2 whitespace-nowrap">
+              <span className="flex min-w-0 flex-1 items-center gap-2 text-left">
                 {option.icon}
                 {option.label}
                 {option.detail ? (

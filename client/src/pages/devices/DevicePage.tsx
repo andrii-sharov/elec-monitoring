@@ -24,7 +24,7 @@ export function DevicePage() {
   const { data } = useDevice(id);
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex min-h-8 items-center justify-between gap-2">
+      <div className="flex min-h-11 items-center justify-between gap-2 compact:min-h-8">
         <BackLink to="/devices" label={t('app.device.backToList')} />
         {data?.role === 'OWNER' ? <DeviceSettingsDialog device={data} /> : null}
       </div>

@@ -7,7 +7,10 @@ import {
   tabClassName,
 } from './tabs';
 
-export const segmentClassName = cn(tabClassName, 'py-1.5 aria-pressed:text-foreground');
+export const segmentClassName = cn(
+  tabClassName,
+  'min-h-10 py-1.5 aria-pressed:text-foreground max-sm:grow compact:min-h-0',
+);
 
 type Box = { left: number; top: number; width: number; height: number };
 
@@ -62,7 +65,11 @@ function SegmentedControl({ label, className, children, ...props }: SegmentedCon
     <fieldset
       ref={ref}
       data-slot="segmented-control"
-      className={cn(pillListClassName, 'flex-wrap', className)}
+      className={cn(
+        pillListClassName,
+        'no-scrollbar max-w-full overflow-x-auto max-sm:w-full sm:flex-wrap',
+        className,
+      )}
       {...props}
     >
       <legend className="sr-only">{label}</legend>

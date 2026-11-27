@@ -20,6 +20,7 @@ import { channelTypeInfo } from './channelTypes';
 import { DeliveryLog } from './DeliveryLog';
 import { EditDevicesDialog } from './EditDevicesDialog';
 import { useChannelRefresh } from './useChannelRefresh';
+import { GuideLink } from './WebhookGuideLink';
 import { WebhookForm } from './WebhookForm';
 
 const statusTag = {
@@ -115,37 +116,41 @@ export function ChannelRow({ channel, devices, selected, onSelect, index, onSecr
           selected ? 'border-primary/60' : 'border-border',
         )}
       >
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 p-3">
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 p-3">
           <Checkbox
             checked={selected}
             onCheckedChange={(value) => onSelect(value)}
             aria-label={t('app.notifications.select', { name: channel.name })}
           />
-          <Icon aria-hidden="true" className="size-4 text-muted-foreground" />
-          <span className="font-medium">{channel.name}</span>
-          <Tag {...statusTag[status]}>{t(`app.notifications.status.${status}`)}</Tag>
-          {webhook && channel.failures > 0 ? (
-            <Tag icon={TriangleAlert} look="outline-offline">
-              {t('app.notifications.webhook.failures', { failures: channel.failures })}
-            </Tag>
-          ) : null}
-          <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-            {names.length === 0 ? (
-              t('app.notifications.noDevices')
-            ) : (
-              <>
-                {names.slice(0, 3).map((device) => (
-                  <span key={device} className="rounded-full bg-secondary px-2 py-0.5">
-                    {device}
-                  </span>
-                ))}
-                {names.length > 3 ? (
-                  <span>{t('app.notifications.moreDevices', { count: names.length - 3 })}</span>
-                ) : null}
-              </>
-            )}
-          </span>
-          <span className="ms-auto flex items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
+            <span className="flex min-w-0 items-center gap-2">
+              <Icon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+              <span className="font-medium break-words">{channel.name}</span>
+            </span>
+            <Tag {...statusTag[status]}>{t(`app.notifications.status.${status}`)}</Tag>
+            {webhook && channel.failures > 0 ? (
+              <Tag icon={TriangleAlert} look="outline-offline">
+                {t('app.notifications.webhook.failures', { failures: channel.failures })}
+              </Tag>
+            ) : null}
+            <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+              {names.length === 0 ? (
+                t('app.notifications.noDevices')
+              ) : (
+                <>
+                  {names.slice(0, 3).map((device) => (
+                    <span key={device} className="rounded-full bg-secondary px-2 py-0.5">
+                      {device}
+                    </span>
+                  ))}
+                  {names.length > 3 ? (
+                    <span>{t('app.notifications.moreDevices', { count: names.length - 3 })}</span>
+                  ) : null}
+                </>
+              )}
+            </span>
+          </div>
+          <span className="flex items-center gap-2">
             <Switch
               checked={channel.enabled}
               disabled={toggle.isPending || status === 'failing'}
@@ -179,6 +184,7 @@ export function ChannelRow({ channel, devices, selected, onSelect, index, onSecr
             {info.summary(channel, t) ? (
               <p className="text-muted-foreground">{info.summary(channel, t)}</p>
             ) : null}
+            {webhook ? <GuideLink /> : null}
             {status === 'failing' ? (
               <p className="text-status-offline">{t('app.notifications.failingHint')}</p>
             ) : null}
@@ -192,13 +198,16 @@ export function ChannelRow({ channel, devices, selected, onSelect, index, onSecr
               </ul>
             ) : null}
             {renaming ? (
-              <form onSubmit={submitName} className="flex flex-wrap items-center gap-2">
+              <form
+                onSubmit={submitName}
+                className="flex flex-wrap items-center gap-2 max-sm:*:grow"
+              >
                 <Input
                   aria-label={t('app.notifications.name')}
                   value={name}
                   maxLength={64}
                   onChange={(event) => setName(event.target.value)}
-                  className="w-56"
+                  className="sm:w-56"
                 />
                 <Button type="submit" size="sm" disabled={rename.isPending || !name.trim()}>
                   {t('app.common.save')}
@@ -208,7 +217,7 @@ export function ChannelRow({ channel, devices, selected, onSelect, index, onSecr
                 </Button>
               </form>
             ) : null}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 max-sm:*:grow">
               <EditDevicesDialog channel={channel} devices={devices} />
               {webhook ? (
                 <>

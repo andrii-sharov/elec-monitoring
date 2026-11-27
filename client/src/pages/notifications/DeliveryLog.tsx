@@ -81,7 +81,7 @@ function DeliveryRow({ channel, delivery, deviceName, index }: RowProps) {
           <Button
             variant="outline"
             size="xs"
-            className="ms-auto"
+            className="ms-auto max-sm:w-full"
             disabled={!channel.enabled || again.isPending}
             onClick={() => again.mutate()}
           >

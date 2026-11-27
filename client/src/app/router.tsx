@@ -15,6 +15,7 @@ import { VerifyEmailPage } from '@/pages/auth/VerifyEmailPage';
 import { FlashPage } from '@/pages/firmware/FlashPage';
 import { InvitePage } from '@/pages/invite/InvitePage';
 import { NotificationsPage } from '@/pages/notifications/NotificationsPage';
+import { WebhookGuidePage } from '@/pages/notifications/WebhookGuidePage';
 import { NotFound } from '@/pages/NotFound';
 import { WelcomeAppearancePage } from '@/pages/welcome/WelcomeAppearancePage';
 
@@ -54,6 +55,7 @@ export const routes: RouteObject[] = [
                   { path: 'devices/:id', Component: DevicePage },
                   { path: 'flash', Component: FlashPage },
                   { path: 'notifications', Component: NotificationsPage },
+                  { path: 'notifications/webhooks/guide', Component: WebhookGuidePage },
                   { path: 'account', Component: AccountPage },
                 ],
               },

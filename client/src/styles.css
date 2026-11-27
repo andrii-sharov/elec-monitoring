@@ -7,6 +7,7 @@
 @import './appStyles/lamp/style.css';
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant compact (@media (width >= 48rem) and (pointer: fine));
 
 :root {
   color-scheme: light;
@@ -115,6 +116,15 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@media (width < 48rem), (pointer: coarse), (pointer: none) {
+  :root {
+    --text-xs: 0.8125rem;
+    --text-xs--line-height: calc(1.125 / 0.8125);
+    --text-sm: 0.9375rem;
+    --text-sm--line-height: calc(1.375 / 0.9375);
   }
 }
 

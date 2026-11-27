@@ -12,7 +12,14 @@ import { isApiError } from '@/api/errors';
 import { useSession } from '@/api/session';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { GuideLink } from './WebhookGuideLink';
 import { FieldError, FieldLegend, FieldSet } from '@/components/ui/field';
 import { Label } from '@/components/ui/label';
 import { errorMessage } from '@/forms/errorMessage';
@@ -164,7 +171,11 @@ export function WebhookForm({ open, ...props }: Props) {
               ? t('app.notifications.webhook.editTitle')
               : t('app.notifications.webhook.addTitle')}
           </DialogTitle>
+          {props.channel ? null : (
+            <DialogDescription>{t('app.notifications.webhook.addBody')}</DialogDescription>
+          )}
         </DialogHeader>
+        {props.channel ? null : <GuideLink />}
         <Fields {...props} />
       </DialogContent>
     </Dialog>

@@ -60,6 +60,9 @@ test('after create the secret shows once, then the device picker opens', async (
   expect(dialog.getByText(secret)).toBeInTheDocument();
   expect(dialog.getByText(/shown only once/)).toBeInTheDocument();
   expect(occurrences()).toBe(1);
+  const guide = dialog.getByRole('link', { name: 'How to connect a webhook' });
+  expect(guide).toHaveAttribute('href', '/notifications/webhooks/guide');
+  expect(guide).toHaveAttribute('target', '_blank');
   await user.click(dialog.getByRole('button', { name: 'Copy' }));
   expect(copy).toHaveBeenCalledWith(secret);
   expect(await dialog.findByRole('button', { name: 'Copied' })).toBeInTheDocument();

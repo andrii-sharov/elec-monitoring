@@ -96,7 +96,11 @@ export function DeviceHistory({ deviceId }: { deviceId: string }) {
     <Tabs value={view} onValueChange={(value) => setView(value as View)} className="gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <PeriodSelect range={range} today={today} onChange={setRange} />
-        <TabsList variant="pill" aria-label={t('app.history.view')}>
+        <TabsList
+          variant="pill"
+          aria-label={t('app.history.view')}
+          className="max-sm:w-full max-sm:*:grow"
+        >
           {views.map((choice) => {
             const Icon = viewIcons[choice];
             return (

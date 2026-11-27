@@ -61,7 +61,7 @@ function FilterSelect({
 }) {
   return (
     <Select items={options} value={value} onValueChange={(next) => next && onChange(next)}>
-      <SelectTrigger aria-label={label} className="min-w-32">
+      <SelectTrigger aria-label={label} className="min-w-32 max-sm:w-full">
         <SelectValue />
       </SelectTrigger>
       <SelectContent align="start">
@@ -234,8 +234,8 @@ export function NotificationsPage() {
           </EmptyState>
         ) : (
           <>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative grow basis-48">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+              <div className="relative col-span-2 grow basis-48">
                 <Search
                   aria-hidden="true"
                   className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
@@ -246,7 +246,7 @@ export function NotificationsPage() {
                   placeholder={t('app.notifications.search')}
                   value={filters.query}
                   onChange={(event) => setFilter({ q: event.target.value })}
-                  className="h-8 ps-8"
+                  className="ps-9 compact:ps-8"
                 />
               </div>
               {types.length > 1 ? (
@@ -288,7 +288,7 @@ export function NotificationsPage() {
                 }))}
               />
             </div>
-            <div className="flex min-h-8 flex-wrap items-center gap-2 text-sm">
+            <div className="flex min-h-10 flex-wrap items-center gap-2 text-sm compact:min-h-8">
               <Checkbox
                 checked={allShownSelected}
                 onCheckedChange={(checked) =>

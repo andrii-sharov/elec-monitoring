@@ -13,7 +13,7 @@ export const pillIndicatorClassName =
   'top-(--active-tab-top) -z-1 h-(--active-tab-height) rounded-md bg-card shadow-sm';
 
 export const tabClassName =
-  'flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-active:text-foreground [&_svg]:size-4 [&_svg]:shrink-0';
+  'flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-md px-3.5 py-2 text-sm font-medium compact:min-h-0 compact:px-3 whitespace-nowrap text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-active:text-foreground [&_svg]:size-4 [&_svg]:shrink-0';
 
 function Tabs({ className, ...props }: TabsPrimitive.Root.Props) {
   return (
@@ -59,7 +59,11 @@ function TabsTab({ className, ...props }: TabsPrimitive.Tab.Props) {
   return (
     <TabsPrimitive.Tab
       data-slot="tabs-tab"
-      className={cn(tabClassName, 'in-data-[variant=pill]:py-1.5', className)}
+      className={cn(
+        tabClassName,
+        'in-data-[variant=pill]:min-h-10 in-data-[variant=pill]:py-1.5 compact:in-data-[variant=pill]:min-h-0',
+        className,
+      )}
       {...props}
     />
   );

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { GuideLink } from './WebhookGuideLink';
 import {
   Dialog,
   DialogContent,
@@ -54,6 +55,10 @@ export function WebhookSecretDialog({ secret, onClose }: Props) {
             <DialogTitle>{t('app.notifications.webhook.secretTitle')}</DialogTitle>
             <DialogDescription>{t('app.notifications.webhook.secretOnce')}</DialogDescription>
           </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {t('app.notifications.webhook.secretUse')}
+          </p>
+          <GuideLink newTab />
           <Secret key={secret} secret={secret} onClose={onClose} />
         </DialogContent>
       ) : null}

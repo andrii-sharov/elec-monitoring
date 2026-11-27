@@ -12,6 +12,11 @@ const handRolled: [string, RegExp][] = [
   ['raw <textarea>', /<textarea[\s>]/],
   ['popup animation classes', /\b(animate-in|animate-out|zoom-in-|slide-in-from-)/],
   ['pressed or active state styling', /\b(aria-pressed|aria-selected|data-active):/],
+  [
+    'control height override',
+    /<(?:Input|Button|SelectTrigger|InputGroup|TabsTab|Segment)\b(?:=>|[^>])*?className=["'{`][^"'`]*?(?<![\w:-])(?:h|size)-\d/,
+  ],
+  ['font size below text-xs', /text-\[(?:0\.(?:[0-6]\d*|7[0-4]\d*)rem|(?:\d|1[01])px)\]/],
 ];
 
 function sourceFiles(dir: string): string[] {

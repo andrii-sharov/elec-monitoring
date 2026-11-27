@@ -59,6 +59,35 @@ describe('typing in the identifier field', () => {
     expect(typeText('380501234567').value).toBe('+380501234567');
   });
 
+  test('a Ukrainian number without the leading 0 formats as typed', () => {
+    expect(typeText('50123')).toMatchObject({ display: '50 123', country: 'UA' });
+    expect(typeText('501234567')).toEqual({
+      kind: 'phone',
+      display: '50 123 4567',
+      value: '+380501234567',
+      country: 'UA',
+    });
+  });
+
+  test('a number with 380 but no plus formats while typed', () => {
+    expect(typeText('380501')).toMatchObject({ display: '380 50 1', value: '+380501' });
+    expect(typeText('380501234567')).toMatchObject({ display: '380 50 123 4567' });
+  });
+
+  test('a calling code of another country without a plus stays national', () => {
+    expect(typeText('382123456', 'phone').value).toBe('+380382123456');
+  });
+
+  test('other countries format without their national prefix too', () => {
+    const state = typeText('612345678', 'phone', emptyState('FR'));
+    expect(state).toMatchObject({ display: '6 12 34 56 78', value: '+33612345678' });
+  });
+
+  test('a country whose leading 0 is part of the number keeps its own format', () => {
+    const state = typeText('3123456789', 'phone', emptyState('IT'));
+    expect(state).toMatchObject({ display: '312 345 6789', value: '+393123456789' });
+  });
+
   test('an email stays as typed', () => {
     expect(typeText('john@example.com')).toEqual({
       kind: 'email',

@@ -26,9 +26,7 @@ export function SwitchboardDeviceSummary({ device }: DeviceSummaryProps) {
           className="text-xs text-muted-foreground"
         />
         {device.role === 'VIEWER' ? (
-          <span className="text-[0.65rem] text-muted-foreground uppercase">
-            {t('app.devices.shared')}
-          </span>
+          <span className="text-xs text-muted-foreground uppercase">{t('app.devices.shared')}</span>
         ) : null}
       </span>
     </Link>

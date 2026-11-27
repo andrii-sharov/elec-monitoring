@@ -32,16 +32,18 @@ Status: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 | M3  | [Worker and platform bot](#m3--worker-and-platform-telegram-bot)      | ✅     | M2         | [M03](plans/M03-worker-telegram.md)                                                                                                                           |
 | M4  | [Client app](#m4--client-app)                                         | ✅     | M3         | [M04](plans/M04-client.md) · [M04a](plans/M04a-client-styles.md) · [M04b](plans/M04b-device-page-and-brand.md) · [M04c](plans/M04c-ui-polish-and-channels.md) |
 | M5  | [Firmware core and device setup](#m5--firmware-core-and-device-setup) | ✅     | M2         | [M05](plans/M05-firmware.md)                                                                                                                                  |
-| M6  | [Sharing](#m6--sharing)                                               | 🟡     | M4         | [M06](plans/M06-sharing.md)                                                                                                                                   |
-| M7  | [Phone sign-in via Telegram](#m7--phone-sign-in-via-telegram)         | 🟡     | M4         | [M07](plans/M07-phone-auth.md) · [M07a](plans/M07a-phone-input.md)                                                                                            |
-| M8  | [Webhooks](#m8--webhooks)                                             | 🟡     | M4         | [M08](plans/M08-webhooks.md)                                                                                                                                  |
+| M6  | [Sharing](#m6--sharing)                                               | ✅     | M4         | [M06](plans/M06-sharing.md)                                                                                                                                   |
+| M7  | [Phone sign-in via Telegram](#m7--phone-sign-in-via-telegram)         | ✅     | M4         | [M07](plans/M07-phone-auth.md) · [M07a](plans/M07a-phone-input.md)                                                                                            |
+| M8  | [Webhooks](#m8--webhooks)                                             | ✅     | M4         | [M08](plans/M08-webhooks.md)                                                                                                                                  |
 | M9  | [Statistics](#m9--statistics)                                         | ⬜     | M4         | —                                                                                                                                                             |
 | M10 | [Admin app](#m10--admin-app)                                          | ⬜     | M4         | —                                                                                                                                                             |
 | M11 | [Remote management and OTA](#m11--remote-device-management-and-ota)   | ⬜     | M4, M5     | —                                                                                                                                                             |
 | M12 | [Launch readiness](#m12--launch-readiness)                            | ⬜     | all        | —                                                                                                                                                             |
 | M13 | [Public status links](#m13--public-status-links)                      | ⬜     | M4         | [M04c §Future](plans/M04c-ui-polish-and-channels.md#future--planning-only-no-code-in-this-milestone)                                                          |
+| M14 | [Mobile layout](#m14--mobile-layout)                                  | 🟡     | M4         | [M14](plans/M14-mobile.md)                                                                                                                                    |
 
 M5 (firmware) can run alongside M3–M4 once the check-in endpoints exist.
+M14 comes next, before M9.
 
 **Release constraint:** P §4 says the first firmware must support OTA.
 The partition table and the signature-verifying key can't be changed
@@ -481,3 +483,21 @@ move it into P §9 and A before starting.
 **Done when:** tests cover each level's response shape, revoked and
 expired links, and the rate limit. 👤 Open a link in a private window at
 each level.
+
+## M14 — Mobile layout
+
+**Goal:** every client screen works on a phone, phone numbers format
+without the leading `0`, and webhook users get a setup guide.
+**Spec:** [M14](plans/M14-mobile.md#design) · P §9 · theme.md Touch tier ·
+P §7 Webhooks · A §8.
+
+- [ ] Touch tier: `compact` variant, touch sizes in `components/ui`,
+      touch type scale
+- [ ] Phone layouts: channel rows, delivery log, history controls,
+      members, dialogs as bottom sheets, auth pages
+- [ ] Phone numbers format without the national prefix or `+`
+- [ ] Webhook guide page and links
+
+**Done when:** tests cover the phone formats and the guide page, and the
+consistency test rejects page-level control sizes. 👤 Run the
+[manual checks](plans/M14-mobile.md#manual-checks) on a real phone.

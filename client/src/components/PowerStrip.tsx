@@ -87,7 +87,7 @@ export function PowerStrip({ deviceId, className }: { deviceId: string; classNam
           <Segment key={`${segment.kind}-${segment.start}`} segment={segment} from={from} />
         ))}
       </div>
-      <div aria-hidden="true" className="relative h-4 text-[0.65rem] text-muted-foreground">
+      <div aria-hidden="true" className="relative h-5 text-xs text-muted-foreground">
         {dayTicks(from, timezone, i18n.resolvedLanguage ?? 'en').map((tick) => (
           <span
             key={tick.left}

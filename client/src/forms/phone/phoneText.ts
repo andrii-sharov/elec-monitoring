@@ -61,11 +61,51 @@ function caretAfterPhoneChars(display: string, count: number): number {
   return display.length;
 }
 
+type Formatted = { display: string; value: string };
+
+function nationalPrefix(country: CountryCode): string | undefined {
+  const example = getExampleNumber(country, examples);
+  if (!example) return undefined;
+  const digits = example.formatNational().replace(/\D/g, '');
+  const prefix = digits.slice(0, digits.length - example.nationalNumber.length);
+  return prefix && digits.endsWith(example.nationalNumber) ? prefix : undefined;
+}
+
+function asTyped(country: CountryCode, text: string): Formatted & { typer: AsYouType } {
+  const typer = new AsYouType(country);
+  const display = typer.input(text);
+  return { typer, display, value: typer.getNumberValue() ?? text };
+}
+
+function withoutPlus(raw: string, country: CountryCode): Formatted | undefined {
+  const code = getCountryCallingCode(country);
+  if (raw.length <= code.length || !raw.startsWith(code)) return undefined;
+  const { typer, display, value } = asTyped(country, `+${raw}`);
+  if (typer.getCallingCode() !== code) return undefined;
+  return { display: display.slice(1), value };
+}
+
+function withoutNationalPrefix(raw: string, country: CountryCode): Formatted | undefined {
+  const prefix = nationalPrefix(country);
+  if (!prefix || raw.startsWith(prefix)) return undefined;
+  const { display, value } = asTyped(country, prefix + raw);
+  if (!display.startsWith(prefix)) return undefined;
+  return { display: display.slice(prefix.length).trimStart(), value };
+}
+
+function formatNational(raw: string, country: CountryCode): Formatted {
+  const { display, value } = asTyped(country, raw);
+  const plain = { display, value };
+  if (display !== raw) return plain;
+  return withoutPlus(raw, country) ?? withoutNationalPrefix(raw, country) ?? plain;
+}
+
 function formatPhone(raw: string, country: CountryCode, forceCountry = false): FieldState {
+  if (!raw.startsWith('+')) return { kind: 'phone', ...formatNational(raw, country), country };
   const typer = new AsYouType(country);
   const display = typer.input(raw);
   const value = typer.getNumberValue() ?? raw;
-  if (forceCountry || !raw.startsWith('+')) return { kind: 'phone', display, value, country };
+  if (forceCountry) return { kind: 'phone', display, value, country };
   const callingCode = typer.getCallingCode();
   const keepCurrent = callingCode === getCountryCallingCode(country);
   const detected =

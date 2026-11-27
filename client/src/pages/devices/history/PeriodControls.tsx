@@ -127,7 +127,7 @@ export function PeriodNav({ range, today, onChange }: Props) {
   const current =
     range.period === 'custom' ? periodRange('week', today) : periodRange(range.period, today);
   return (
-    <div className="flex flex-wrap items-center gap-1">
+    <div className="flex items-center gap-1">
       <Button
         variant="outline"
         size="icon-sm"
@@ -136,7 +136,10 @@ export function PeriodNav({ range, today, onChange }: Props) {
       >
         <ChevronLeft aria-hidden="true" />
       </Button>
-      <span aria-live="polite" className="min-w-36 text-center text-sm font-medium tabular-nums">
+      <span
+        aria-live="polite"
+        className="min-w-36 text-center text-sm font-medium tabular-nums max-sm:min-w-0 max-sm:flex-1"
+      >
         {label}
       </span>
       <Button
