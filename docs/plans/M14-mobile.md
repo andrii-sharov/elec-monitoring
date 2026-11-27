@@ -62,6 +62,12 @@ replaced by `text-xs`.
 - Channel rows: checkbox, name block and switch sit in a three-column
   grid; the name block wraps tags and devices. Row actions become a
   two-column grid of full-width buttons.
+- Line tabs (Device, Account) run to the screen edges on phones, so a
+  tab that doesn't fit peeks in and shows the strip scrolls.
+- The theme control (System, Light, Dark) gets touch height and fills the
+  row on phones.
+- Device names in the Sonar and Switchboard heroes wrap instead of being
+  cut off with an ellipsis.
 - Delivery log rows stack event, status and time; Redeliver goes full
   width.
 - The history period control scrolls sideways instead of wrapping into a
@@ -146,6 +152,9 @@ dark, in each app style:
   add-webhook sheet, secret sheet, guide page with code samples that
   scroll sideways rather than overflow.
 - Dialogs open as bottom sheets on a phone and centered on desktop.
+- Device and Account tabs: the last tab peeks in at the screen edge and
+  the strip scrolls.
+- A device with a long name: the hero shows the whole name in every style.
 - Desktop with a mouse at full width looks the same as before.
 - Phone field with Ukraine: `671234567`, `0671234567`, `380671234567`
   and `+380671234567` all show a formatted number.

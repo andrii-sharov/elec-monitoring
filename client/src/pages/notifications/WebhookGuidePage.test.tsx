@@ -54,9 +54,11 @@ test('the reference lists every header the receiver gets', async () => {
   expect(within(reference).getByText(/"event": "device.offline"/)).toBeInTheDocument();
 });
 
-test('a webhook row links to the guide', async () => {
-  const { user, router } = renderRoute('/notifications', { me: meFixture() });
-  await user.click(await screen.findByRole('button', { name: /Details for/ }));
-  await user.click(screen.getByRole('link', { name: 'How to connect a webhook' }));
-  expect(router.state.location.pathname).toBe(guidePath);
+test('the Notifications page links to the guide even without webhooks', async () => {
+  server.use(http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items: [] })));
+  renderRoute('/notifications', { me: meFixture() });
+  expect(await screen.findByRole('link', { name: 'How to connect a webhook' })).toHaveAttribute(
+    'href',
+    guidePath,
+  );
 });

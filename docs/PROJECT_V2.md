@@ -801,9 +801,9 @@ Pages:
   error, time; load more; redeliver for `SENT` and `FAILED` while the
   webhook is on). The signing secret is shown once, in a dialog, after
   create or a new secret, and the client doesn't store it. After create the
-  device picker opens for the new webhook. The add form, the secret dialog
-  (in a new tab, so the secret stays on screen) and an expanded webhook
-  row link to the webhook guide.
+  device picker opens for the new webhook. The page, the add form and the
+  secret dialog (in a new tab, so the secret stays on screen) link to the
+  webhook guide.
 - **Webhook guide** (`/notifications/webhooks/guide`, signed in) — the
   setup steps in order (receiver, add, save the signing secret, check the
   signature, answer within 10 s, send a test), Node.js and Python samples

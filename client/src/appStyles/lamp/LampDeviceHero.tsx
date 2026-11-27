@@ -26,7 +26,7 @@ export function LampDeviceHero({ device }: DeviceHeroProps) {
       className="lamp-card flex flex-col gap-5 rounded-(--lamp-card-radius) bg-card p-6 text-card-foreground sm:p-8"
     >
       <LampStatusMark state={device.state} lastSeenAt={device.last_seen_at} />
-      <h1 className="font-heading text-3xl leading-tight font-semibold tracking-tight text-balance sm:text-4xl">
+      <h1 className="font-heading text-3xl leading-tight font-semibold tracking-tight text-balance break-words sm:text-4xl">
         {t(sentenceKey[device.state], { name: device.name, duration })}
       </h1>
       <DeviceTelemetry device={device} />

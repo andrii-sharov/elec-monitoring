@@ -16,7 +16,7 @@ export function SwitchboardDeviceHero({ device }: DeviceHeroProps) {
           <SwitchboardStatusMark state={device.state} lastSeenAt={device.last_seen_at} size="lg" />
         </div>
         <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="truncate font-heading text-xl font-semibold tracking-wide uppercase sm:text-2xl">
+          <h1 className="font-heading text-xl break-words font-semibold tracking-wide uppercase sm:text-2xl">
             {device.name}
           </h1>
           <StateDuration state={device.state} since={stateStart(device)} className="text-base" />

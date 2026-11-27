@@ -129,3 +129,10 @@ test('edit starts from the current webhook and saves the changes', async () => {
   ]);
   expect(screen.queryByRole('dialog')).toBeNull();
 });
+
+test('the add form links to the webhook guide', async () => {
+  const { user, router } = renderRoute('/notifications', { me: meFixture() });
+  const form = await openCreate(user);
+  await user.click(form.getByRole('link', { name: 'How to connect a webhook' }));
+  expect(router.state.location.pathname).toBe('/notifications/webhooks/guide');
+});

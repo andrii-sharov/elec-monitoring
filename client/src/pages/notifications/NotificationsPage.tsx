@@ -43,6 +43,7 @@ import { DevicesDialogContent } from './EditDevicesDialog';
 import { TelegramConnect } from './TelegramConnect';
 import { useChannelRefresh } from './useChannelRefresh';
 import { WebhookForm } from './WebhookForm';
+import { GuideLink } from './WebhookGuideLink';
 import { WebhookSecretDialog } from './WebhookSecretDialog';
 import { EmptyState } from '@/components/Illustration';
 
@@ -363,6 +364,7 @@ export function NotificationsPage() {
           </>
         )}
       </section>
+      <GuideLink />
       <WebhookForm
         open={addingWebhook}
         onOpenChange={setAddingWebhook}

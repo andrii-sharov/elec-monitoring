@@ -20,7 +20,6 @@ import { channelTypeInfo } from './channelTypes';
 import { DeliveryLog } from './DeliveryLog';
 import { EditDevicesDialog } from './EditDevicesDialog';
 import { useChannelRefresh } from './useChannelRefresh';
-import { GuideLink } from './WebhookGuideLink';
 import { WebhookForm } from './WebhookForm';
 
 const statusTag = {
@@ -184,7 +183,6 @@ export function ChannelRow({ channel, devices, selected, onSelect, index, onSecr
             {info.summary(channel, t) ? (
               <p className="text-muted-foreground">{info.summary(channel, t)}</p>
             ) : null}
-            {webhook ? <GuideLink /> : null}
             {status === 'failing' ? (
               <p className="text-status-offline">{t('app.notifications.failingHint')}</p>
             ) : null}

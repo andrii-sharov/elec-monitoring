@@ -65,23 +65,27 @@ function DeliveryRow({ channel, delivery, deviceName, index }: RowProps) {
       style={{ '--i': index } as CSSProperties}
       className="flex flex-col gap-1 border-t border-border pt-2"
     >
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <code className="font-mono text-xs">{delivery.event}</code>
-        <span>{deviceName}</span>
-        <Tag {...statusTag[delivery.status]}>
-          {t(`app.notifications.webhook.status.${delivery.status}`)}
-        </Tag>
-        <span className="text-xs text-muted-foreground">
-          {t('app.notifications.webhook.attempts', { attempts: delivery.attempts })}
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1">
+        <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+          <code className="font-mono text-xs break-all">{delivery.event}</code>
+          <span className="font-medium sm:font-normal">{deviceName}</span>
         </span>
-        <time dateTime={at} className="text-xs text-muted-foreground">
-          {format.moment(at)}
-        </time>
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <Tag {...statusTag[delivery.status]}>
+            {t(`app.notifications.webhook.status.${delivery.status}`)}
+          </Tag>
+          <span className="text-xs text-muted-foreground">
+            {t('app.notifications.webhook.attempts', { attempts: delivery.attempts })}
+          </span>
+          <time dateTime={at} className="text-xs text-muted-foreground">
+            {format.moment(at)}
+          </time>
+        </span>
         {redeliverable.includes(delivery.status) ? (
           <Button
             variant="outline"
             size="xs"
-            className="ms-auto max-sm:w-full"
+            className="max-sm:w-full sm:ms-auto"
             disabled={!channel.enabled || again.isPending}
             onClick={() => again.mutate()}
           >
@@ -153,7 +157,7 @@ export function DeliveryLog({ id, channel, devices }: Props) {
         <Button
           variant="outline"
           size="sm"
-          className="self-start"
+          className="max-sm:w-full sm:self-start"
           disabled={log.isFetchingNextPage}
           onClick={() => void log.fetchNextPage()}
         >

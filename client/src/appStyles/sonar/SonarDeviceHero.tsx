@@ -20,7 +20,7 @@ export function SonarDeviceHero({ device }: DeviceHeroProps) {
             since={stateStart(device)}
             className="sonar-headline font-heading text-2xl font-semibold tracking-tight sm:text-3xl"
           />
-          <h1 className="truncate text-base text-muted-foreground">{device.name}</h1>
+          <h1 className="text-base break-words text-muted-foreground">{device.name}</h1>
         </div>
       </div>
       <PowerStrip deviceId={device.id} />
