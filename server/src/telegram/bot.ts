@@ -1,4 +1,13 @@
-import { formatMoment, languages, type Language } from '@elec/shared';
+import {
+  addDays,
+  formatDuration,
+  formatMoment,
+  languages,
+  localDate,
+  LOCALES,
+  type Language,
+  type LocalDate,
+} from '@elec/shared';
 import { telegramPhone } from '@elec/shared/api';
 import { asc, eq } from 'drizzle-orm';
 import type { i18n } from 'i18next';
@@ -9,8 +18,9 @@ import type { Db } from '../db/client.ts';
 import { appUser, device, deviceChannel, notificationChannel } from '../db/schema/index.ts';
 import { parseCommand, type TelegramUpdate } from './commands.ts';
 import { connectPlatformChat, platformChat } from './platformChat.ts';
-import { telegramT } from './html.ts';
+import { telegramT, type TelegramT } from './html.ts';
 import { renderTelegramAuth } from './pushes.ts';
+import { loadStats } from '../stats/load.ts';
 
 export type BotDeps = {
   db: Db;
@@ -88,24 +98,12 @@ export async function handleUpdate(
         : link(deps, message, command.arg, say);
     case 'status': {
       if (!owner) return say('notLinked');
-      const rows = await db
-        .select({
-          id: device.id,
-          name: device.name,
-          state: device.state,
-          stateSince: device.stateSince,
-        })
-        .from(deviceChannel)
-        .innerJoin(notificationChannel, eq(notificationChannel.id, deviceChannel.channelId))
-        .innerJoin(device, eq(device.id, deviceChannel.deviceId))
-        .where(platformChat(chatId))
-        .orderBy(asc(device.name), asc(device.id));
-      const unique = [...new Map(rows.map((r) => [r.id, r])).values()];
-      if (unique.length === 0) return say('statusEmpty');
+      const devices = await chatDevices(db, chatId);
+      if (devices.length === 0) return say('statusEmpty');
       const t = telegramT(deps.i18n, owner.language);
       return {
         chatId,
-        text: unique
+        text: devices
           .map((r) =>
             t(`telegram.bot.status.${r.state}`, {
               name: r.name,
@@ -114,6 +112,12 @@ export async function handleUpdate(
           )
           .join('\n'),
       };
+    }
+    case 'stats': {
+      if (!owner) return say('notLinked');
+      const devices = await chatDevices(db, chatId);
+      if (devices.length === 0) return say('statusEmpty');
+      return { chatId, text: await statsText(deps, devices, owner) };
     }
     case 'stop': {
       if (!owner) return say('notLinked');
@@ -203,4 +207,83 @@ async function link(
     chatId: BigInt(message.chat.id),
     text: telegramT(deps.i18n, outcome.language)(`telegram.bot.${outcome.key}`),
   };
+}
+
+async function chatDevices(db: Db, chatId: bigint) {
+  const rows = await db
+    .select({
+      id: device.id,
+      name: device.name,
+      state: device.state,
+      stateSince: device.stateSince,
+      shortOutageThresholdS: device.shortOutageThresholdS,
+    })
+    .from(deviceChannel)
+    .innerJoin(notificationChannel, eq(notificationChannel.id, deviceChannel.channelId))
+    .innerJoin(device, eq(device.id, deviceChannel.deviceId))
+    .where(platformChat(chatId))
+    .orderBy(asc(device.name), asc(device.id));
+  return [...new Map(rows.map((r) => [r.id, r])).values()];
+}
+
+function rangeLabel(from: LocalDate, to: LocalDate, language: Language): string {
+  const format = new Intl.DateTimeFormat(LOCALES[language], {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  });
+  const parts = (date: LocalDate) => {
+    const formatted = format.formatToParts(Date.parse(date));
+    const pick = (type: string) => formatted.find((p) => p.type === type)?.value ?? '';
+    return { day: pick('day'), month: pick('month') };
+  };
+  const a = parts(from);
+  const b = parts(to);
+  return a.month === b.month
+    ? `${a.day}–${b.day} ${b.month}`
+    : `${a.day} ${a.month} – ${b.day} ${b.month}`;
+}
+
+async function statsText(
+  deps: BotDeps,
+  devices: Awaited<ReturnType<typeof chatDevices>>,
+  owner: { language: Language; timezone: string },
+): Promise<string> {
+  const now = deps.clock.now().getTime();
+  const to = localDate(now, owner.timezone);
+  const from = addDays(to, -6);
+  const t: TelegramT = telegramT(deps.i18n, owner.language);
+  const percent = new Intl.NumberFormat(LOCALES[owner.language], {
+    style: 'percent',
+    maximumFractionDigits: 2,
+  });
+  const lines = await Promise.all(
+    devices.map(async (row) => {
+      const stats = await loadStats(deps.db, {
+        device: row,
+        query: { period: 'CUSTOM', from, to },
+        timezone: owner.timezone,
+        now,
+      });
+      if (stats.availability_pct === null)
+        return t('telegram.bot.stats.noData', { name: row.name });
+      const availability = percent.format(stats.availability_pct / 100);
+      const line =
+        stats.outages === 0
+          ? t('telegram.bot.stats.noOutages', { name: row.name, availability })
+          : t('telegram.bot.stats.line', {
+              name: row.name,
+              outages: String(stats.outages),
+              downtime: formatDuration(stats.total_downtime_s, (key, o) => t(key, o)),
+              availability,
+            });
+      return stats.power_blips === 0
+        ? line
+        : line + t('telegram.bot.stats.blips', { count: stats.power_blips });
+    }),
+  );
+  return [
+    t('telegram.bot.stats.title', { range: rangeLabel(from, to, owner.language) }),
+    ...lines,
+  ].join('\n');
 }

@@ -996,10 +996,11 @@ A reply is the webhook response body
 replies never call Telegram. The API calls `sendMessage` only for auth
 pushes, sent after the transaction commits: password reset link, "someone
 tried to sign up" notice and phone invite. A failed push is only logged.
-Handles `/start <code>`, `/status`, `/stop` and a
+Handles `/start <code>`, `/status`, `/stats`, `/stop` and a
 `my_chat_member` update with status `kicked` or `left` (deletes the chat's
-channels, no reply). `/stats` arrives with statistics; until then it gets
-the help text. `/cmd@OtherBot` is ignored. Replies use the language of the
+channels, no reply). `/stats` lists the last 7 local days (today
+included) for each device that notifies the chat. Other commands get the
+help text. `/cmd@OtherBot` is ignored. Replies use the language of the
 user who linked the chat (the oldest link for a shared group), or the
 sender's Telegram language when it is `uk`, `en` or `ru`, else `uk`.
 Allowed updates: `message`, `my_chat_member`.

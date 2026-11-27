@@ -105,7 +105,14 @@ export const en = {
       statusEmpty: 'No devices send alerts to this chat yet. Choose them in the app.',
       stopped: "🛑 This chat is unlinked. You won't get alerts here anymore.",
       notLinked: "This chat isn't linked yet. Open the app and choose “Connect Telegram”.",
-      help: 'Commands:\n/status — your devices\n/stop — unlink this chat',
+      help: 'Commands:\n/status — your devices\n/stats — last 7 days\n/stop — unlink this chat',
+      stats: {
+        title: '📊 Last 7 days · {{range}}',
+        line: '<b>{{name}}</b> — outages: {{outages}} · without contact: {{downtime}} · {{availability}}',
+        noOutages: '<b>{{name}}</b> — no outages · {{availability}}',
+        blips: ' · power blips: {{count}}',
+        noData: '<b>{{name}}</b> — no data yet',
+      },
     },
   },
   device: {

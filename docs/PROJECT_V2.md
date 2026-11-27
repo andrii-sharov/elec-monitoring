@@ -568,8 +568,18 @@ the same localization rules.
 4. Works for private chats and groups (`startgroup` link). The new
    channel is attached to every device the user owns or views at that moment, and the user can change that per device. Devices created or shared later aren't attached by the link (joining a shared device attaches the viewer's channels, §6).
 
-Bot commands: `/status` (devices that notify this chat), `/stats`
-(last 7 days, with statistics), `/stop` (unlink the chat). Removing the bot
+Bot commands: `/status` (devices that notify this chat), `/stats` (the
+last 7 local days, today included, for the same devices), `/stop` (unlink
+the chat). Replies use the chat owner's language and timezone.
+
+```
+📊 Last 7 days · 21–27 Nov
+<b>Garage</b> — no data yet
+<b>Home</b> — outages: 3 · without contact: 2 h 15 min · 98.56% · power blips: 2
+<b>Dacha</b> — no outages · 100%
+```
+
+Removing the bot
 from a group also unlinks it. Linking creates a channel named after the
 group title or the person's Telegram name. Linking a chat that is already
 linked changes nothing.

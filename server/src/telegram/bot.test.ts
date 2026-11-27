@@ -10,9 +10,11 @@ import { issueOneTimeToken } from '../auth/oneTimeTokens.ts';
 import {
   appUser,
   device,
+  deviceBoot,
   deviceChannel,
   notificationChannel,
   oneTimeToken,
+  outage,
 } from '../db/schema/index.ts';
 import { createI18n } from '../i18n.ts';
 import { handleUpdate, type BotDeps } from './bot.ts';
@@ -218,6 +220,111 @@ describe('/status', () => {
   });
 });
 
+describe('/stats', () => {
+  const BOOT = '0193a1c4-0000-7000-8000-00000000000a';
+
+  async function statsSetup(language: 'en' | 'uk' = 'en') {
+    clock.set(new Date('2026-11-27T10:00:00Z'));
+    const user = await createUser(t.db, { language, timezone: 'Europe/Kyiv' });
+    const home = await createDevice(t.db, user.id, { name: 'Home' });
+    const garage = await createDevice(t.db, user.id, { name: 'Garage' });
+    const channel = await createPlatformChannel(t.db, user.id, { chatId: BigInt(CHAT) });
+    await linkChannel(t.db, home.id, channel.id);
+    await linkChannel(t.db, garage.id, channel.id);
+    await t.db.insert(deviceBoot).values({
+      deviceId: home.id,
+      bootId: BOOT,
+      resetReason: 'POWER_ON',
+      firstSeenAt: new Date('2026-11-01T00:00:00Z'),
+    });
+    const closed = { deviceId: home.id, cause: 'POWER' as const, kind: 'LONG' as const };
+    await t.db.insert(outage).values([
+      {
+        ...closed,
+        type: 'OUTAGE',
+        startedAt: new Date('2026-11-22T10:00:00Z'),
+        endedAt: new Date('2026-11-22T11:00:00Z'),
+      },
+      {
+        ...closed,
+        type: 'OUTAGE',
+        startedAt: new Date('2026-11-24T10:00:00Z'),
+        endedAt: new Date('2026-11-24T11:00:00Z'),
+      },
+      {
+        ...closed,
+        type: 'OUTAGE',
+        startedAt: new Date('2026-11-26T10:00:00Z'),
+        endedAt: new Date('2026-11-26T10:15:00Z'),
+      },
+      {
+        ...closed,
+        type: 'POWER_BLIP',
+        startedAt: new Date('2026-11-25T10:00:00Z'),
+        endedAt: new Date('2026-11-25T10:00:20Z'),
+        kind: 'SHORT',
+      },
+      {
+        ...closed,
+        type: 'POWER_BLIP',
+        startedAt: new Date('2026-11-25T12:00:00Z'),
+        endedAt: new Date('2026-11-25T12:00:20Z'),
+        kind: 'SHORT',
+      },
+      {
+        ...closed,
+        type: 'OUTAGE',
+        startedAt: new Date('2026-11-19T10:00:00Z'),
+        endedAt: new Date('2026-11-19T11:00:00Z'),
+      },
+    ]);
+    return { user, home, garage };
+  }
+
+  test('lists the last 7 days for each device of the chat', async () => {
+    await statsSetup();
+    const reply = await handleUpdate(deps, message('/stats'));
+    expect(reply!.text.split('\n')).toEqual([
+      '📊 Last 7 days · 21–27 Nov',
+      '<b>Garage</b> — no data yet',
+      '<b>Home</b> — outages: 3 · without contact: 2 h 15 min · 98.56% · power blips: 2',
+    ]);
+  });
+
+  test('a device without outages shows full availability', async () => {
+    const { home } = await statsSetup();
+    await t.db.delete(outage).where(eq(outage.deviceId, home.id));
+    const reply = await handleUpdate(deps, message('/stats'));
+    expect(reply!.text).toContain('<b>Home</b> — no outages · 100%');
+  });
+
+  test('escapes device names', async () => {
+    const { home } = await statsSetup();
+    await t.db.update(device).set({ name: '<script>' }).where(eq(device.id, home.id));
+    const reply = await handleUpdate(deps, message('/stats'));
+    expect(reply!.text).toContain('<b>&lt;script&gt;</b>');
+  });
+
+  test("uses the owner's language", async () => {
+    await statsSetup('uk');
+    const reply = await handleUpdate(deps, message('/stats'));
+    expect(reply!.text).toMatch(/^📊 Останні 7 днів · 21–27 лист/);
+    expect(reply!.text).toContain('2 год 15 хв');
+  });
+
+  test('says so when the chat is not linked or has no devices', async () => {
+    expect((await handleUpdate(deps, message('/stats', {}, 'en')))?.text).toMatch(/isn't linked/);
+    const user = await createUser(t.db, { language: 'en' });
+    await createPlatformChannel(t.db, user.id, { chatId: BigInt(CHAT) });
+    expect((await handleUpdate(deps, message('/stats')))?.text).toMatch(/No devices/);
+  });
+
+  test('help lists /stats', async () => {
+    await statsSetup();
+    expect((await handleUpdate(deps, message('/help')))?.text).toContain('/stats');
+  });
+});
+
 describe('/stop and removal', () => {
   test('/stop unlinks the chat and its device links', async () => {
     const { user, home } = await userWithDevices();
@@ -257,8 +364,9 @@ describe('/stop and removal', () => {
 
 describe('other input', () => {
   test('unknown commands get the help text', async () => {
-    const reply = await handleUpdate(deps, message('/stats'));
+    const reply = await handleUpdate(deps, message('/weather'));
     expect(reply?.text).toContain('/status');
+    expect(reply?.text).toContain('/stats');
   });
 
   test('plain text and non-text updates get no reply', async () => {
