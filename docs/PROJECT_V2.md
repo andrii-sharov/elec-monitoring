@@ -467,9 +467,12 @@ alerts for 5–120 min (`network_pause_until` on the device). The device
 state stays truthful; only alerts and history change:
 
 - No OFF alert is queued before the pause ends. An open outage's
-  unqueued alert waits for the end.
-- A gap that starts in the pause and ends with the **same** `boot_id`,
-  with no OFF alert queued, is dropped: no outage, no message.
+  unqueued alert waits for the end. Ending or shortening the pause
+  moves that alert back to its normal time.
+- A gap that started before the pause ends and is closed by the **same**
+  `boot_id` while the pause still runs, with no OFF alert queued, is
+  dropped: no outage, no message. This includes a gap already open when
+  the owner starts the pause.
 - A **new** boot is recorded and notified as usual (the power dropped).
 - If the device is still silent when the pause ends, the OFF alert goes
   out then and the outage follows the normal rules.

@@ -9,7 +9,7 @@ import {
   networkPauseSchema,
   pairingCodeSchema,
 } from '@elec/shared/api';
-import { and, count, eq, isNull, lt } from 'drizzle-orm';
+import { and, count, eq, isNull } from 'drizzle-orm';
 import { Router, type Request } from 'express';
 import { z } from 'zod';
 import type { ZodOpenApiPathsObject } from 'zod-openapi';
@@ -18,6 +18,7 @@ import { getAccessibleDevice } from '../../devices/access.ts';
 import { PAIRING_CODE_TTL_MS, hashPairingCode, newPairingCode } from '../../devices/credentials.ts';
 import { findDeviceView, findDeviceViews } from '../../devices/queries.ts';
 import { applySettingsPatch } from '../../devices/settings.ts';
+import { offAlertDueAt } from '../../notifications/rules.ts';
 import type { AppDeps } from '../app.ts';
 import { getAuth, requireUser, requireVerified } from '../auth/middleware.ts';
 import { HttpError, errorResponse } from '../errors.ts';
@@ -259,32 +260,32 @@ export function devicesRouter(deps: AppDeps): Router {
     });
   });
 
+  async function setNetworkPause(userId: string, id: string, until: Date | null) {
+    await db.transaction(async (tx) => {
+      const { device: row } = await getAccessibleDevice(tx, userId, id, 'manage', { lock: true });
+      await tx.update(device).set({ networkPauseUntil: until }).where(eq(device.id, id));
+      const [open] = await tx
+        .select()
+        .from(outage)
+        .where(
+          and(eq(outage.deviceId, id), isNull(outage.endedAt), isNull(outage.offAlertQueuedAt)),
+        );
+      if (!open?.offAlertDueAt) return;
+      const due = offAlertDueAt(open.startedAt, clock.now(), { ...row, networkPauseUntil: until });
+      await tx.update(outage).set({ offAlertDueAt: due }).where(eq(outage.id, open.id));
+    });
+  }
+
   router.put('/api/v1/devices/:id/network-pause', auth, async (req, res) => {
     const id = deviceIdParam(req);
     const { minutes } = networkPauseBodySchema.parse(req.body ?? {});
     const until = new Date(clock.now().getTime() + minutes * 60_000);
-    await db.transaction(async (tx) => {
-      await getAccessibleDevice(tx, getAuth(res).user.id, id, 'manage', { lock: true });
-      await tx.update(device).set({ networkPauseUntil: until }).where(eq(device.id, id));
-      await tx
-        .update(outage)
-        .set({ offAlertDueAt: until })
-        .where(
-          and(
-            eq(outage.deviceId, id),
-            isNull(outage.endedAt),
-            isNull(outage.offAlertQueuedAt),
-            lt(outage.offAlertDueAt, until),
-          ),
-        );
-    });
+    await setNetworkPause(getAuth(res).user.id, id, until);
     res.json({ until: until.toISOString() });
   });
 
   router.delete('/api/v1/devices/:id/network-pause', auth, async (req, res) => {
-    const id = deviceIdParam(req);
-    await getAccessibleDevice(db, getAuth(res).user.id, id, 'manage');
-    await db.update(device).set({ networkPauseUntil: null }).where(eq(device.id, id));
+    await setNetworkPause(getAuth(res).user.id, deviceIdParam(req), null);
     res.status(204).end();
   });
 

@@ -36,8 +36,9 @@ function gapStart(start: Date, now: Date): Date {
   return start.getTime() > now.getTime() ? now : start;
 }
 
-function pausedAt(device: DeviceSnapshot, startedAt: Date): boolean {
-  return device.networkPauseUntil !== null && startedAt < device.networkPauseUntil;
+function insidePause(device: DeviceSnapshot, startedAt: Date, now: Date): boolean {
+  const until = device.networkPauseUntil;
+  return until !== null && startedAt < until && now <= until;
 }
 
 function planOnline(device: DeviceSnapshot, checkIn: CheckInFacts, now: Date): CheckInPlan {
@@ -48,7 +49,9 @@ function planOnline(device: DeviceSnapshot, checkIn: CheckInFacts, now: Date): C
   const cause = classifyCause({ previousBootId: device.bootId, ...checkIn });
 
   if (device.offlineAt && now.getTime() >= device.offlineAt.getTime()) {
-    if (cause === 'NETWORK' && pausedAt(device, startedAt)) return { ...unchanged, event: null };
+    if (cause === 'NETWORK' && insidePause(device, startedAt, now)) {
+      return { ...unchanged, event: null };
+    }
     return {
       action: 'ACCEPT',
       state: 'ONLINE',
@@ -72,7 +75,7 @@ function planOffline(
   const recovered = { action: 'ACCEPT', state: 'ONLINE', stateSince: now } as const;
   if (!open) return { ...recovered, event: null };
   const cause = classifyCause({ previousBootId: device.bootId, ...checkIn });
-  if (cause === 'NETWORK' && !open.offAlertQueuedAt && pausedAt(device, open.startedAt)) {
+  if (cause === 'NETWORK' && !open.offAlertQueuedAt && insidePause(device, open.startedAt, now)) {
     return { ...recovered, event: { type: 'DISCARD_OUTAGE', outageId: open.id } };
   }
   return {

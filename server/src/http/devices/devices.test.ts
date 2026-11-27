@@ -419,6 +419,41 @@ describe('network pause', () => {
     expect(stored!.offAlertDueAt).toEqual(new Date('2026-11-21T16:52:00Z'));
   });
 
+  test('ending the pause brings a held OFF alert back to its normal time', async () => {
+    const { user, auth } = await authed();
+    const row = await createDevice(t.db, user.id);
+    await put(auth, row.id, { minutes: 60 });
+    const [open] = await t.db
+      .insert(outage)
+      .values({
+        deviceId: row.id,
+        type: 'OUTAGE',
+        startedAt: new Date('2026-11-21T16:41:00Z'),
+        offAlertDueAt: new Date('2026-11-21T17:42:00Z'),
+      })
+      .returning();
+    expect((await remove(auth, row.id)).status).toBe(204);
+    const [stored] = await t.db.select().from(outage).where(eq(outage.id, open!.id));
+    expect(stored!.offAlertDueAt).toEqual(new Date('2026-11-21T16:42:00Z'));
+  });
+
+  test('a shorter pause shortens a held OFF alert', async () => {
+    const { user, auth } = await authed();
+    const row = await createDevice(t.db, user.id);
+    const [open] = await t.db
+      .insert(outage)
+      .values({
+        deviceId: row.id,
+        type: 'OUTAGE',
+        startedAt: new Date('2026-11-21T16:41:00Z'),
+        offAlertDueAt: new Date('2026-11-21T17:42:00Z'),
+      })
+      .returning();
+    await put(auth, row.id, { minutes: 10 });
+    const [stored] = await t.db.select().from(outage).where(eq(outage.id, open!.id));
+    expect(stored!.offAlertDueAt).toEqual(new Date('2026-11-21T16:52:00Z'));
+  });
+
   test('rejects durations outside 5–120 min', async () => {
     const { user, auth } = await authed();
     const row = await createDevice(t.db, user.id);

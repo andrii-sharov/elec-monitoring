@@ -215,6 +215,16 @@ describe('planned network pause', () => {
     expect(plan).toMatchObject({ event: { type: 'CLOSE_OUTAGE', cause: 'NETWORK' } });
   });
 
+  test('a return after the pause ended keeps the gap', () => {
+    const plan = planCheckIn(
+      paused({ networkPauseUntil: at(120) }),
+      openOutage(null),
+      sameBoot(),
+      at(180),
+    );
+    expect(plan).toMatchObject({ event: { type: 'CLOSE_OUTAGE', cause: 'NETWORK' } });
+  });
+
   test('a late gap with the same boot during the pause records nothing', () => {
     const online = device({ offlineAt: at(40), networkPauseUntil: at(900) });
     expect(planCheckIn(online, null, sameBoot(), at(180))).toEqual({

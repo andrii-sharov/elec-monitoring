@@ -44,6 +44,7 @@ export function ChannelRow({ channel, devices, selected, onSelect, index, onSecr
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [panel, setPanel] = useState<'overview' | 'log'>('overview');
   const panelId = useId();
   const webhook = channel.type === 'WEBHOOK';
   const info = channelTypeInfo[channel.type];
@@ -172,6 +173,7 @@ export function ChannelRow({ channel, devices, selected, onSelect, index, onSecr
               channel={channel}
               onRename={() => {
                 setOpen(true);
+                setPanel('overview');
                 setRenaming(true);
               }}
               onRotate={() => rotate.mutate()}
@@ -198,7 +200,11 @@ export function ChannelRow({ channel, devices, selected, onSelect, index, onSecr
         {open ? (
           <div id={panelId} className="border-t border-border p-3">
             {webhook ? (
-              <Tabs defaultValue="overview" className="gap-3">
+              <Tabs
+                value={panel}
+                onValueChange={(value) => setPanel(value as 'overview' | 'log')}
+                className="gap-3"
+              >
                 <TabsList variant="pill">
                   <TabsTab value="overview">{t('app.notifications.overview')}</TabsTab>
                   <TabsTab value="log">{t('app.notifications.webhook.log')}</TabsTab>

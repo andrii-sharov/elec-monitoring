@@ -123,3 +123,12 @@ test('a webhook has no language picker', async () => {
   const { card } = await expanded('Automation');
   expect(within(card).queryByRole('combobox', { name: 'Notification language' })).toBeNull();
 });
+
+test('rename from the menu shows the form even while the log tab is open', async () => {
+  const { user, card } = await expanded('Automation');
+  await user.click(within(card).getByRole('tab', { name: 'Delivery log' }));
+  await user.click(within(card).getByRole('button', { name: 'More actions for Automation' }));
+  await user.click(await screen.findByRole('menuitem', { name: 'Rename' }));
+  expect(await within(card).findByRole('textbox', { name: 'Name' })).toHaveValue('Automation');
+  expect(within(card).getByRole('tab', { name: 'Overview', selected: true })).toBeInTheDocument();
+});
