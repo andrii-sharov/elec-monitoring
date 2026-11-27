@@ -27,7 +27,7 @@
     },
     {
       "name": "Outages",
-      "description": "Outage history and device diagnostics"
+      "description": "Outage history, statistics and device diagnostics"
     },
     {
       "name": "Notifications",
@@ -2430,6 +2430,107 @@
           },
           "403": {
             "description": "`forbidden`: only the device owner can do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Device not found or not accessible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/devices/{id}/stats": {
+      "get": {
+        "summary": "Statistics for a History range",
+        "description": "Outages, downtime and availability for a local day, week, month, year or custom range (up to 366 days) in the caller timezone. `from` and `to` are local dates. Outages and power blips count in every bucket they overlap.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Outages"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "period",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "DAY",
+                "WEEK",
+                "MONTH",
+                "YEAR",
+                "CUSTOM"
+              ]
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "type": "string",
+              "example": "2026-11-23",
+              "description": "Local date in the caller timezone"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "type": "string",
+              "example": "2026-11-23",
+              "description": "Local date in the caller timezone"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceStats"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid range",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
             "content": {
               "application/json": {
                 "schema": {
@@ -4894,6 +4995,199 @@
           "ended_at",
           "duration_s",
           "boot_wifi_evicted"
+        ],
+        "additionalProperties": false
+      },
+      "DeviceStats": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "enum": [
+              "DAY",
+              "WEEK",
+              "MONTH",
+              "YEAR",
+              "CUSTOM"
+            ]
+          },
+          "timezone": {
+            "type": "string",
+            "example": "Europe/Kyiv"
+          },
+          "from": {
+            "type": "string",
+            "example": "2026-11-21T16:42:00Z"
+          },
+          "to": {
+            "type": "string",
+            "example": "2026-11-21T16:42:00Z"
+          },
+          "bucket": {
+            "type": "string",
+            "enum": [
+              "HOUR",
+              "DAY",
+              "MONTH"
+            ]
+          },
+          "monitoring_since": {
+            "anyOf": [
+              {
+                "type": "string",
+                "example": "2026-11-21T16:42:00Z"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outages": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "long_outages": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "open_outage": {
+            "type": "boolean"
+          },
+          "power_blips": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "by_cause": {
+            "type": "object",
+            "properties": {
+              "power": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "network": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "unknown": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "power",
+              "network",
+              "unknown"
+            ],
+            "additionalProperties": false
+          },
+          "total_downtime_s": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "avg_outage_s": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "longest_outage_s": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "availability_pct": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "buckets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StatsBucket"
+            }
+          }
+        },
+        "required": [
+          "period",
+          "timezone",
+          "from",
+          "to",
+          "bucket",
+          "monitoring_since",
+          "outages",
+          "long_outages",
+          "open_outage",
+          "power_blips",
+          "by_cause",
+          "total_downtime_s",
+          "avg_outage_s",
+          "longest_outage_s",
+          "availability_pct",
+          "buckets"
+        ],
+        "additionalProperties": false
+      },
+      "StatsBucket": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "example": "2026-11-21T16:42:00Z"
+          },
+          "to": {
+            "type": "string",
+            "example": "2026-11-21T16:42:00Z"
+          },
+          "outages": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "power_blips": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "total_downtime_s": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "availability_pct": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "outages",
+          "power_blips",
+          "total_downtime_s",
+          "availability_pct"
         ],
         "additionalProperties": false
       },

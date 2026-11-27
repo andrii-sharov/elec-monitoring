@@ -27,6 +27,7 @@ import { pingPaths, pingRouter } from './device/ping.ts';
 import { devicesPaths, devicesRouter } from './devices/devices.ts';
 import { firmwarePaths, firmwareRouter } from './firmware/firmware.ts';
 import { historyPaths, historyRouter } from './devices/history.ts';
+import { statsPaths, statsRouter } from './devices/stats.ts';
 import { sharingPaths, sharingRouter } from './sharing/sharing.ts';
 import { telegramWebhookRouter } from './telegram/webhook.ts';
 import { buildOpenApiDocument, docsRouter, type OpenApiDocument } from './openapi.ts';
@@ -62,8 +63,8 @@ export function apiDocument(): OpenApiDocument {
     },
     {
       tag: 'Outages',
-      description: 'Outage history and device diagnostics',
-      paths: [historyPaths],
+      description: 'Outage history, statistics and device diagnostics',
+      paths: [historyPaths, statsPaths],
     },
     {
       tag: 'Notifications',
@@ -102,6 +103,7 @@ export function createApp(deps: AppDeps, extraRoutes?: (app: Express) => void): 
   app.use(claimRouter(deps));
   app.use(pingRouter(deps));
   app.use(historyRouter(deps));
+  app.use(statsRouter(deps));
   app.use(channelsRouter(deps));
   app.use(deliveriesRouter(deps));
   app.use(sharingRouter(deps));

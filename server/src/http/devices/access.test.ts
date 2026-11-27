@@ -89,6 +89,11 @@ const matrix: Record<string, Row> = {
     path: (c) => `/api/v1/devices/${c.deviceId}/outages`,
     expect: { owner: 200, viewer: 200, stranger: 404 },
   },
+  'GET stats': {
+    method: 'get',
+    path: (c) => `/api/v1/devices/${c.deviceId}/stats?period=WEEK`,
+    expect: { owner: 200, viewer: 200, stranger: 404 },
+  },
   'GET diagnostics': {
     method: 'get',
     path: (c) => `/api/v1/devices/${c.deviceId}/diagnostics`,

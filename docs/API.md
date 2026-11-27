@@ -549,7 +549,7 @@ the browser.
 | Method | Path                       | Auth      | Role          | Purpose                                              |
 | ------ | -------------------------- | --------- | ------------- | ---------------------------------------------------- |
 | GET    | `/devices/:id/outages`     | signed in | owner, viewer | Outages and power blips, filtered, cursor pagination |
-| GET    | `/devices/:id/stats`       | signed in | owner, viewer | Stats for `DAY`, `WEEK` or `MONTH`                   |
+| GET    | `/devices/:id/stats`       | signed in | owner, viewer | Stats for a History range                            |
 | GET    | `/devices/:id/diagnostics` | signed in | owner         | Wi-Fi and API reachability diagnostics               |
 
 `GET /devices/:id/outages?from&to&kind&cause&type&limit&cursor`, newest
@@ -610,15 +610,28 @@ newest first:
 - `boot_wifi_evicted` is the highest count of records the device dropped
   in that boot because its buffer was full.
 
-`GET /devices/:id/stats?period=WEEK&from=…`:
+`GET /devices/:id/stats?period&from&to`:
+
+- `period`: `DAY` | `WEEK` | `MONTH` | `YEAR` | `CUSTOM`, the same choices
+  as the History tab. `from` and `to` are local dates (`YYYY-MM-DD`)
+  between 2000-01-01 and 2100-12-31 in the caller's timezone from `/me`.
+- `DAY`, `WEEK`, `MONTH`, `YEAR`: `from` is any date in the period and
+  defaults to today. The server snaps it to the period start (weeks start
+  on Monday). `to` → `400`.
+- `CUSTOM`: `from` and `to` are required and inclusive, `to >= from`, at
+  most 366 days. Otherwise `400`.
 
 ```json
 {
   "period": "WEEK",
-  "from": "2026-11-16T00:00:00Z",
-  "to": "2026-11-23T00:00:00Z",
+  "timezone": "Europe/Kyiv",
+  "from": "2026-11-15T22:00:00Z",
+  "to": "2026-11-22T22:00:00Z",
+  "bucket": "DAY",
+  "monitoring_since": "2026-10-02T09:14:05Z",
   "outages": 7,
   "long_outages": 3,
+  "open_outage": false,
   "power_blips": 2,
   "by_cause": { "power": 5, "network": 1, "unknown": 1 },
   "total_downtime_s": 28800,
@@ -627,8 +640,10 @@ newest first:
   "availability_pct": 95.24,
   "buckets": [
     {
-      "from": "2026-11-16T00:00:00Z",
+      "from": "2026-11-15T22:00:00Z",
+      "to": "2026-11-16T22:00:00Z",
       "outages": 1,
+      "power_blips": 0,
       "total_downtime_s": 3600,
       "availability_pct": 95.83
     }
@@ -636,10 +651,27 @@ newest first:
 }
 ```
 
-- Day and week boundaries use the caller's timezone from `/me`.
-- `buckets`: hours for `DAY`, days for `WEEK` and `MONTH`. Used for charts.
-- Planned OTA windows are excluded. Power blips count in `power_blips`,
-  not in `outages` or downtime.
+- `from` and `to` in the response are the range as instants (`to`
+  exclusive).
+- `bucket`: `HOUR` for `DAY` (23 or 25 buckets on a DST day), `DAY` for
+  `WEEK`, `MONTH` and `CUSTOM` up to 31 days, `MONTH` for `YEAR` and
+  longer `CUSTOM` ranges (clipped to the range). Used for charts.
+- An outage or power blip counts in every bucket it overlaps, and in the
+  totals when it overlaps the range (the `GET /outages` rule). Bucket
+  counts can add up to more than the total.
+- `monitoring_since` is the device's first check-in (`null` before it).
+  Availability counts only monitored time: from `monitoring_since` or
+  the range start, whichever is later, up to now or the range end.
+  `availability_pct` is `null` when there is no monitored time (a future
+  bucket, before the first check-in).
+- `total_downtime_s` adds the outages clipped to the range; an open
+  outage runs until now. Power blips count in `power_blips`, never in
+  `outages` or downtime. Planned OTA windows create no outages.
+- `long_outages`: closed with kind `LONG`, plus the open outage once it
+  reaches the short-outage threshold. `by_cause` counts closed outages;
+  `open_outage` marks an open one in the range.
+- `avg_outage_s` and `longest_outage_s` use each outage's full duration,
+  not the clipped part; `null` without outages.
 
 ### Sharing
 
@@ -1071,9 +1103,8 @@ in PROJECT_V2.md §3–§12. Section numbers below refer to PROJECT_V2.md.
   string.
 - **Enum case.** Resolved: enum values are `UPPER_CASE` in the spec, the
   API and the database (see [Formats](#formats)).
-- **Stats response** has no power blips, no cause breakdown and no series
-  for charts. §5 says blips count "once in history and statistics".
-  Proposed fields in [Outages and stats](#outages-and-stats).
+- ~~**Stats response.**~~ ✅ Resolved (M9): power blips, cause breakdown
+  and buckets for charts.
 - ~~**Invites.**~~ ✅ Resolved (M6): invites and member removal need a
   signed-in user.
 - **Ping interval vs rate limit.** 20 check-ins/min allows 3 s, but boot
