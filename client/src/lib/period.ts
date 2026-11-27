@@ -1,4 +1,14 @@
-import { addDays, diffDays, isWeekStart, localDate, weekdayOf, type LocalDate } from './week';
+import {
+  addDays,
+  addMonths,
+  diffDays,
+  isLocalDate,
+  localDate,
+  monthStart,
+  periodBounds,
+  type LocalDate,
+} from '@elec/shared';
+import { isWeekStart } from './week';
 
 export const periods = ['day', 'week', 'month', 'year', 'custom'] as const;
 export type Period = (typeof periods)[number];
@@ -9,43 +19,10 @@ export const MAX_CUSTOM_DAYS = 366;
 export const GRID_MAX_DAYS = 31;
 export const PHONE_GRID_MAX_DAYS = 7;
 
-const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-
-function isDate(value: string | null): value is LocalDate {
-  return (
-    value !== null &&
-    datePattern.test(value) &&
-    new Date(Date.parse(value)).toISOString().slice(0, 10) === value
-  );
-}
-
-function monthStart(date: LocalDate): LocalDate {
-  return `${date.slice(0, 7)}-01`;
-}
-
-function addMonths(date: LocalDate, months: number): LocalDate {
-  const [year = 1970, month = 1] = date.split('-').map(Number);
-  const value = new Date(Date.UTC(year, month - 1 + months, 1));
-  return value.toISOString().slice(0, 10);
-}
+const isDate = (value: string | null): value is LocalDate => isLocalDate(value);
 
 export function periodRange(period: Exclude<Period, 'custom'>, anchor: LocalDate): Range {
-  switch (period) {
-    case 'day':
-      return { period, from: anchor, to: anchor };
-    case 'week': {
-      const from = addDays(anchor, -weekdayOf(anchor));
-      return { period, from, to: addDays(from, 6) };
-    }
-    case 'month': {
-      const from = monthStart(anchor);
-      return { period, from, to: addDays(addMonths(from, 1), -1) };
-    }
-    case 'year': {
-      const year = anchor.slice(0, 4);
-      return { period, from: `${year}-01-01`, to: `${year}-12-31` };
-    }
-  }
+  return { period, ...periodBounds(period, anchor) };
 }
 
 export function rangeLength(range: Range): number {

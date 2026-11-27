@@ -1,8 +1,15 @@
 import type { OutageItem } from '@elec/shared/api';
+import {
+  addDays,
+  diffDays,
+  isLocalDate,
+  localDate,
+  weekdayOf,
+  zonedTime,
+  type LocalDate,
+} from '@elec/shared';
 
-const dayMs = 86_400_000;
-
-export type LocalDate = string;
+export { addDays, diffDays, localDate, weekdayOf, zonedTime, type LocalDate } from '@elec/shared';
 
 export type Slot = { start: number; end: number };
 
@@ -14,91 +21,13 @@ export type HourCell = Slot & {
   future: boolean;
 };
 
-const partsFormat = new Map<string, Intl.DateTimeFormat>();
-
-function formatFor(timezone: string): Intl.DateTimeFormat {
-  let format = partsFormat.get(timezone);
-  if (!format) {
-    format = new Intl.DateTimeFormat('en-US', {
-      timeZone: timezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hourCycle: 'h23',
-    });
-    partsFormat.set(timezone, format);
-  }
-  return format;
-}
-
-function wallClock(at: number, timezone: string) {
-  const parts = formatFor(timezone).formatToParts(at);
-  const pick = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? 0);
-  return {
-    year: pick('year'),
-    month: pick('month'),
-    day: pick('day'),
-    hour: pick('hour'),
-    minute: pick('minute'),
-    second: pick('second'),
-  };
-}
-
-function offsetAt(at: number, timezone: string): number {
-  const w = wallClock(at, timezone);
-  return Date.UTC(w.year, w.month - 1, w.day, w.hour, w.minute, w.second) - (at - (at % 1000));
-}
-
-function parseDate(date: LocalDate) {
-  const [year = 1970, month = 1, day = 1] = date.split('-').map(Number);
-  return { year, month, day };
-}
-
-export function zonedTime(date: LocalDate, hour: number, timezone: string): number {
-  const { year, month, day } = parseDate(date);
-  const wall = Date.UTC(year, month - 1, day, hour);
-  let guess = wall - offsetAt(wall, timezone);
-  guess = wall - offsetAt(guess, timezone);
-  return guess;
-}
-
-export function localDate(at: number, timezone: string): LocalDate {
-  const w = wallClock(at, timezone);
-  return toDate(Date.UTC(w.year, w.month - 1, w.day));
-}
-
-function toDate(utcMidnight: number): LocalDate {
-  return new Date(utcMidnight).toISOString().slice(0, 10);
-}
-
-export function addDays(date: LocalDate, days: number): LocalDate {
-  const { year, month, day } = parseDate(date);
-  return toDate(Date.UTC(year, month - 1, day) + days * dayMs);
-}
-
-export function weekdayOf(date: LocalDate): number {
-  const { year, month, day } = parseDate(date);
-  return (new Date(Date.UTC(year, month - 1, day)).getUTCDay() + 6) % 7;
-}
-
 export function weekStart(at: number, timezone: string): LocalDate {
   const date = localDate(at, timezone);
   return addDays(date, -weekdayOf(date));
 }
 
 export function isWeekStart(value: string): boolean {
-  return (
-    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
-    toDate(Date.parse(value)) === value &&
-    weekdayOf(value) === 0
-  );
-}
-
-export function diffDays(from: LocalDate, to: LocalDate): number {
-  return Math.round((Date.parse(to) - Date.parse(from)) / dayMs);
+  return isLocalDate(value) && weekdayOf(value) === 0;
 }
 
 function buildDay(date: LocalDate, timezone: string): Day {
