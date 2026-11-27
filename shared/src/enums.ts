@@ -50,3 +50,9 @@ export type DeliveryStatus = (typeof deliveryStatuses)[number];
 
 export const channelTypes = ['TELEGRAM_PLATFORM', 'WEBHOOK'] as const;
 export type ChannelType = (typeof channelTypes)[number];
+
+export const statsPeriods = ['DAY', 'WEEK', 'MONTH', 'YEAR', 'CUSTOM'] as const;
+export type StatsPeriod = (typeof statsPeriods)[number];
+
+export const statsBuckets = ['HOUR', 'DAY', 'MONTH'] as const;
+export type StatsBucketKind = (typeof statsBuckets)[number];
