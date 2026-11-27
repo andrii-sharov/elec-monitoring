@@ -149,13 +149,13 @@ export function TelegramDemo() {
   const name = t('app.landing.demo.device');
   const messages = [
     {
-      title: plain(t('offline.title', { name })),
-      body: t('offline.body', { time: '18:42' }),
+      title: plain(t('telegram.offline.title', { name })),
+      body: t('telegram.offline.body', { time: '18:42' }),
       time: '18:43',
     },
     {
-      title: plain(t('recovery.title', { name })),
-      body: `${t('recovery.body', { duration: format.duration(133 * 60), range: '18:42 → 20:55' })} · ${t('cause.POWER')}`,
+      title: plain(t('telegram.recovery.title', { name })),
+      body: `${t('telegram.recovery.body', { duration: format.duration(133 * 60), range: '18:42 → 20:55' })} · ${t('telegram.cause.POWER')}`,
       time: '20:55',
     },
   ];

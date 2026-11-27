@@ -4,15 +4,14 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
-type Look = 'outline-warning' | 'outline-offline' | 'fill-offline' | 'fill-primary' | 'dashed';
+type Look = 'outline-warning' | 'outline-offline' | 'fill-offline' | 'fill-live' | 'dashed';
 
 const looks: Record<Look, string> = {
   'outline-warning': 'border-warning/70 text-warning',
   'outline-offline': 'border-status-offline/70 text-status-offline',
   'fill-offline':
     'border-transparent bg-[color-mix(in_oklab,var(--status-offline)_14%,transparent)] text-status-offline',
-  'fill-primary':
-    'border-transparent bg-[color-mix(in_oklab,var(--primary)_14%,transparent)] text-primary',
+  'fill-live': 'border-transparent bg-[color-mix(in_oklab,var(--live)_14%,transparent)] text-live',
   dashed: 'border-dashed border-muted-foreground/60 text-muted-foreground',
 };
 
@@ -47,7 +46,7 @@ const kindTag = {
 
 const causeTag = {
   POWER: { icon: Unplug, look: 'fill-offline' },
-  NETWORK: { icon: WifiOff, look: 'fill-primary' },
+  NETWORK: { icon: WifiOff, look: 'fill-live' },
   UNKNOWN: { icon: CircleHelp, look: 'dashed' },
 } as const;
 

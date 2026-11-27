@@ -17,7 +17,7 @@ import { useFormatters } from '@/lib/format';
 
 const statusTag = {
   QUEUED: { icon: Clock, look: 'dashed' },
-  SENT: { icon: CircleCheck, look: 'fill-primary' },
+  SENT: { icon: CircleCheck, look: 'fill-live' },
   RETRYING: { icon: RotateCw, look: 'outline-warning' },
   FAILED: { icon: CircleAlert, look: 'fill-offline' },
 } as const;

@@ -22,7 +22,12 @@ function LiveDuration({ device }: { device: DeviceListItem }) {
   const duration = useLiveDuration(stateStart(device));
   const live = device.state === 'ONLINE' || device.state === 'OFFLINE';
   return (
-    <p className="font-heading text-2xl leading-tight font-bold tabular-nums">
+    <p
+      className={cn(
+        'font-heading leading-tight font-bold tabular-nums',
+        live ? 'text-2xl' : 'text-lg text-muted-foreground',
+      )}
+    >
       {live
         ? duration
         : t(`app.device.duration.${device.state === 'PENDING' ? 'pending' : 'updating'}`)}

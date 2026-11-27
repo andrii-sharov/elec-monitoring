@@ -32,7 +32,7 @@ export function Wordmark({ className }: { className?: string }) {
   const { t } = useTranslation();
   const [first, ...rest] = t('common.appName').split(' ');
   return (
-    <span className={cn('font-heading font-bold tracking-tight', className)}>
+    <span className={cn('font-heading font-bold tracking-tight max-[22.5rem]:sr-only', className)}>
       {first} <span className="text-primary">{rest.join(' ')}</span>
       <span aria-hidden="true" className="text-live">
         _

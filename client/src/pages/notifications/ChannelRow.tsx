@@ -23,7 +23,7 @@ import { useChannelRefresh } from './useChannelRefresh';
 import { WebhookForm } from './WebhookForm';
 
 const statusTag = {
-  active: { icon: CircleCheck, look: 'fill-primary' },
+  active: { icon: CircleCheck, look: 'fill-live' },
   off: { icon: CirclePause, look: 'dashed' },
   failing: { icon: CircleAlert, look: 'fill-offline' },
 } as const;

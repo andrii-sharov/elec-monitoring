@@ -4,28 +4,28 @@ Client and admin app theme, from [`assets/BRAND.md`](../assets/BRAND.md).
 Dark is the default; the user can pick dark, light or system in Account →
 Appearance (saved in `localStorage['em.theme']`).
 
-| Color token              | Light     | Dark      | Used for                                         |
-| ------------------------ | --------- | --------- | ------------------------------------------------ |
-| `--background`           | `#F3F6F8` | `#0B1015` | Page                                             |
-| `--surface`              | `#FFFFFF` | `#151E27` | Cards, dialogs, menus, header                    |
-| `--foreground`           | `#0B1015` | `#E8F0F4` | Text                                             |
-| `--muted-foreground`     | `#4F6070` | `#93A4B0` | Secondary text, labels, timestamps               |
-| `--primary`              | `#4D7A00` | `#C8F560` | Main buttons, links, active nav (signal lime)    |
-| `--primary-foreground`   | `#FFFFFF` | `#0B1015` | Text on primary                                  |
-| `--secondary`            | `#EAEFF2` | `#1D2833` | Raised elements: hover, inputs (dark), chips     |
-| `--secondary-foreground` | `#0B1015` | `#E8F0F4` | Text on secondary                                |
-| `--border`               | `#D3DCE2` | `#2A3742` | Hairlines, dividers, card edges                  |
-| `--input`                | `#7D8D99` | `#5C6E7E` | Form control borders (≥ 3:1 on surface)          |
-| `--ring`                 | `#4D7A00` | `#C8F560` | Focus ring                                       |
-| `--live`                 | `#00757E` | `#5CE1E6` | The "now" dot, check-in ping, network as a cause |
-| `--signal`               | `#C8F560` | `#C8F560` | Lime fill of the power card (both themes)        |
-| `--signal-foreground`    | `#0B1015` | `#0B1015` | Text on `--signal`                               |
-| `--status-online`        | `#4D7A00` | `#C8F560` | `ONLINE`, power on                               |
-| `--status-offline`       | `#C62828` | `#FF7A7A` | `OFFLINE`, open outage                           |
-| `--status-pending`       | `#5E6E7C` | `#8FA3B8` | `PENDING`, `UPDATING`, unknown cause             |
-| `--danger`               | `#C62828` | `#FF7A7A` | Destructive actions, errors                      |
-| `--danger-foreground`    | `#FFFFFF` | `#0B1015` | Text on danger                                   |
-| `--warning`              | `#8A5A00` | `#FFC857` | Power blips, settings not yet applied            |
+| Color token              | Light     | Dark      | Used for                                                      |
+| ------------------------ | --------- | --------- | ------------------------------------------------------------- |
+| `--background`           | `#F3F6F8` | `#0B1015` | Page                                                          |
+| `--surface`              | `#FFFFFF` | `#151E27` | Cards, dialogs, menus, header                                 |
+| `--foreground`           | `#0B1015` | `#E8F0F4` | Text                                                          |
+| `--muted-foreground`     | `#4F6070` | `#93A4B0` | Secondary text, labels, timestamps                            |
+| `--primary`              | `#4D7A00` | `#C8F560` | Main buttons, links, active nav (signal lime)                 |
+| `--primary-foreground`   | `#FFFFFF` | `#0B1015` | Text on primary                                               |
+| `--secondary`            | `#EAEFF2` | `#1D2833` | Raised elements: hover, inputs (dark), chips                  |
+| `--secondary-foreground` | `#0B1015` | `#E8F0F4` | Text on secondary                                             |
+| `--border`               | `#D3DCE2` | `#2A3742` | Hairlines, dividers, card edges                               |
+| `--input`                | `#7D8D99` | `#5C6E7E` | Form control borders (≥ 3:1 on surface)                       |
+| `--ring`                 | `#4D7A00` | `#C8F560` | Focus ring                                                    |
+| `--live`                 | `#00757E` | `#5CE1E6` | "Now" dot, check-in ping, network cause, active and sent tags |
+| `--signal`               | `#C8F560` | `#C8F560` | Lime fill of the power card (both themes)                     |
+| `--signal-foreground`    | `#0B1015` | `#0B1015` | Text on `--signal`                                            |
+| `--status-online`        | `#4D7A00` | `#C8F560` | `ONLINE`, power on                                            |
+| `--status-offline`       | `#C62828` | `#FF7A7A` | `OFFLINE`, open outage                                        |
+| `--status-pending`       | `#5E6E7C` | `#8FA3B8` | `PENDING`, `UPDATING`, unknown cause                          |
+| `--danger`               | `#C62828` | `#FF7A7A` | Destructive actions, errors                                   |
+| `--danger-foreground`    | `#FFFFFF` | `#0B1015` | Text on danger                                                |
+| `--warning`              | `#8A5A00` | `#FFC857` | Power blips, settings not yet applied                         |
 
 BRAND's surface-2 is `--secondary` here, and BRAND's cyan `--accent` is
 `--live`, because shadcn uses `--accent` for hover fills. Lime means power

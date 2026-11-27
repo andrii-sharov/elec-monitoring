@@ -18,7 +18,7 @@ const look = (text: string) =>
 
 test('cause and kind each get their own look', () => {
   renderTags(outageFixture({ cause: 'NETWORK', kind: 'SHORT' }));
-  expect(look('Network outage')).toBe('fill-primary');
+  expect(look('Network outage')).toBe('fill-live');
   expect(look('Short')).toBe('outline-warning');
 });
 
