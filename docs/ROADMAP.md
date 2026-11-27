@@ -24,23 +24,24 @@ Status: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 
 ## Status board
 
-| #   | Milestone                                                             | Status | Depends on | Plan                                                                                                                                                          |
-| --- | --------------------------------------------------------------------- | ------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M0  | [Foundation](#m0--foundation)                                         | ✅     | —          | [M00](plans/M00-foundation.md)                                                                                                                                |
-| M1  | [Auth](#m1--auth)                                                     | ✅     | M0         | [M01](plans/M01-auth.md)                                                                                                                                      |
-| M2  | [Devices and check-ins](#m2--devices-and-check-ins)                   | ✅     | M1         | [M02](plans/M02-devices.md)                                                                                                                                   |
-| M3  | [Worker and platform bot](#m3--worker-and-platform-telegram-bot)      | ✅     | M2         | [M03](plans/M03-worker-telegram.md)                                                                                                                           |
-| M4  | [Client app](#m4--client-app)                                         | ✅     | M3         | [M04](plans/M04-client.md) · [M04a](plans/M04a-client-styles.md) · [M04b](plans/M04b-device-page-and-brand.md) · [M04c](plans/M04c-ui-polish-and-channels.md) |
-| M5  | [Firmware core and device setup](#m5--firmware-core-and-device-setup) | ✅     | M2         | [M05](plans/M05-firmware.md)                                                                                                                                  |
-| M6  | [Sharing](#m6--sharing)                                               | ✅     | M4         | [M06](plans/M06-sharing.md)                                                                                                                                   |
-| M7  | [Phone sign-in via Telegram](#m7--phone-sign-in-via-telegram)         | ✅     | M4         | [M07](plans/M07-phone-auth.md) · [M07a](plans/M07a-phone-input.md)                                                                                            |
-| M8  | [Webhooks](#m8--webhooks)                                             | ✅     | M4         | [M08](plans/M08-webhooks.md)                                                                                                                                  |
-| M9  | [Statistics](#m9--statistics)                                         | 🟡     | M4         | [M09](plans/M09-statistics.md)                                                                                                                                |
-| M10 | [Admin app](#m10--admin-app)                                          | ⬜     | M4         | —                                                                                                                                                             |
-| M11 | [Remote management and OTA](#m11--remote-device-management-and-ota)   | ⬜     | M4, M5     | —                                                                                                                                                             |
-| M12 | [Launch readiness](#m12--launch-readiness)                            | ⬜     | all        | —                                                                                                                                                             |
-| M13 | [Public status links](#m13--public-status-links)                      | ⬜     | M4         | [M04c §Future](plans/M04c-ui-polish-and-channels.md#future--planning-only-no-code-in-this-milestone)                                                          |
-| M14 | [Mobile layout](#m14--mobile-layout)                                  | 🟡     | M4         | [M14](plans/M14-mobile.md)                                                                                                                                    |
+| #   | Milestone                                                                                      | Status | Depends on | Plan                                                                                                                                                          |
+| --- | ---------------------------------------------------------------------------------------------- | ------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M0  | [Foundation](#m0--foundation)                                                                  | ✅     | —          | [M00](plans/M00-foundation.md)                                                                                                                                |
+| M1  | [Auth](#m1--auth)                                                                              | ✅     | M0         | [M01](plans/M01-auth.md)                                                                                                                                      |
+| M2  | [Devices and check-ins](#m2--devices-and-check-ins)                                            | ✅     | M1         | [M02](plans/M02-devices.md)                                                                                                                                   |
+| M3  | [Worker and platform bot](#m3--worker-and-platform-telegram-bot)                               | ✅     | M2         | [M03](plans/M03-worker-telegram.md)                                                                                                                           |
+| M4  | [Client app](#m4--client-app)                                                                  | ✅     | M3         | [M04](plans/M04-client.md) · [M04a](plans/M04a-client-styles.md) · [M04b](plans/M04b-device-page-and-brand.md) · [M04c](plans/M04c-ui-polish-and-channels.md) |
+| M5  | [Firmware core and device setup](#m5--firmware-core-and-device-setup)                          | ✅     | M2         | [M05](plans/M05-firmware.md)                                                                                                                                  |
+| M6  | [Sharing](#m6--sharing)                                                                        | ✅     | M4         | [M06](plans/M06-sharing.md)                                                                                                                                   |
+| M7  | [Phone sign-in via Telegram](#m7--phone-sign-in-via-telegram)                                  | ✅     | M4         | [M07](plans/M07-phone-auth.md) · [M07a](plans/M07a-phone-input.md)                                                                                            |
+| M8  | [Webhooks](#m8--webhooks)                                                                      | ✅     | M4         | [M08](plans/M08-webhooks.md)                                                                                                                                  |
+| M9  | [Statistics](#m9--statistics)                                                                  | 🟡     | M4         | [M09](plans/M09-statistics.md)                                                                                                                                |
+| M10 | [Admin app](#m10--admin-app)                                                                   | ⬜     | M4         | —                                                                                                                                                             |
+| M11 | [Remote management and OTA](#m11--remote-device-management-and-ota)                            | ⬜     | M4, M5     | —                                                                                                                                                             |
+| M12 | [Launch readiness](#m12--launch-readiness)                                                     | ⬜     | all        | —                                                                                                                                                             |
+| M13 | [Public status links](#m13--public-status-links)                                               | ⬜     | M4         | [M04c §Future](plans/M04c-ui-polish-and-channels.md#future--planning-only-no-code-in-this-milestone)                                                          |
+| M14 | [Mobile layout](#m14--mobile-layout)                                                           | 🟡     | M4         | [M14](plans/M14-mobile.md)                                                                                                                                    |
+| M15 | [Channel language, network pause, UI fixes](#m15--channel-language-network-pause-and-ui-fixes) | ⬜     | M9, M14    | [M15](plans/M15-feedback-fixes.md)                                                                                                                            |
 
 M5 (firmware) can run alongside M3–M4 once the check-in endpoints exist.
 M14 comes next, before M9.
@@ -503,3 +504,24 @@ P §7 Webhooks · A §8.
 **Done when:** tests cover the phone formats and the guide page, and the
 consistency test rejects page-level control sizes. 👤 Run the
 [manual checks](plans/M14-mobile.md#manual-checks) on a real phone.
+
+## M15 — Channel language, network pause and UI fixes
+
+**Goal:** per-channel notification language, planned router work without
+alerts or outages, network gaps kept apart from power downtime, and the
+UI fixes from feedback.
+**Spec:** [M15](plans/M15-feedback-fixes.md#design-decisions) · P §5, §7,
+§9 · A Devices, Notification channels · D.
+
+- [ ] Per-channel language for Telegram (server, client)
+- [ ] Planned network pause (server, client)
+- [ ] Network gaps outside power downtime (stats, history)
+- [ ] Popups above the bottom nav; scrolling day popover
+- [ ] Stable Select width and sort control
+- [ ] Phone tabs and theme picker
+- [ ] Channel card redesign and wording
+- [ ] Phone date range and Month calendar
+
+**Done when:** tests cover a pause with the same boot, a new boot and a
+queued alert, and the channel language fallback. 👤 Run the
+[manual checks](plans/M15-feedback-fixes.md#verify-by-hand-after-all-tasks).
