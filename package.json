@@ -17,13 +17,13 @@
     "test": "npm run test --workspaces",
     "prepare": "git config core.hooksPath .githooks || true"
   },
-  "lint-staged": {
-    "*": "oxfmt --no-error-on-unmatched-pattern"
-  },
   "devDependencies": {
     "lint-staged": "^17.6.2",
     "oxfmt": "^0.79.0",
     "oxlint": "^1.94.0"
+  },
+  "lint-staged": {
+    "*": "oxfmt --no-error-on-unmatched-pattern"
   },
   "engines": {
     "node": ">=26"
