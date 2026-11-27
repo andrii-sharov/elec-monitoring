@@ -27,6 +27,7 @@ import {
   outagesPageSchema,
   statsSchema,
   type StatsQuery,
+  networkPauseSchema,
   pairingCodeSchema,
   putChannelIdsSchema,
   putDeviceIdsSchema,
@@ -142,6 +143,18 @@ export function deleteDevice(api: ApiClient, id: string) {
 
 export function newPairingCode(api: ApiClient, id: string) {
   return api.request(`${device(id)}/pairing-code`, { method: 'POST', schema: pairingCodeSchema });
+}
+
+export function pauseNetworkAlerts(api: ApiClient, id: string, minutes: number) {
+  return api.request(`${device(id)}/network-pause`, {
+    method: 'PUT',
+    body: { minutes },
+    schema: networkPauseSchema,
+  });
+}
+
+export function resumeNetworkAlerts(api: ApiClient, id: string) {
+  return api.request(`${device(id)}/network-pause`, { method: 'DELETE' });
 }
 
 export function rotateToken(api: ApiClient, id: string) {

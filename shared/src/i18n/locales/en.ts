@@ -379,6 +379,12 @@ export const en = {
       notAllowed: 'Open this page over HTTPS to install the firmware.',
     },
     device: {
+      pause: {
+        start: 'Router work',
+        hint: 'Restarting or moving the router? Pause network alerts for:',
+        until: 'Network alerts paused until {{time}}',
+        resume: 'Resume alerts',
+      },
       details: {
         show: 'Show details',
         hide: 'Hide details',

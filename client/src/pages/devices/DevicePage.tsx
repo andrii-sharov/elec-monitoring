@@ -15,6 +15,7 @@ import { DeviceChannels } from './DeviceChannels';
 import { DeviceMembers } from './DeviceMembers';
 import { DeviceSettingsDialog } from './DeviceSettingsDialog';
 import { DeviceSetup } from './DeviceSetup';
+import { NetworkPause } from './NetworkPause';
 import { DeviceHistory } from './history/DeviceHistory';
 import { DeviceStats } from './stats/DeviceStats';
 import { Illustration } from '@/components/Illustration';
@@ -88,6 +89,7 @@ function DeviceContent() {
       <div data-motion="enter">
         <DeviceHero device={data} />
       </div>
+      <NetworkPause device={data} />
       {data.role === 'OWNER' && data.state === 'PENDING' ? (
         <SetupSection deviceId={data.id} />
       ) : null}
