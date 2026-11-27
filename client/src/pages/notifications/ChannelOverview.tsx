@@ -1,9 +1,10 @@
 import type { Channel, DeviceListItem } from '@elec/shared/api';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { channelStatus } from './channelFilters';
+import { ChannelLanguageSelect } from './ChannelLanguageSelect';
 import { channelTypeInfo } from './channelTypes';
 import { EditDevicesDialog } from './EditDevicesDialog';
 
@@ -37,6 +38,7 @@ export function ChannelOverview({
   const { t } = useTranslation();
   const [name, setName] = useState(channel.name);
   const nameRef = useRef<HTMLInputElement>(null);
+  const languageId = useId();
   useEffect(() => {
     if (renaming) nameRef.current?.focus();
   }, [renaming]);
@@ -60,6 +62,9 @@ export function ChannelOverview({
             </li>
           ))}
         </ul>
+      ) : null}
+      {channel.type === 'TELEGRAM_PLATFORM' ? (
+        <ChannelLanguageSelect channel={channel} id={languageId} />
       ) : null}
       {channelStatus(channel) === 'failing' ? (
         <p className="text-status-offline">{t('app.notifications.failingHint')}</p>

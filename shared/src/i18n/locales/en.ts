@@ -532,6 +532,8 @@ export const en = {
       sort: { name: 'By name', newest: 'Newest first', devices: 'Most devices' },
       state: { active: 'Active', off: 'Turned off', failing: 'Failing' },
       overview: 'Overview',
+      language: 'Notification language',
+      sameAsAccount: 'Same as account ({{language}})',
       moreActions: 'More actions for {{name}}',
       events: {
         offline: 'Device went offline',

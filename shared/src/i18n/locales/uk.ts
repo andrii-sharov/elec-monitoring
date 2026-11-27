@@ -556,6 +556,8 @@ export const uk: Dictionary = {
       },
       state: { active: 'Активний', off: 'Вимкнений', failing: 'Збої' },
       overview: 'Огляд',
+      language: 'Мова сповіщень',
+      sameAsAccount: 'Як в обліковому записі ({{language}})',
       moreActions: 'Інші дії для {{name}}',
       events: {
         offline: 'Пристрій зник зі зв’язку',

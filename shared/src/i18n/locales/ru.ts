@@ -562,6 +562,8 @@ export const ru: Dictionary = {
       },
       state: { active: 'Активен', off: 'Выключен', failing: 'Сбои' },
       overview: 'Обзор',
+      language: 'Язык уведомлений',
+      sameAsAccount: 'Как в аккаунте ({{language}})',
       moreActions: 'Другие действия для {{name}}',
       events: {
         offline: 'Устройство пропало со связи',

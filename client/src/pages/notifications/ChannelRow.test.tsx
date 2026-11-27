@@ -1,7 +1,7 @@
 import { resources } from '@elec/shared';
 import { screen, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
-import { beforeEach, expect, test } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
 import {
   channelFixture,
   deviceFixture,
@@ -77,4 +77,49 @@ test('the status tag uses its own wording, not the filter label', () => {
   const ru = resources.ru.translation.app.notifications;
   expect(ru.state.active).toBe('Активен');
   expect(ru.state.active).not.toBe(ru.status.active);
+});
+
+test('a Telegram channel picks its own notification language', async () => {
+  const bodies: unknown[] = [];
+  server.use(
+    http.patch(`${base}/api/v1/channels/${chat.id}`, async ({ request }) => {
+      const body = (await request.json()) as { language: string | null };
+      bodies.push(body);
+      return HttpResponse.json({ ...chat, language: body.language });
+    }),
+  );
+  const { user, card } = await expanded('Home chat');
+  const picker = within(card).getByRole('combobox', { name: 'Notification language' });
+  await user.click(picker);
+  const options = await screen.findAllByRole('option');
+  expect(options.map((option) => option.textContent)).toEqual([
+    'Same as account (English)',
+    'Українська',
+    'English',
+    'Русский',
+  ]);
+  await user.click(screen.getByRole('option', { name: 'English' }));
+  await vi.waitFor(() => expect(bodies).toEqual([{ language: 'en' }]));
+});
+
+test('choosing the account language clears the channel language', async () => {
+  const bodies: unknown[] = [];
+  server.use(
+    http.get(`${base}/api/v1/channels`, () =>
+      HttpResponse.json({ items: [{ ...chat, language: 'ru' }, hook] }),
+    ),
+    http.patch(`${base}/api/v1/channels/${chat.id}`, async ({ request }) => {
+      bodies.push(await request.json());
+      return HttpResponse.json({ ...chat, language: null });
+    }),
+  );
+  const { user, card } = await expanded('Home chat');
+  await user.click(within(card).getByRole('combobox', { name: 'Notification language' }));
+  await user.click(await screen.findByRole('option', { name: 'Same as account (English)' }));
+  await vi.waitFor(() => expect(bodies).toEqual([{ language: null }]));
+});
+
+test('a webhook has no language picker', async () => {
+  const { card } = await expanded('Automation');
+  expect(within(card).queryByRole('combobox', { name: 'Notification language' })).toBeNull();
 });
