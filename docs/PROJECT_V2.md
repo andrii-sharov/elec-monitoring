@@ -788,7 +788,9 @@ Pages:
   "No contact for 25 min", "Waiting for the first check-in", "Updating"),
   and in Sonar and Switchboard a 7-day power strip built from the loaded
   outages (time before the oldest loaded outage is unknown while more
-  pages exist). Below the hero, tabs (kept in `?tab=`): **History**,
+  pages exist). The owner can start **Router work** (10, 15, 30 or 60 min,
+  §5 Planned network work); while it runs everyone sees "Network alerts
+  paused until 14:30" and the owner can resume alerts. Below the hero, tabs (kept in `?tab=`): **History**,
   **Stats**, **Notifications** (channels for this device), **Members**
   (members & invites). History shows one period in the user's timezone: **Day · Week · Month ·
   Year · Custom** (up to 366 days), kept in the URL (`?period=&from=&to=`;
@@ -796,7 +798,9 @@ Pages:
   button back to the current period. Three views (`?view=`, last choice
   remembered): **Timeline** grouped by day with day chips (up to 31 days),
   **Grid** of days × 24 hours filled by the time without power (a calendar
-  heatmap of days for longer ranges), and **Table**. Ranges over 31 days
+  heatmap of days for longer ranges, and for more than a week on phones),
+  and **Table**. Network-only gaps show as "No internet", apart from time
+  without power. On phones the custom range opens as a bottom sheet. Ranges over 31 days
   load month by month in parallel; only a range that includes today polls.
   An open outage
   shows a live duration that ticks every second. **Stats** shares the
@@ -830,12 +834,16 @@ Pages:
 - **Notifications** — built for many channels: an **Add channel** menu
   (Telegram now, webhook in M8; new types come from a client registry),
   search, filters by type, device and status, sorting, all kept in the URL.
-  Each channel is a compact row (type icon, name, status tag, device chips,
-  on/off switch) that expands to rename, edit devices, send a test message
-  and delete. Bulk select turns channels on or off or deletes them. A
+  Filter selects keep the width of their longest option; sorting is its
+  own control with a sort icon.
+  Each channel is a compact card (type icon, name, status tag, device chips,
+  on/off switch, a **⋯** menu with rename, new secret for webhooks and
+  delete) that expands to its overview: destination, events in words,
+  devices, notification language (Telegram), edit devices, send a test
+  message and edit webhook. Bulk select turns channels on or off or deletes them. A
   webhook row also shows its failed attempts in a row (when there are any),
-  and when expanded the URL host and events, with edit, new secret (after a
-  confirmation) and the delivery log (event, device, status, attempts, last
+  and when expanded has two tabs, **Overview** and **Delivery log**; new
+  secret asks for confirmation. The delivery log (event, device, status, attempts, last
   error, time; load more; redeliver for `SENT` and `FAILED` while the
   webhook is on). The signing secret is shown once, in a dialog, after
   create or a new secret, and the client doesn't store it. After create the

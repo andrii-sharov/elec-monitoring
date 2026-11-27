@@ -41,7 +41,7 @@ Status: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 | M12 | [Launch readiness](#m12--launch-readiness)                                                     | ⬜     | all        | —                                                                                                                                                             |
 | M13 | [Public status links](#m13--public-status-links)                                               | ⬜     | M4         | [M04c §Future](plans/M04c-ui-polish-and-channels.md#future--planning-only-no-code-in-this-milestone)                                                          |
 | M14 | [Mobile layout](#m14--mobile-layout)                                                           | 🟡     | M4         | [M14](plans/M14-mobile.md)                                                                                                                                    |
-| M15 | [Channel language, network pause, UI fixes](#m15--channel-language-network-pause-and-ui-fixes) | ⬜     | M9, M14    | [M15](plans/M15-feedback-fixes.md)                                                                                                                            |
+| M15 | [Channel language, network pause, UI fixes](#m15--channel-language-network-pause-and-ui-fixes) | 🟡     | M9, M14    | [M15](plans/M15-feedback-fixes.md)                                                                                                                            |
 
 M5 (firmware) can run alongside M3–M4 once the check-in endpoints exist.
 M14 comes next, before M9.
@@ -513,14 +513,14 @@ UI fixes from feedback.
 **Spec:** [M15](plans/M15-feedback-fixes.md#design-decisions) · P §5, §7,
 §9 · A Devices, Notification channels · D.
 
-- [ ] Per-channel language for Telegram (server, client)
-- [ ] Planned network pause (server, client)
-- [ ] Network gaps outside power downtime (stats, history)
-- [ ] Popups above the bottom nav; scrolling day popover
-- [ ] Stable Select width and sort control
-- [ ] Phone tabs and theme picker
-- [ ] Channel card redesign and wording
-- [ ] Phone date range and Month calendar
+- [x] Per-channel language for Telegram (server, client)
+- [x] Planned network pause (server, client)
+- [x] Network gaps outside power downtime (stats, history)
+- [x] Popups above the bottom nav; scrolling day popover
+- [x] Stable Select width and sort control
+- [x] Phone tabs and theme picker
+- [x] Channel card redesign and wording
+- [x] Phone date range and Month calendar
 
 **Done when:** tests cover a pause with the same boot, a new boot and a
 queued alert, and the channel language fallback. 👤 Run the
