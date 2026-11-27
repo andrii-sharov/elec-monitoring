@@ -107,6 +107,7 @@ test('the chart loads lazily and causes show shares and an open outage', async (
   open();
   await screen.findByText('95.24%');
   await waitFor(() => expect(document.querySelector('[data-slot="chart"]')).not.toBeNull());
+  expect(document.querySelector('[aria-hidden="true"] [tabindex]:not([tabindex="-1"])')).toBeNull();
   const causes = screen.getByRole('region', { name: 'Causes' });
   expect(within(causes).getByText('Power')).toBeInTheDocument();
   expect(within(causes).getByText('5')).toBeInTheDocument();

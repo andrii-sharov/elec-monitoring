@@ -14,7 +14,7 @@ test('sets a color variable per series and draws bars with it', () => {
       config={{ downtime: { label: 'Downtime', color: 'var(--status-offline)' } }}
       initialSize={{ width: 300, height: 160 }}
     >
-      <BarChart data={data} accessibilityLayer={false}>
+      <BarChart data={data}>
         <XAxis dataKey="label" />
         <Bar dataKey="downtime" fill="var(--color-downtime)" />
       </BarChart>
@@ -36,4 +36,17 @@ test('the tooltip panel renders the hovered datum only while active', () => {
   expect(container).toHaveTextContent('Hour 02');
   rerender(<ChartTooltipPanel active={false} payload={payload} render={show} />);
   expect(container).toBeEmptyDOMElement();
+});
+
+test('the chart is not focusable, so it can sit inside aria-hidden', () => {
+  const { container } = render(
+    <ChartContainer config={{}} initialSize={{ width: 300, height: 160 }}>
+      <BarChart data={data}>
+        <Bar dataKey="downtime" />
+      </BarChart>
+    </ChartContainer>,
+  );
+  expect(container.querySelector('svg')).not.toBeNull();
+  expect(container.querySelector('[tabindex]:not([tabindex="-1"])')).toBeNull();
+  expect(container.querySelector('[role="application"]')).toBeNull();
 });

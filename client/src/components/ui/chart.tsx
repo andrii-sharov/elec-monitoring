@@ -1,8 +1,13 @@
 import { cn } from 'cn';
 import type { ComponentProps, CSSProperties, ReactNode } from 'react';
-import { Bar as RechartsBar, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
+import {
+  Bar as RechartsBar,
+  BarChart as RechartsBarChart,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+} from 'recharts';
 
-export { BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+export { CartesianGrid, XAxis, YAxis } from 'recharts';
 
 export type ChartSeries = Record<string, { label: string; color: string }>;
 
@@ -36,6 +41,10 @@ function ChartContainer({ config, className, children, initialSize }: ChartConta
       </ResponsiveContainer>
     </div>
   );
+}
+
+function BarChart(props: ComponentProps<typeof RechartsBarChart>) {
+  return <RechartsBarChart accessibilityLayer={false} {...props} />;
 }
 
 function Bar(props: ComponentProps<typeof RechartsBar>) {
@@ -74,4 +83,4 @@ function ChartTooltip<T>({ render }: ChartTooltipProps<T>) {
   );
 }
 
-export { Bar, ChartContainer, ChartTooltip, TooltipPanel as ChartTooltipPanel };
+export { Bar, BarChart, ChartContainer, ChartTooltip, TooltipPanel as ChartTooltipPanel };
