@@ -1,5 +1,5 @@
 import type { ChannelType, DeliveryEvent, Language } from '@elec/shared';
-import { and, asc, eq, inArray, lte, notExists, notInArray, sql } from 'drizzle-orm';
+import { and, asc, eq, gt, inArray, lte, notExists, notInArray, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { Clock } from '../clock.ts';
 import type { Db, Executor } from '../db/client.ts';
@@ -59,9 +59,17 @@ function oldestDueOfChannel(db: Executor, now: Date) {
         and(
           eq(earlier.channelId, delivery.channelId),
           inArray(earlier.status, waitingStatuses),
-          lte(earlier.nextAttemptAt, now),
-          sql`(${earlier.nextAttemptAt}, ${earlier.createdAt}, ${earlier.id})
-            < (${delivery.nextAttemptAt}, ${delivery.createdAt}, ${delivery.id})`,
+          or(
+            and(
+              lte(earlier.nextAttemptAt, now),
+              sql`(${earlier.nextAttemptAt}, ${earlier.createdAt}, ${earlier.id})
+                < (${delivery.nextAttemptAt}, ${delivery.createdAt}, ${delivery.id})`,
+            ),
+            and(
+              gt(earlier.nextAttemptAt, now),
+              sql`${earlier.nextAttemptAt} = ${earlier.lastAttemptAt} + ${`${LEASE_MS} milliseconds`}::interval`,
+            ),
+          ),
         ),
       ),
   );

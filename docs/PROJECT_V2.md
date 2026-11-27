@@ -617,7 +617,9 @@ same way: one channel, attached to every device the user owns or views.
   without an email get none. Turning such a webhook off by hand doesn't
   change why it is off: only a successful test turns it back on.
 - Each webhook gets at most one send per worker batch, so one slow receiver
-  doesn't fill the batch. A user can add webhooks or change their URLs 10
+  doesn't fill the batch, and no second send while one is in flight (its
+  2-minute lease), even across workers. A delivery waiting for a retry
+  doesn't hold back newer ones. A user can add webhooks or change their URLs 10
   times a minute.
 - A webhook gets `device.offline` even if the outage has already closed,
   and quiet hours don't apply.

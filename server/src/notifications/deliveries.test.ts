@@ -84,6 +84,55 @@ describe('claimDeliveries', () => {
     expect(await claimDeliveries(t.db, clock, 10)).toHaveLength(1);
   });
 
+  const blip = (minute: number) => ({
+    type: 'POWER_BLIP' as const,
+    startedAt: at(-600 + minute * 60),
+    endedAt: at(-600 + minute * 60 + 25),
+    cause: 'POWER' as const,
+    kind: 'SHORT' as const,
+  });
+
+  test('a webhook with a send in flight gets no second claim', async () => {
+    const first = await seedWebhookDelivery(t.db, {
+      nextAttemptAt: at(-10),
+      outageOverrides: blip(0),
+    });
+    const { user, device: dev, channel } = first;
+    await seedWebhookDelivery(t.db, {
+      user,
+      device: dev,
+      channel,
+      nextAttemptAt: at(-5),
+      outageOverrides: blip(1),
+    });
+
+    const claimed = await claimDeliveries(t.db, clock, 10, 'WEBHOOK');
+    expect(claimed.map((d) => d.id)).toEqual([first.delivery.id]);
+    expect(await claimDeliveries(t.db, clock, 10, 'WEBHOOK')).toEqual([]);
+
+    clock.advance(121_000);
+    expect(await claimDeliveries(t.db, clock, 10, 'WEBHOOK')).toHaveLength(1);
+  });
+
+  test('a webhook waiting for a retry does not hold back newer deliveries', async () => {
+    const first = await seedWebhookDelivery(t.db, {
+      status: 'RETRYING',
+      nextAttemptAt: at(60),
+      outageOverrides: blip(0),
+    });
+    const { user, device: dev, channel } = first;
+    const newer = await seedWebhookDelivery(t.db, {
+      user,
+      device: dev,
+      channel,
+      nextAttemptAt: at(-5),
+      outageOverrides: blip(1),
+    });
+
+    const claimed = await claimDeliveries(t.db, clock, 10, 'WEBHOOK');
+    expect(claimed.map((d) => d.id)).toEqual([newer.delivery.id]);
+  });
+
   test('filters by channel type', async () => {
     const chat = await seedDelivery(t.db);
     const hook = await seedWebhookDelivery(t.db, {
