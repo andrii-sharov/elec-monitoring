@@ -21,7 +21,9 @@ export type Formatters = {
   days(from: string, to: string): string;
   full(iso: string): string;
   exactDuration(seconds: number): string;
+  percent(value: number): string;
   timezone: string;
+  language: Language;
 };
 
 export function browserTimezone(): string {
@@ -75,6 +77,12 @@ export function useFormatters(): Formatters {
         .map(([value, unit]) => t(`common.duration.${unit}`, { value, lng: language }))
         .join(' ');
     },
+    percent: (value) =>
+      new Intl.NumberFormat(LOCALES[language], {
+        style: 'percent',
+        maximumFractionDigits: 2,
+      }).format(value / 100),
     timezone,
+    language,
   };
 }

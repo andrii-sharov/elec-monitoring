@@ -1,5 +1,5 @@
 import type { Device } from '@elec/shared/api';
-import { BellRing, History, RotateCw, Users } from 'lucide-react';
+import { BellRing, ChartColumn, History, RotateCw, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 import { useDevice } from '@/api/queries';
@@ -16,6 +16,7 @@ import { DeviceMembers } from './DeviceMembers';
 import { DeviceSettingsDialog } from './DeviceSettingsDialog';
 import { DeviceSetup } from './DeviceSetup';
 import { DeviceHistory } from './history/DeviceHistory';
+import { DeviceStats } from './stats/DeviceStats';
 import { Illustration } from '@/components/Illustration';
 
 export function DevicePage() {
@@ -97,6 +98,7 @@ function DeviceContent() {
 
 const sections = [
   { value: 'history', icon: History },
+  { value: 'stats', icon: ChartColumn },
   { value: 'notifications', icon: BellRing },
   { value: 'members', icon: Users },
 ] as const;
@@ -120,6 +122,9 @@ function DeviceSections({ device }: { device: Device }) {
       </TabsList>
       <TabsPanel value="history">
         <DeviceHistory deviceId={device.id} />
+      </TabsPanel>
+      <TabsPanel value="stats">
+        <DeviceStats deviceId={device.id} />
       </TabsPanel>
       <TabsPanel value="notifications">
         <DeviceChannels deviceId={device.id} />

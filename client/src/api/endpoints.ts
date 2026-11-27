@@ -25,6 +25,8 @@ import {
   meSchema,
   membersSchema,
   outagesPageSchema,
+  statsSchema,
+  type StatsQuery,
   pairingCodeSchema,
   putChannelIdsSchema,
   putDeviceIdsSchema,
@@ -151,6 +153,10 @@ export function getOutages(api: ApiClient, id: string, cursor?: string) {
     query: { limit: 20, cursor },
     schema: outagesPageSchema,
   });
+}
+
+export function getStats(api: ApiClient, id: string, query: StatsQuery) {
+  return api.request(`${device(id)}/stats`, { query, schema: statsSchema });
 }
 
 export type OutageRange = { from: string; to: string };

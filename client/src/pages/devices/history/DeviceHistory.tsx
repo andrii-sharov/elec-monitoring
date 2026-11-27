@@ -2,7 +2,6 @@ import type { OutageItem } from '@elec/shared/api';
 import { Grid3x3, List, RotateCw, Table2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router';
 import { useOutageRange } from '@/api/queries';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,16 +11,14 @@ import { useFormatters } from '@/lib/format';
 import { createPreference } from '@/lib/preference';
 import { useMediaQuery } from '@/lib/useMediaQuery';
 import { useNow } from '@/lib/useNow';
+import { useRangeParams } from '@/lib/useRangeParams';
 import { cn } from '@/lib/utils';
 import {
   containsToday,
   GRID_MAX_DAYS,
   PHONE_GRID_MAX_DAYS,
   monthChunks,
-  parseRange,
-  rangeParams,
   todayIn,
-  type Range,
 } from '@/lib/period';
 import { addDays, daySummary, daysBetween, zonedTime, type Day, type LocalDate } from '@/lib/week';
 import { HistoryGrid } from './HistoryGrid';
@@ -42,26 +39,13 @@ const viewPreference = createPreference<View>({
 });
 
 function useHistoryParams(today: LocalDate) {
-  const [params, setParams] = useSearchParams();
+  const { params, range, update, setRange } = useRangeParams(today);
   const [storedView, storeView] = viewPreference.use();
-  const range = parseRange(params, today);
   const view = views.find((choice) => choice === params.get('view')) ?? storedView;
-  const update = (changes: Record<string, string | null>) =>
-    setParams(
-      (previous) => {
-        const next = new URLSearchParams(previous);
-        for (const [key, value] of Object.entries(changes)) {
-          if (value === null) next.delete(key);
-          else next.set(key, value);
-        }
-        return next;
-      },
-      { replace: true },
-    );
   return {
     range,
     view,
-    setRange: (value: Range) => update(rangeParams(value, today)),
+    setRange,
     setView: (value: View) => {
       storeView(value);
       update({ view: value });

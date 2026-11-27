@@ -1,4 +1,5 @@
-import type { Channel, Device, Me } from '@elec/shared/api';
+import type { LocalDate } from '@elec/shared';
+import type { Channel, Device, Me, StatsQuery } from '@elec/shared/api';
 import {
   keepPreviousData,
   useInfiniteQuery,
@@ -18,8 +19,10 @@ import {
   getMe,
   getMembers,
   getOutages,
+  getStats,
   type OutageRange,
 } from './endpoints.ts';
+import { containsToday, type Range } from '@/lib/period';
 import { useSession } from './session.tsx';
 
 export const queryKeys = {
@@ -28,6 +31,7 @@ export const queryKeys = {
   device: (id: string) => ['device', id],
   outages: (id: string) => ['outages', id],
   outageRange: (id: string, from: string, to: string) => ['outages', id, 'range', from, to],
+  stats: (id: string, query: StatsQuery, timezone: string) => ['stats', id, timezone, query],
   channels: ['channels'],
   deviceChannels: (id: string) => ['deviceChannels', id],
   deliveries: (id: string) => ['deliveries', id],
@@ -94,6 +98,28 @@ export function useOutageRange(
     },
     placeholderData: keepPreviousData,
     refetchInterval: live ? pollMs.device : false,
+  });
+}
+
+export function statsQuery(range: Range): StatsQuery {
+  const period = range.period.toUpperCase() as StatsQuery['period'];
+  return range.period === 'custom'
+    ? { period, from: range.from, to: range.to }
+    : { period, from: range.from };
+}
+
+export function statsPollMs(range: Range, today: LocalDate): number | false {
+  return containsToday(range, today) ? pollMs.device : false;
+}
+
+export function useDeviceStats(id: string, range: Range, today: LocalDate, timezone: string) {
+  const { api } = useSession();
+  const query = statsQuery(range);
+  return useQuery({
+    queryKey: queryKeys.stats(id, query, timezone),
+    queryFn: () => getStats(api, id, query),
+    placeholderData: keepPreviousData,
+    refetchInterval: statsPollMs(range, today),
   });
 }
 

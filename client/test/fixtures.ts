@@ -8,6 +8,7 @@ import type {
   Member,
   OutageItem,
   Session,
+  DeviceStats,
 } from '@elec/shared/api';
 
 export function meFixture(overrides: Partial<Me> = {}): Me {
@@ -143,6 +144,36 @@ export function invitePreviewFixture(overrides: Partial<InvitePreview> = {}): In
     phone: null,
     expires_at: '2026-11-28T16:42:00Z',
     accepted: false,
+    ...overrides,
+  };
+}
+
+export function statsFixture(overrides: Partial<DeviceStats> = {}): DeviceStats {
+  const days = Array.from({ length: 7 }, (_day, index) => ({
+    from: new Date(Date.parse('2026-11-15T22:00:00Z') + index * 86_400_000).toISOString(),
+    to: new Date(Date.parse('2026-11-16T22:00:00Z') + index * 86_400_000).toISOString(),
+    outages: index === 1 ? 2 : 0,
+    power_blips: index === 3 ? 1 : 0,
+    total_downtime_s: index === 1 ? 3600 : 0,
+    availability_pct: index === 1 ? 95.83 : 100,
+  }));
+  return {
+    period: 'WEEK',
+    timezone: 'Europe/Kyiv',
+    from: '2026-11-15T22:00:00Z',
+    to: '2026-11-22T22:00:00Z',
+    bucket: 'DAY',
+    monitoring_since: '2026-10-02T09:14:05Z',
+    outages: 7,
+    long_outages: 3,
+    open_outage: false,
+    power_blips: 2,
+    by_cause: { power: 5, network: 1, unknown: 1 },
+    total_downtime_s: 28800,
+    avg_outage_s: 4114,
+    longest_outage_s: 14400,
+    availability_pct: 95.24,
+    buckets: days,
     ...overrides,
   };
 }
