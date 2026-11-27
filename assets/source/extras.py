@@ -1,12 +1,13 @@
 import os, re, sys
 sys.path.insert(0, os.path.dirname(__file__))
-from brand import C, BOLT, defs, mark_body
+from brand import C, WAVE, defs, mark_body
+from gen import backdrop, side_waves
 OUT = 'out'
 
-LIGHT = dict(a='#166088', f='#203844', m='#476471', s='#FFFFFF', b='#B6CBD4',
-             on='#146847', off='#A43042', pend='#56657A', w='#855A12')
-DARK = dict(a='#92CBE6', f='#E6F1F5', m='#B2C8D1', s='#192C36', b='#405965',
-            on='#79DEB2', off='#FFA0AC', pend='#A5B4CA', w='#F1C677')
+LIGHT = dict(a='#4D7A00', f='#0B1015', m='#4F6070', s='#FFFFFF', b='#D3DCE2',
+             on='#4D7A00', off='#C62828', pend='#5E6E7C', w='#8A5A00')
+DARK = dict(a='#C8F560', f='#E8F0F4', m='#93A4B0', s='#151E27', b='#2A3742',
+            on='#C8F560', off='#FF7A7A', pend='#8FA3B8', w='#FFC857')
 TOKENS = dict(a='primary', f='foreground', m='muted-foreground', s='surface', b='border',
               on='status-online', off='status-offline', pend='status-pending', w='warning')
 
@@ -34,13 +35,14 @@ def illustration(name, label, body):
 
 
 def bolt_at(cx, cy, scale):
-    tx, ty = cx - 33 * scale, cy - 32 * scale
-    return (f'<path transform="translate({tx:g} {ty:g}) scale({scale:g})" d="{BOLT}" '
-            f'fill="{C["bolt"]}" stroke="{C["bolt"]}" stroke-width="2.5"/>')
+    # brand square wave + live dot, centred on (cx, cy)
+    tx, ty = cx - 30 * scale, cy - 31 * scale
+    return (f'<g transform="translate({tx:g} {ty:g}) scale({scale:g})"><path d="{WAVE}" fill="none" stroke="{C["signal"]}" stroke-width="5"/>'
+            f'<circle cx="52" cy="22" r="5" fill="{C["cyan"]}" stroke="none"/></g>')
 
 
 def not_found():
-    illustration('not-found', 'Unplugged cable', f'''    <path class="a-s" d="M16 96 H50 L58 82 L66 96 H92"/>
+    illustration('not-found', 'Unplugged cable', f'''    <path class="a-s" d="M16 96 H40 V82 H62 V96 H92"/>
     <rect class="a" x="92" y="84" width="24" height="24" rx="6"/>
     <path class="m-s" d="M116 91 H126 M116 101 H126"/>
     <path class="pend-s" d="M132 96 H146" stroke-dasharray="1 6"/>
@@ -55,14 +57,14 @@ def history_empty():
     days = '\n'.join(
         f'    <rect class="on" x="{28 + i * 27}" y="104" width="23" height="24" rx="6" fill-opacity="{0.55 + i * 0.07:.2f}"/>'
         for i in range(7))
-    illustration('history-empty', 'A calm week with no outages', f'''    <path class="a-s" d="M28 62 H58 L66 50 L74 62 H98 M142 62 H212"/>
+    illustration('history-empty', 'A calm week with no outages', f'''    <path class="a-s" d="M28 62 H52 V48 H74 V62 H98 M142 62 H212"/>
     <circle class="on" cx="120" cy="62" r="18"/>
     <path class="s-s" stroke-width="4" d="M111 62 L117.5 68.5 L130 55.5"/>
 {days}''')
 
 
 def channels_empty():
-    illustration('channels-empty', 'No notification channel yet', f'''    <path fill="url(#channels-emptybg)" d="M52 46 H92 A16 16 0 0 1 108 62 V84 A16 16 0 0 1 92 100 H70 L46 116 L52 100 A16 16 0 0 1 36 84 V62 A16 16 0 0 1 52 46 Z"/>
+    illustration('channels-empty', 'No notification channel yet', f'''    <path fill="{C['tile']}" d="M52 46 H92 A16 16 0 0 1 108 62 V84 A16 16 0 0 1 92 100 H70 L46 116 L52 100 A16 16 0 0 1 36 84 V62 A16 16 0 0 1 52 46 Z"/>
     {bolt_at(72, 73, 0.72)}
     <path class="m-s" d="M118 73 H142" stroke-dasharray="1 7"/>
     <circle class="b-s" cx="176" cy="73" r="26" stroke-dasharray="6 6"/>
@@ -70,11 +72,9 @@ def channels_empty():
 
 
 def full_bleed(uid, size):
-    inner = mark_body(uid).split('/>', 1)[1]
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="{size}" height="{size}">
-  <defs>{defs(uid)}</defs>
-  <rect width="64" height="64" fill="url(#{uid}bg)"/>
-  <g transform="translate(9.6 9.6) scale(0.7)">{inner}</g>
+  <rect width="64" height="64" fill="{C['tile']}"/>
+  <g transform="translate(9.6 9.6) scale(0.7)">{mark_body(uid, tile=False)}</g>
 </svg>
 '''
 
@@ -82,15 +82,9 @@ def full_bleed(uid, size):
 def banner(name, W, H, mark_scale):
     m = 64 * mark_scale
     x, y = (W - m) / 2, (H - m) / 2
-    line_y = y + 34 * mark_scale
     s = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}">
-  <defs>{defs('d')}
-    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.6"><stop offset="0" stop-color="#1D78A8" stop-opacity=".55"/><stop offset="1" stop-color="#101D24" stop-opacity="0"/></radialGradient>
-    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#92CBE6" stroke-opacity=".07"/></pattern></defs>
-  <rect width="{W}" height="{H}" fill="#101D24"/>
-  <rect width="{W}" height="{H}" fill="url(#grid)"/>
-  <rect width="{W}" height="{H}" fill="url(#glow)"/>
-  <path d="M0 {line_y:g} H{x - 36:g} M{x + m + 36:g} {line_y:g} H{W}" stroke="#92CBE6" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/>
+  {backdrop(W, H, 'd', 32)}
+  {side_waves(W, y + 40 * mark_scale, x - 36, x + m + 36, mark_scale)}
   <g transform="translate({x:g} {y:g}) scale({mark_scale:g})">{mark_body('d')}</g>
 </svg>
 '''
@@ -99,7 +93,7 @@ def banner(name, W, H, mark_scale):
 
 def minified_mark():
     s = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true"><defs>{defs('p')}</defs>{mark_body('p', small=True)}</svg>'''
-    s = re.sub(r'>\s+<', '><', s).replace(' class="pulse"', '')
+    s = re.sub(r'>\s+<', '><', s).replace(' class="wave"', '').replace(' class="dot"', '').replace('<defs></defs>', '')
     open(f'{OUT}/portal-mark.svg', 'w').write(s + '\n')
 
 

@@ -9,29 +9,29 @@
     <style>
       @media (prefers-color-scheme: dark) {
         .em-page {
-          background: #101d24 !important;
+          background: #0b1015 !important;
         }
         .em-card {
-          background: #192c36 !important;
-          border-color: #405965 !important;
+          background: #151e27 !important;
+          border-color: #2a3742 !important;
         }
         .em-text {
-          color: #e6f1f5 !important;
+          color: #e8f0f4 !important;
         }
         .em-muted {
-          color: #b2c8d1 !important;
+          color: #93a4b0 !important;
         }
         .em-brand {
-          color: #92cbe6 !important;
+          color: #c8f560 !important;
         }
         .em-button {
-          background: #92cbe6 !important;
+          background: #c8f560 !important;
         }
         .em-button a {
-          color: #102530 !important;
+          color: #0b1015 !important;
         }
         .em-link {
-          color: #92cbe6 !important;
+          color: #c8f560 !important;
         }
       }
       @media (max-width: 620px) {
@@ -42,7 +42,7 @@
       }
     </style>
   </head>
-  <body style="margin: 0; padding: 0; background: #dbe9ee">
+  <body style="margin: 0; padding: 0; background: #f3f6f8">
     <div style="display: none; max-height: 0; overflow: hidden; opacity: 0">{{preheader}}</div>
     <table
       role="presentation"
@@ -51,7 +51,7 @@
       cellpadding="0"
       cellspacing="0"
       border="0"
-      style="background: #dbe9ee"
+      style="background: #f3f6f8"
     >
       <tr>
         <td align="center" style="padding: 32px 12px">
@@ -79,10 +79,10 @@
                     <td
                       class="em-brand"
                       style="
-                        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-                        font-size: 17px;
-                        font-weight: 600;
-                        color: #166088;
+                        font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+                        font-size: 16px;
+                        font-weight: 700;
+                        color: #4d7a00;
                       "
                     >
                       {{appName}}
@@ -100,7 +100,7 @@
                   cellpadding="0"
                   cellspacing="0"
                   border="0"
-                  style="background: #ffffff; border: 1px solid #b6cbd4; border-radius: 16px"
+                  style="background: #ffffff; border: 1px solid #d3dce2; border-radius: 16px"
                 >
                   <tr>
                     <td
@@ -110,7 +110,7 @@
                         font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
                         font-size: 16px;
                         line-height: 24px;
-                        color: #203844;
+                        color: #0b1015;
                       "
                     >
                       <p style="margin: 0 0 24px">{{intro}}</p>
@@ -120,7 +120,7 @@
                     <td style="padding: 0 40px 24px">
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                         <tr>
-                          <td class="em-button" style="background: #166088; border-radius: 10px">
+                          <td class="em-button" style="background: #0b1015; border-radius: 10px">
                             <a
                               href="{{link}}"
                               style="
@@ -131,7 +131,7 @@
                                 font-size: 15px;
                                 font-weight: 600;
                                 line-height: 20px;
-                                color: #ffffff;
+                                color: #c8f560;
                                 text-decoration: none;
                                 border-radius: 10px;
                               "
@@ -150,14 +150,14 @@
                         font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
                         font-size: 14px;
                         line-height: 21px;
-                        color: #476471;
+                        color: #4f6070;
                       "
                     >
                       <!-- {{#notes}} one <p> per note -->
                       <p style="margin: 0 0 12px">{{note}}</p>
                       <!-- {{/notes}} -->
                       <p style="margin: 16px 0 0; word-break: break-all">
-                        {{linkHint}}<br /><a class="em-link" href="{{link}}" style="color: #166088"
+                        {{linkHint}}<br /><a class="em-link" href="{{link}}" style="color: #4d7a00"
                           >{{link}}</a
                         >
                       </p>
@@ -175,7 +175,7 @@
                   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
                   font-size: 12px;
                   line-height: 18px;
-                  color: #476471;
+                  color: #4f6070;
                 "
               >
                 {{footer}}

@@ -1,24 +1,24 @@
 :root {
   color-scheme: light dark;
-  --bg: #dbe9ee;
+  --bg: #f3f6f8;
   --card: #fff;
-  --fg: #203844;
-  --mut: #476471;
-  --pri: #166088;
+  --fg: #0b1015;
+  --mut: #4f6070;
+  --pri: #4d7a00;
   --on-pri: #fff;
-  --in: #738e9b;
-  --bad: #a43042;
+  --in: #8a99a6;
+  --bad: #c62828;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #101d24;
-    --card: #192c36;
-    --fg: #e6f1f5;
-    --mut: #b2c8d1;
-    --pri: #92cbe6;
-    --on-pri: #102530;
-    --in: #64808d;
-    --bad: #ffa0ac;
+    --bg: #0b1015;
+    --card: #151e27;
+    --fg: #e8f0f4;
+    --mut: #93a4b0;
+    --pri: #c8f560;
+    --on-pri: #0b1015;
+    --in: #3a4a57;
+    --bad: #ff7a7a;
   }
 }
 body {
@@ -37,6 +37,7 @@ header {
 }
 header h1 {
   margin: 0;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
   font-size: 1.35rem;
 }
 form {

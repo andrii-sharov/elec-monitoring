@@ -6,7 +6,7 @@ const svg = fs.readFileSync(svgPath, 'utf8');
 const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome' });
 const p = await b.newPage({ viewport: { width: 1000, height: 560 }, deviceScaleFactor: 1.92 });
 await p.setContent(
-  `<html><body style="margin:0;background:#101D24">${svg.replace('<svg ', '<svg style="width:1000px;height:560px;display:block" ')}</body></html>`,
+  `<html><body style="margin:0;background:#0B1015">${svg.replace('<svg ', '<svg style="width:1000px;height:560px;display:block" ')}</body></html>`,
 );
 for (let i = 0; i < 360; i++) {
   await p.evaluate(

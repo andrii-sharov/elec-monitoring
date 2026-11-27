@@ -1,19 +1,33 @@
-# Palette: Underwater Dream (docs/theme.md) + derived brand shades
-C=dict(bgA='#1D78A8', bgB='#0F4664', line='#92CBE6', bolt='#F1C677', dot='#79DEB2',
-       primL='#166088', fgL='#203844', primD='#92CBE6', fgD='#E6F1F5')
+# Palette: Neon Grid (assets/BRAND.md). Dark-first; the mark keeps these fixed colours in every theme.
+C = dict(
+    tile='#151E27', edge='#2A3742',          # mark tile + hairline border
+    signal='#C8F560', cyan='#5CE1E6',        # square wave + live dot
+    bg='#0B1015', surface='#151E27', card='#1D2833', border='#2A3742',
+    fgD='#E8F0F4', mutD='#93A4B0', outage='#FF7A7A', lamp='#FFC857',
+    # light-surface variants (text-safe on white, 4.5:1+)
+    fgL='#0B1015', mutL='#4F6070', signalL='#4D7A00', cyanL='#00808A',
+    primL='#4D7A00', primD='#C8F560',
+)
+
+# Square-wave signal: steps between OFF (low) and ON (high), ends at the live dot.
+WAVE = 'M8 40 H20 V22 H38 V40 H46 V22 H52'
+WAVE_SMALL = 'M6 42 H22 V22 H52'          # one clean step for 16-32 px
+DOT = (52, 22)
+
 
 def defs(uid):
-    return f'''<linearGradient id="{uid}bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{C['bgA']}"/><stop offset="1" stop-color="{C['bgB']}"/></linearGradient>'''
+    return ''
 
-BOLT='M36 9 L23 36 H32 L28 55 L43 27 H34 Z'
-def mark_body(uid, small=False):
-    lw = 5.5 if small else 4
-    left = 'M5 34 H30' if small else 'M6 34 H10 L14.5 27.5 L19 34 H30'
-    return f'''<rect width="64" height="64" rx="15" fill="url(#{uid}bg)"/>
-  <mask id="{uid}gap" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64"><rect width="64" height="64" fill="#fff"/><path d="{BOLT}" fill="#000" stroke="#000" stroke-width="6" stroke-linejoin="round"/></mask>
-  <g mask="url(#{uid}gap)" class="pulse">
-  <path d="{left}" fill="none" stroke="{C['line']}" stroke-width="{lw}" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M34 34 H58" fill="none" stroke="{C['line']}" stroke-width="{lw}" stroke-linecap="round"/>
-  </g>
-  <path d="{BOLT}" fill="{C['bolt']}" stroke="{C['bolt']}" stroke-width="2.5" stroke-linejoin="round"/>
-  <circle cx="51" cy="13" r="{5.5 if small else 4.5}" fill="{C['dot']}"/>'''
+
+def mark_body(uid, small=False, tile=True):
+    lw = 6.5 if small else 4.5
+    wave = WAVE_SMALL if small else WAVE
+    r = 6 if small else 4.5
+    t = ''
+    if tile:
+        t = f'<rect width="64" height="64" rx="14" fill="{C["tile"]}"/>'
+        if not small:
+            t += f'<rect x="1" y="1" width="62" height="62" rx="13" fill="none" stroke="{C["edge"]}" stroke-width="2"/>'
+    return f'''{t}
+  <path class="wave" d="{wave}" fill="none" stroke="{C['signal']}" stroke-width="{lw}" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle class="dot" cx="{DOT[0]}" cy="{DOT[1]}" r="{r}" fill="{C['cyan']}"/>'''

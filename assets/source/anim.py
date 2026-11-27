@@ -1,11 +1,11 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
 from text2path import text_path
-from brand import BOLT, C
-O='fonts/fontsource-onest-5.3.1/package/files/onest-'
+from brand import WAVE, C
+O='fonts/fontsource-inter-5.3.0/package/files/inter-'
 def on(w): return [O+f'latin-{w}-normal.woff2', O+f'cyrillic-{w}-normal.woff2']
-U='fonts/fontsource-unbounded-5.3.0/package/files/unbounded-'
-UN=[U+'latin-600-normal.woff2', U+'cyrillic-600-normal.woff2']
+U='fonts/fontsource-jetbrains-mono-5.3.0/package/files/jetbrains-mono-'
+UN=[U+'latin-700-normal.woff2', U+'cyrillic-700-normal.woff2']
 
 def T(text, w, size, x, y, fill, anchor='start', cls=''):
     _,wd=text_path(text, on(w) if w!='U' else UN, size)
@@ -27,33 +27,22 @@ def wrap(text, w, size, maxw):
 def logo_animated():
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Electricity Monitor">
   <style>
-    .trace{{stroke-dasharray:20 160;stroke-dashoffset:20;animation:trace 2.4s linear infinite}}
-    .glow{{opacity:0;animation:glow 2.4s ease-out infinite}}
-    .bolt{{transform-origin:33px 32px;animation:kick 2.4s ease-out infinite}}
-    .ring{{transform-origin:51px 13px;animation:ring 2.4s ease-out infinite}}
-    @keyframes trace{{0%{{stroke-dashoffset:20}}100%{{stroke-dashoffset:-120}}}}
-    @keyframes glow{{0%,30%{{opacity:0}}42%{{opacity:.9}}70%,100%{{opacity:0}}}}
-    @keyframes kick{{0%,32%{{transform:scale(1)}}40%{{transform:scale(1.07)}}55%,100%{{transform:scale(1)}}}}
-    @keyframes ring{{0%{{transform:scale(1);opacity:.9}}60%,100%{{transform:scale(2.4);opacity:0}}}}
-    @media (prefers-reduced-motion:reduce){{.trace,.glow,.bolt,.ring{{animation:none}}.trace,.ring,.glow{{opacity:0}}}}
+    .trace{{stroke-dasharray:14 200;stroke-dashoffset:14;animation:trace 2.4s linear infinite}}
+    .ring{{transform-origin:52px 22px;animation:ring 2.4s ease-out infinite}}
+    .dot{{transform-origin:52px 22px;animation:kick 2.4s ease-out infinite}}
+    @keyframes trace{{0%{{stroke-dashoffset:14}}70%,100%{{stroke-dashoffset:-100}}}}
+    @keyframes kick{{0%,62%{{transform:scale(1)}}70%{{transform:scale(1.3)}}85%,100%{{transform:scale(1)}}}}
+    @keyframes ring{{0%,65%{{transform:scale(1);opacity:0}}70%{{opacity:.9}}100%{{transform:scale(2.6);opacity:0}}}}
+    @media (prefers-reduced-motion:reduce){{.trace,.ring,.dot{{animation:none}}.trace,.ring{{opacity:0}}}}
   </style>
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{C['bgA']}"/><stop offset="1" stop-color="{C['bgB']}"/></linearGradient>
-    <mask id="gap" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64"><rect width="64" height="64" fill="#fff"/><path d="{BOLT}" fill="#000" stroke="#000" stroke-width="6" stroke-linejoin="round"/></mask>
-    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
-    <clipPath id="tile"><rect width="64" height="64" rx="15"/></clipPath>
-  </defs>
-  <rect width="64" height="64" rx="15" fill="url(#bg)"/>
-  <g clip-path="url(#tile)">
-    <g mask="url(#gap)" fill="none" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M6 34 H10 L14.5 27.5 L19 34 H30 M34 34 H58" stroke="{C['line']}" stroke-width="4"/>
-      <path class="trace" pathLength="100" d="M6 34 H10 L14.5 27.5 L19 34 H58" stroke="#E6F1F5" stroke-width="4"/>
-    </g>
-    <path class="glow" d="{BOLT}" fill="{C['bolt']}" filter="url(#blur)"/>
-    <path class="bolt" d="{BOLT}" fill="{C['bolt']}" stroke="{C['bolt']}" stroke-width="2.5" stroke-linejoin="round"/>
-    <circle class="ring" cx="51" cy="13" r="4.5" fill="none" stroke="{C['dot']}" stroke-width="1.5"/>
-    <circle cx="51" cy="13" r="4.5" fill="{C['dot']}"/>
+  <rect width="64" height="64" rx="14" fill="{C['tile']}"/>
+  <rect x="1" y="1" width="62" height="62" rx="13" fill="none" stroke="{C['edge']}" stroke-width="2"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="{WAVE}" stroke="{C['signal']}" stroke-width="4.5"/>
+    <path class="trace" pathLength="100" d="{WAVE}" stroke="#F4FFD6" stroke-width="4.5"/>
   </g>
+  <circle class="ring" cx="52" cy="22" r="4.5" fill="none" stroke="{C['cyan']}" stroke-width="1.5"/>
+  <circle class="dot" cx="52" cy="22" r="4.5" fill="{C['cyan']}"/>
 </svg>
 '''
 
@@ -78,19 +67,19 @@ def chip(x,y,txt,col):
 
 def card(s, kind):
     # card in local coords, 196 wide
-    col = '#FFA0AC' if kind=='off' else '#79DEB2'
+    col = '#FF7A7A' if kind=='off' else '#C8F560'
     title = s['off'] if kind=='off' else s['on']; body = s['offb'] if kind=='off' else s['onb']
     tl=wrap(title,600,11.5,160); bl=wrap(body,400,10,166)
     h=34+len(tl)*14+len(bl)*13+24
-    out=[f'<rect width="196" height="{h}" rx="14" fill="#203844" stroke="#405965"/>',
-         f'<circle cx="16" cy="18" r="5" fill="{col}"/>', T(s['home'],600,12,28,22,'#E6F1F5'), T(s['now'],400,9.5,184,22,'#B2C8D1','end')]
+    out=[f'<rect width="196" height="{h}" rx="14" fill="#1D2833" stroke="#2A3742"/>',
+         f'<circle cx="16" cy="18" r="5" fill="{col}"/>', T(s['home'],600,12,28,22,'#E8F0F4'), T(s['now'],400,9.5,184,22,'#93A4B0','end')]
     y=40
-    for l in tl: out.append(T(l,600,11.5,12,y,'#E6F1F5')); y+=14
+    for l in tl: out.append(T(l,600,11.5,12,y,'#E8F0F4')); y+=14
     y+=1
-    for l in bl: out.append(T(l,400,10,12,y,'#B2C8D1')); y+=13
-    out.append(chip(12,y-4,s['tg'],'#92CBE6'))
+    for l in bl: out.append(T(l,400,10,12,y,'#93A4B0')); y+=13
+    out.append(chip(12,y-4,s['tg'],'#5CE1E6'))
     if kind=='on':
-        _,w=text_path(s['tg'],on(500),9.5); out.append(chip(12+w+20,y-4,s['wh'],'#79DEB2'))
+        _,w=text_path(s['tg'],on(500),9.5); out.append(chip(12+w+20,y-4,s['wh'],'#C8F560'))
     return '\n'.join(out), h
 
 def hero(lang):
@@ -133,66 +122,66 @@ def hero(lang):
     }}'''
     house=f'''
   <g transform="translate(70 0)">
-    <path d="M10 258 L100 182 L190 258" fill="none" stroke="#64808D" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-    <rect x="28" y="248" width="144" height="152" rx="6" fill="#192C36" stroke="#405965" stroke-width="2"/>
-    <rect x="52" y="272" width="64" height="62" rx="5" fill="#0C161C"/>
-    <g class="lit"><rect x="52" y="272" width="64" height="62" rx="5" fill="{C['bolt']}"/>
-      <rect x="40" y="262" width="88" height="82" rx="12" fill="{C['bolt']}" opacity=".18" filter="url(#soft)"/></g>
-    <path d="M84 272 V334 M52 303 H116" stroke="#192C36" stroke-width="4"/>
-    <rect x="128" y="318" width="34" height="46" rx="8" fill="#DBE9EE"/>
-    <circle cx="139" cy="333" r="3" fill="#738E9B"/><circle cx="151" cy="333" r="3" fill="#738E9B"/>
-    <rect x="132" y="342" width="26" height="40" rx="4" fill="#166088" stroke="#0F4664" stroke-width="1.5"/>
-    <rect x="137" y="350" width="16" height="12" rx="2" fill="#0F4664"/>
-    <circle class="lit" cx="145" cy="372" r="3.2" fill="#79DEB2"/>
-    <circle class="led lit" cx="145" cy="372" r="6" fill="#79DEB2" opacity=".35"/>
-    <circle class="dark" cx="145" cy="372" r="3.2" fill="#405965"/>
+    <path d="M10 258 L100 182 L190 258" fill="none" stroke="#5A6B78" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="28" y="248" width="144" height="152" rx="6" fill="#151E27" stroke="#2A3742" stroke-width="2"/>
+    <rect x="52" y="272" width="64" height="62" rx="5" fill="#070A0E"/>
+    <g class="lit"><rect x="52" y="272" width="64" height="62" rx="5" fill="{C['lamp']}"/>
+      <rect x="40" y="262" width="88" height="82" rx="12" fill="{C['lamp']}" opacity=".18" filter="url(#soft)"/></g>
+    <path d="M84 272 V334 M52 303 H116" stroke="#151E27" stroke-width="4"/>
+    <rect x="128" y="318" width="34" height="46" rx="8" fill="#C9D3DA"/>
+    <circle cx="139" cy="333" r="3" fill="#5A6B78"/><circle cx="151" cy="333" r="3" fill="#5A6B78"/>
+    <rect x="132" y="342" width="26" height="40" rx="4" fill="#2A3742" stroke="#151E27" stroke-width="1.5"/>
+    <rect x="137" y="350" width="16" height="12" rx="2" fill="#151E27"/>
+    <circle class="lit" cx="145" cy="372" r="3.2" fill="#C8F560"/>
+    <circle class="led lit" cx="145" cy="372" r="6" fill="#C8F560" opacity=".35"/>
+    <circle class="dark" cx="145" cy="372" r="3.2" fill="#2A3742"/>
   </g>'''
     srv=f'''
   <g transform="translate(450 0)">
-    <rect x="0" y="236" width="100" height="134" rx="12" fill="#192C36" stroke="#405965" stroke-width="2"/>
-    <g fill="#2A414D"><rect x="12" y="252" width="76" height="26" rx="5"/><rect x="12" y="290" width="76" height="26" rx="5"/><rect x="12" y="328" width="76" height="26" rx="5"/></g>
-    <g fill="#92CBE6" opacity=".7"><circle cx="24" cy="265" r="3"/><circle cx="24" cy="303" r="3"/><circle cx="24" cy="341" r="3"/></g>
-    <g stroke="#64808D" stroke-width="3" stroke-linecap="round"><path d="M40 265 H76 M40 303 H70 M40 341 H74"/></g>
+    <rect x="0" y="236" width="100" height="134" rx="12" fill="#151E27" stroke="#2A3742" stroke-width="2"/>
+    <g fill="#222E39"><rect x="12" y="252" width="76" height="26" rx="5"/><rect x="12" y="290" width="76" height="26" rx="5"/><rect x="12" y="328" width="76" height="26" rx="5"/></g>
+    <g fill="#5CE1E6" opacity=".7"><circle cx="24" cy="265" r="3"/><circle cx="24" cy="303" r="3"/><circle cx="24" cy="341" r="3"/></g>
+    <g stroke="#5A6B78" stroke-width="3" stroke-linecap="round"><path d="M40 265 H76 M40 303 H70 M40 341 H74"/></g>
     <g transform="translate(50 196)">
-      <circle r="21" fill="none" stroke="#2A414D" stroke-width="3"/>
-      <circle class="timer" r="21" fill="none" stroke="#F1C677" stroke-width="3" pathLength="100" transform="rotate(-90)" stroke-linecap="round"/>
-      <circle class="ripple" r="12" fill="none" stroke="#FFA0AC" stroke-width="2"/>
-      <circle class="ripple2" r="12" fill="none" stroke="#79DEB2" stroke-width="2"/>
-      <g class="s-on"><circle class="beat" r="12" fill="#79DEB2"/></g>
-      <circle class="s-wait" r="12" fill="#F1C677"/>
-      <circle class="s-off" r="12" fill="#FFA0AC"/>
+      <circle r="21" fill="none" stroke="#222E39" stroke-width="3"/>
+      <circle class="timer" r="21" fill="none" stroke="#FFC857" stroke-width="3" pathLength="100" transform="rotate(-90)" stroke-linecap="round"/>
+      <circle class="ripple" r="12" fill="none" stroke="#FF7A7A" stroke-width="2"/>
+      <circle class="ripple2" r="12" fill="none" stroke="#C8F560" stroke-width="2"/>
+      <g class="s-on"><circle class="beat" r="12" fill="#C8F560"/></g>
+      <circle class="s-wait" r="12" fill="#FFC857"/>
+      <circle class="s-off" r="12" fill="#FF7A7A"/>
     </g>
   </g>'''
     wire=f'''
-  <path d="M232 320 H446" stroke="#405965" stroke-width="2" stroke-dasharray="2 8" stroke-linecap="round"/>
-  <g class="lit"><circle class="pk" cx="252" cy="320" r="5" fill="#79DEB2"/></g>
-  <path d="M554 300 H738" stroke="#405965" stroke-width="2" stroke-dasharray="2 8" stroke-linecap="round"/>
-  <circle class="send1" cx="560" cy="300" r="5" fill="#FFA0AC"/>
-  <circle class="send2" cx="560" cy="300" r="5" fill="#79DEB2"/>'''
+  <path d="M232 320 H446" stroke="#2A3742" stroke-width="2" stroke-dasharray="2 8" stroke-linecap="round"/>
+  <g class="lit"><circle class="pk" cx="252" cy="320" r="5" fill="#C8F560"/></g>
+  <path d="M554 300 H738" stroke="#2A3742" stroke-width="2" stroke-dasharray="2 8" stroke-linecap="round"/>
+  <circle class="send1" cx="560" cy="300" r="5" fill="#FF7A7A"/>
+  <circle class="send2" cx="560" cy="300" r="5" fill="#C8F560"/>'''
     phone=f'''
   <g transform="translate(742 96)">
-    <rect class="phone-glow" x="-10" y="-10" width="240" height="388" rx="40" fill="#92CBE6" opacity="0" filter="url(#soft)"/>
-    <rect width="220" height="368" rx="32" fill="#0C161C" stroke="#405965" stroke-width="2"/>
-    <rect x="8" y="8" width="204" height="352" rx="25" fill="#192C36"/>
-    <rect x="84" y="16" width="52" height="8" rx="4" fill="#0C161C"/>
-    {T(s['notif'],600,11,22,50,'#B2C8D1')}
+    <rect class="phone-glow" x="-10" y="-10" width="240" height="388" rx="40" fill="#5CE1E6" opacity="0" filter="url(#soft)"/>
+    <rect width="220" height="368" rx="32" fill="#070A0E" stroke="#2A3742" stroke-width="2"/>
+    <rect x="8" y="8" width="204" height="352" rx="25" fill="#151E27"/>
+    <rect x="84" y="16" width="52" height="8" rx="4" fill="#070A0E"/>
+    {T(s['notif'],600,11,22,50,'#93A4B0')}
     <g transform="translate(12 64)">
       <g class="c1">{c1}</g>
       <g class="c2">{c2}</g>
     </g>
   </g>'''
-    labels=''.join([T(s['dev'],500,13,170,452,'#B2C8D1','middle'),T(s['srv'],500,13,500,452,'#B2C8D1','middle'),T(s['you'],500,13,852,500,'#B2C8D1','middle')])
+    labels=''.join([T(s['dev'],500,13,170,452,'#93A4B0','middle'),T(s['srv'],500,13,500,452,'#93A4B0','middle'),T(s['you'],500,13,852,500,'#93A4B0','middle')])
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="{s['label']}">
   <style>{css}
   </style>
   <defs>
     <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="10"/></filter>
-    <radialGradient id="hglow" cx="0.5" cy="0.45" r="0.65"><stop offset="0" stop-color="#1D78A8" stop-opacity=".35"/><stop offset="1" stop-color="#101D24" stop-opacity="0"/></radialGradient>
-    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#92CBE6" stroke-opacity=".06"/></pattern>
+    <radialGradient id="hglow" cx="0.5" cy="0.45" r="0.65"><stop offset="0" stop-color="#5CE1E6" stop-opacity=".12"/><stop offset="1" stop-color="#0B1015" stop-opacity="0"/></radialGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#C8F560" stroke-opacity=".06"/></pattern>
     <clipPath id="panel"><rect width="{W}" height="{H}" rx="28"/></clipPath>
   </defs>
   <g clip-path="url(#panel)">
-    <rect width="{W}" height="{H}" fill="#101D24"/>
+    <rect width="{W}" height="{H}" fill="#0B1015"/>
     <rect width="{W}" height="{H}" fill="url(#grid)"/>
     <rect width="{W}" height="{H}" fill="url(#hglow)"/>
     {wire}{house}{srv}{phone}
