@@ -1,0 +1,2 @@
+ALTER TABLE "notification_channel" ADD COLUMN "language" text;--> statement-breakpoint
+ALTER TABLE "notification_channel" ADD CONSTRAINT "notification_channel_language_check" CHECK (language is null or (type = 'TELEGRAM_PLATFORM' and language in ('uk', 'en', 'ru')));

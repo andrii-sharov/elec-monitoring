@@ -570,7 +570,7 @@ the same localization rules.
 
 Bot commands: `/status` (devices that notify this chat), `/stats` (the
 last 7 local days, today included, for the same devices), `/stop` (unlink
-the chat). Replies use the chat owner's language and timezone.
+the chat). Replies use the channel's language, else the chat owner's, and the owner's timezone.
 
 ```
 📊 Last 7 days · 21–27 Nov
@@ -685,7 +685,9 @@ Device restarted · 25 s between check-ins
   test checks every `telegram.*` text in all languages.
 
 Render human-readable notifications in the recipient's preferred language
-and timezone. For a shared device, each recipient gets messages according
+and timezone. A Telegram channel can set its own language; alerts, the
+test message and bot replies in that chat then use it instead of the
+account language (the timezone stays the account's). For a shared device, each recipient gets messages according
 to their own profile, regardless of the device owner's preferences. This
 also applies to Telegram bot replies and transactional emails.
 

@@ -24,6 +24,7 @@ export function toChannel(row: ChannelRow, deviceIds: string[] = []): Channel {
     created_at: row.createdAt.toISOString(),
     device_ids: deviceIds,
     failures: row.consecutiveFailures,
+    language: row.language as Channel['language'],
   };
 }
 

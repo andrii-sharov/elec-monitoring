@@ -9,7 +9,7 @@ import {
   type LocalDate,
 } from '@elec/shared';
 import { telegramPhone } from '@elec/shared/api';
-import { asc, eq } from 'drizzle-orm';
+import { asc, eq, sql } from 'drizzle-orm';
 import type { i18n } from 'i18next';
 import { consumeOneTimeToken } from '../auth/oneTimeTokens.ts';
 import { PHONE_CODE_PREFIX, claimPhoneCode, confirmContact } from '../auth/phone.ts';
@@ -49,7 +49,10 @@ function languageFromCode(code: string | undefined): Language {
 
 async function chatOwner(db: Db, chatId: bigint) {
   const [row] = await db
-    .select({ language: appUser.language, timezone: appUser.timezone })
+    .select({
+      language: sql<string>`coalesce(${notificationChannel.language}, ${appUser.language})`,
+      timezone: appUser.timezone,
+    })
     .from(notificationChannel)
     .innerJoin(appUser, eq(appUser.id, notificationChannel.userId))
     .where(platformChat(chatId))

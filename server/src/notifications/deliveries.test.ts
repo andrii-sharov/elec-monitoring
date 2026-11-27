@@ -65,6 +65,24 @@ describe('claimDeliveries', () => {
     expect(await claimDeliveries(t.db, clock, 10)).toEqual([]);
   });
 
+  test('renders in the channel language when one is set', async () => {
+    const { seeded } = await claimOne();
+    await t.db.delete(delivery);
+    await t.db
+      .update(notificationChannel)
+      .set({ language: 'en' })
+      .where(eq(notificationChannel.id, seeded.channel.id));
+    await seedDelivery(t.db, {
+      user: seeded.user,
+      device: seeded.device,
+      channel: seeded.channel,
+      outageId: seeded.outageId,
+    });
+    const [claimed] = await claimDeliveries(t.db, clock, 10);
+    expect(claimed!.recipient).toEqual({ language: 'en', timezone: 'Europe/Kyiv' });
+    expect(claimed!.owner.language).toBe('uk');
+  });
+
   test('ignores rows that are not due or already finished', async () => {
     const first = await seedDelivery(t.db, { nextAttemptAt: at(60) });
     const shared = {

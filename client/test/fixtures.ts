@@ -82,6 +82,7 @@ export function channelFixture(overrides: Partial<Channel> = {}): Channel {
     created_at: '2026-11-21T16:42:00Z',
     device_ids: [],
     failures: 0,
+    language: null,
     ...overrides,
   };
 }

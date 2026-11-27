@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { channelTypes, deliveryEvents } from '../enums.ts';
+import { channelTypes, deliveryEvents, languages } from '../enums.ts';
 
 export const MAX_CHANNEL_IDS = 50;
 export const MAX_DEVICE_IDS = 100;
@@ -36,6 +36,7 @@ export const channelSchema = z
     created_at: z.string().meta({ example: '2026-11-21T16:42:00Z' }),
     device_ids: z.array(z.uuid()),
     failures: z.number().int(),
+    language: z.enum(languages).nullable(),
   })
   .meta({ id: 'Channel' });
 
@@ -74,6 +75,7 @@ export const channelPatchSchema = z
     enabled: z.boolean().optional(),
     url: webhookUrlSchema.optional(),
     events: webhookEventsSchema.optional(),
+    language: z.enum(languages).nullable().optional(),
   })
   .refine((body) => Object.values(body).some((value) => value !== undefined), {
     params: { reason: 'empty' },

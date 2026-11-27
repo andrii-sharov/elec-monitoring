@@ -35,6 +35,7 @@ export const notificationChannel = pgTable(
     webhookUrl: text(),
     webhookEvents: text().array(),
     webhookSecretEnc: bytea(),
+    language: text(),
     createdAt: tstz().notNull().defaultNow(),
     updatedAt: tstz()
       .notNull()
@@ -61,6 +62,10 @@ export const notificationChannel = pgTable(
       'notification_channel_webhook_events_check',
       sql`cardinality(webhook_events) > 0
         and webhook_events <@ array['device.offline', 'device.online', 'device.power_blip']`,
+    ),
+    check(
+      'notification_channel_language_check',
+      sql`language is null or (type = 'TELEGRAM_PLATFORM' and language in ('uk', 'en', 'ru'))`,
     ),
     index('notification_channel_user_id_idx').on(t.userId),
     uniqueIndex('notification_channel_platform_chat_key')

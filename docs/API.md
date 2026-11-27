@@ -773,7 +773,7 @@ shared devices.
 `GET /channels` items include `device_ids`: the devices linked to that
 channel, oldest link first.
 
-`PATCH /channels/:id` `{ "name"?, "enabled"?, "url"?, "events"? }` (at
+`PATCH /channels/:id` `{ "name"?, "enabled"?, "url"?, "events"?, "language"? }` (at
 least one; name 1–64 chars, trimmed) → `200` with the channel.
 `enabled: false` sets `disabled_reason: "USER"`, `enabled: true` clears
 it. Turning a disabled channel on resets its failure count. A channel
@@ -788,6 +788,10 @@ detail `{ "path": "url" | "events", "code": "not_allowed" }`. A changed URL
 is checked like a new one (`400 url_not_allowed`) and counts against the
 webhook URL rate limit (below, `429`); other edits don't. Editing does not
 re-enable the channel or reset its failure count.
+
+`language` (`uk` | `en` | `ru` | `null`) applies to Telegram channels
+only; `null` follows the account language. On a webhook it is
+`400 validation_error` with detail `{ "path": "language", "code": "not_allowed" }`.
 
 `PUT /channels/:id/devices` `{ "device_ids": [...] }` (at most 100) →
 `200 { "device_ids": [...] }`. Replaces the channel's links. Every ID must
@@ -876,7 +880,8 @@ Channel object:
   "config": { "url": "https://…", "events": ["device.offline"] },
   "created_at": "…",
   "device_ids": [],
-  "failures": 0
+  "failures": 0,
+  "language": null
 }
 ```
 

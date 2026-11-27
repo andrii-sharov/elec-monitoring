@@ -64,6 +64,13 @@
       "when": 1795723699683,
       "tag": "0008_delivery_channel_due",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795799319026,
+      "tag": "0009_channel_language_network_pause",
+      "breakpoints": true
     }
   ]
 }

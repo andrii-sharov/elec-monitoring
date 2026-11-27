@@ -249,8 +249,12 @@ async function channelView(db: Executor, row: ChannelRow) {
 
 const newWebhookSecret = () => `whsec_${randomToken()}`;
 
-function webhookOnlyFields(patch: { url?: string; events?: string[] }) {
-  return (['url', 'events'] as const)
+function fieldsNotAllowed(
+  type: string,
+  patch: { url?: string; events?: string[]; language?: string | null },
+) {
+  const paths = type === 'WEBHOOK' ? (['language'] as const) : (['url', 'events'] as const);
+  return paths
     .filter((path) => patch[path] !== undefined)
     .map((path) => ({ path, code: 'not_allowed' }));
 }
@@ -414,13 +418,14 @@ export function channelsRouter(deps: AppDeps): Router {
     const { id } = channelParamsSchema.parse(req.params);
     const patch = channelPatchSchema.parse(req.body ?? {});
     const row = await myChannel(db, user.id, id);
-    const notAllowed = row.type === 'WEBHOOK' ? [] : webhookOnlyFields(patch);
+    const notAllowed = fieldsNotAllowed(row.type, patch);
     if (notAllowed.length > 0) {
       throw new HttpError(400, 'validation_error', 'Invalid request', notAllowed);
     }
     const changes: Partial<ChannelRow> = {};
     if (patch.name !== undefined) changes.name = patch.name;
     if (patch.events !== undefined) changes.webhookEvents = patch.events;
+    if (patch.language !== undefined) changes.language = patch.language;
     if (patch.enabled === true && row.disabledReason === 'TOO_MANY_FAILURES') {
       throw needsTestFirst();
     }
@@ -474,7 +479,7 @@ export function channelsRouter(deps: AppDeps): Router {
       const { id } = channelParamsSchema.parse(req.params);
       const row = await myChannel(db, user.id, id);
       if (row.type === 'WEBHOOK') await sendPing(row);
-      else await sendTelegramTest(row.telegramChatId!, user.language as Language);
+      else await sendTelegramTest(row.telegramChatId!, (row.language ?? user.language) as Language);
       const [updated] =
         row.disabledReason === 'TOO_MANY_FAILURES'
           ? await db

@@ -262,6 +262,32 @@ describe('constraints', () => {
     expect(platform!.telegramChatId).toBe(42n);
   });
 
+  test('only Telegram channels have a known notification language', async () => {
+    const user = await insertUser();
+    const webhook = {
+      userId: user.id,
+      type: 'WEBHOOK',
+      name: 'Hook',
+      webhookUrl: 'https://example.com/hook',
+      webhookEvents: ['device.offline'],
+      webhookSecretEnc: Buffer.alloc(40),
+    };
+    await expectViolation(
+      t.db.insert(notificationChannel).values({ ...webhook, language: 'en' }),
+      'notification_channel_language_check',
+    );
+    await expectViolation(
+      t.db.insert(notificationChannel).values({
+        userId: user.id,
+        type: 'TELEGRAM_PLATFORM',
+        name: 'Chat',
+        telegramChatId: 43n,
+        language: 'de',
+      }),
+      'notification_channel_language_check',
+    );
+  });
+
   test('bytea round-trips as a Buffer and token hashes are 32 bytes', async () => {
     const user = await insertUser();
     const [s] = await t.db.insert(session).values({ userId: user.id }).returning();

@@ -2859,6 +2859,21 @@
                         "device.power_blip"
                       ]
                     }
+                  },
+                  "language": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "uk",
+                          "en",
+                          "ru"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -5282,6 +5297,21 @@
             "type": "integer",
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "uk",
+                  "en",
+                  "ru"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -5293,7 +5323,8 @@
           "config",
           "created_at",
           "device_ids",
-          "failures"
+          "failures",
+          "language"
         ],
         "additionalProperties": false
       },
@@ -5389,6 +5420,21 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
           },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "uk",
+                  "en",
+                  "ru"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "secret": {
             "type": "string",
             "example": "whsec_…"
@@ -5404,6 +5450,7 @@
           "created_at",
           "device_ids",
           "failures",
+          "language",
           "secret"
         ],
         "additionalProperties": false

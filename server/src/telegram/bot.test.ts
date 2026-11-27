@@ -312,6 +312,13 @@ describe('/stats', () => {
     expect(reply!.text).toContain('2 год 15 хв');
   });
 
+  test('uses the channel language over the owner language', async () => {
+    await statsSetup('uk');
+    await t.db.update(notificationChannel).set({ language: 'en' });
+    const reply = await handleUpdate(deps, message('/stats'));
+    expect(reply!.text).toMatch(/^📊 Last 7 days/);
+  });
+
   test('says so when the chat is not linked or has no devices', async () => {
     expect((await handleUpdate(deps, message('/stats', {}, 'en')))?.text).toMatch(/isn't linked/);
     const user = await createUser(t.db, { language: 'en' });

@@ -565,9 +565,12 @@ create table notification_channel (
   webhook_url            text,
   webhook_events         text[],
   webhook_secret_enc     bytea,
+  language               text,
   created_at             timestamptz not null default now(),
   updated_at             timestamptz not null default now(),
   check (enabled = (disabled_reason is null)),
+  check (language is null
+    or (type = 'TELEGRAM_PLATFORM' and language in ('uk', 'en', 'ru'))),
   check (
     (type = 'TELEGRAM_PLATFORM'
       and telegram_chat_id is not null
@@ -588,6 +591,9 @@ create index notification_channel_platform_chat_idx on notification_channel (tel
 ```
 
 - Telegram chat IDs fit in `bigint`. The API shows them as strings.
+- `language` overrides the owner's language for messages to this chat
+  (alerts, test message, bot replies). `null` follows the account.
+  Webhooks carry no human text, so they never have one.
 - The platform bot finds the linked users for `/status`, `/stats` and
   `/stop` by `telegram_chat_id`. Several users can link the same group.
 - Counted delivery failures increment `consecutive_failures` (§7

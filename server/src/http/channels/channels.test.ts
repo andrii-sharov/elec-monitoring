@@ -28,6 +28,7 @@ import {
 import { decrypt, sha256 } from '../../lib/crypto.ts';
 import { createPgRateLimiter, type RateLimiter } from '../../rateLimit/limiter.ts';
 import { signBody } from '../../webhooks/sender.ts';
+import { createI18n } from '../../i18n.ts';
 
 let t: TestDb;
 let clock: FakeClock;
@@ -115,6 +116,7 @@ describe('GET /api/v1/channels', () => {
         created_at: mine.createdAt.toISOString(),
         device_ids: [],
         failures: 0,
+        language: null,
       },
     ]);
   });
@@ -315,6 +317,33 @@ describe('channel management', () => {
     });
     expect((await patch({})).status).toBe(400);
     expect((await patch({ name: '' })).status).toBe(400);
+  });
+
+  test('sets and clears the notification language of a Telegram channel', async () => {
+    const { auth, channel } = await setup();
+    const patch = (body: object) =>
+      request(app()).patch(`/api/v1/channels/${channel.id}`).set('Authorization', auth).send(body);
+    const list = async () =>
+      (await request(app()).get('/api/v1/channels').set('Authorization', auth)).body.items[0];
+    expect((await list()).language).toBeNull();
+    expect((await patch({ language: 'en' })).body).toMatchObject({ language: 'en' });
+    expect((await list()).language).toBe('en');
+    expect((await patch({ language: null })).body).toMatchObject({ language: null });
+    expect((await patch({ language: 'de' })).status).toBe(400);
+  });
+
+  test('the test message uses the channel language over the account language', async () => {
+    const { auth, channel } = await setup();
+    await t.db
+      .update(notificationChannel)
+      .set({ language: 'en' })
+      .where(eq(notificationChannel.id, channel.id));
+    const telegram = new FakeTelegramClient(clock);
+    const res = await request(testApp({ db: t.db, clock, telegram }))
+      .post(`/api/v1/channels/${channel.id}/test`)
+      .set('Authorization', auth);
+    expect(res.status).toBe(200);
+    expect(telegram.sent[0]!.text).toBe(createI18n().getFixedT('en')('telegram.channelTest'));
   });
 
   test('a channel disabled after failures turns on only through a test message', async () => {
@@ -559,6 +588,14 @@ describe('webhook channels', () => {
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('validation_error');
     expect(res.body.error.details).toEqual([{ path, code: 'not_allowed' }]);
+  });
+
+  test('a webhook has no notification language', async () => {
+    const { user, auth } = await authed();
+    const channel = await createWebhookChannel(t.db, user.id);
+    const res = await patch(auth, channel.id, { language: 'en' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.details).toEqual([{ path: 'language', code: 'not_allowed' }]);
   });
 
   test('rotates the secret', async () => {
