@@ -175,15 +175,15 @@ test('UPDATING stays UPDATING with no event', () => {
   });
 });
 
-describe('planned network pause', () => {
-  const paused = (overrides: Partial<DeviceSnapshot> = {}) =>
-    device({
-      state: 'OFFLINE',
-      offlineAt: null,
-      networkPauseUntil: at(900),
-      ...overrides,
-    });
+const paused = (overrides: Partial<DeviceSnapshot> = {}) =>
+  device({
+    state: 'OFFLINE',
+    offlineAt: null,
+    networkPauseUntil: at(900),
+    ...overrides,
+  });
 
+describe('planned network pause', () => {
   test('the same boot drops a gap that started during the pause', () => {
     expect(planCheckIn(paused(), openOutage(null), sameBoot(), at(180))).toEqual({
       action: 'ACCEPT',

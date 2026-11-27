@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { errorMessage } from '@/forms/errorMessage';
 import { useFormatters } from '@/lib/format';
+import { useNow } from '@/lib/useNow';
 
 const durations = [10, 15, 30, 60];
 
@@ -31,7 +32,8 @@ export function NetworkPause({ device }: { device: Device }) {
   const queryClient = useQueryClient();
   const format = useFormatters();
   const owner = device.role === 'OWNER';
-  const until = activePause(device);
+  const now = useNow(5_000);
+  const until = activePause(device, now);
   const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.device(device.id) });
   const fail = (error: unknown) => toast.error(errorMessage(t, error));
   const pause = useMutation({

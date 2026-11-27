@@ -130,8 +130,8 @@ Each item has a test in the task that owns it.
 
 **Files:**
 
-- Create: `server/drizzle/0009_channel_language_network_pause.sql` (also
-  holds Task 2's column, one migration for M15)
+- Create: `server/drizzle/0009_channel_language.sql` (Task 2 adds
+  `0010_network_pause.sql`)
 - Modify: `server/src/db/schema/notifications.ts`,
   `shared/src/api/channels.ts`, `server/src/channels/views.ts`,
   `server/src/http/channels/channels.ts`,

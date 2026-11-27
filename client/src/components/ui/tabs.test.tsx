@@ -38,3 +38,33 @@ test('line tabs stay on one row and bring the chosen tab into view', async () =>
     inline: 'nearest',
   });
 });
+
+const size = (name: string, value: number) =>
+  vi.spyOn(HTMLElement.prototype, name as 'offsetLeft', 'get').mockImplementation(function (
+    this: HTMLElement,
+  ) {
+    if (this.getAttribute('role') === 'tab') return name === 'offsetLeft' ? 300 : 100;
+    return value;
+  });
+
+test('a tab that starts active is scrolled into the row without moving the page', () => {
+  const page = vi.fn<(this: Element, arg?: ScrollIntoViewOptions) => void>();
+  Element.prototype.scrollIntoView = page;
+  size('offsetLeft', 0);
+  size('offsetWidth', 0);
+  vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(200);
+  vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(400);
+  render(
+    <Tabs defaultValue="danger">
+      <TabsList aria-label="Sections">
+        {['profile', 'danger'].map((value) => (
+          <TabsTab key={value} value={value}>
+            {value}
+          </TabsTab>
+        ))}
+      </TabsList>
+    </Tabs>,
+  );
+  expect(screen.getByRole('tablist').scrollLeft).toBe(200);
+  expect(page).not.toHaveBeenCalled();
+});

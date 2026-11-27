@@ -80,3 +80,12 @@ test('a viewer sees the pause but has no controls', async () => {
   expect(screen.queryByRole('button', { name: 'Resume alerts' })).toBeNull();
   expect(screen.queryByRole('button', { name: 'Router work' })).toBeNull();
 });
+
+test('the banner goes away when the pause ends', async () => {
+  serveDevice({ network_pause_until: '2026-11-21T18:43:00Z' });
+  renderRoute(`/devices/${id}`, { me: meFixture() });
+  expect(await screen.findByText('Network alerts paused until 20:43')).toBeInTheDocument();
+  await vi.advanceTimersByTimeAsync(61_000);
+  expect(screen.queryByText(/Network alerts paused/)).toBeNull();
+  expect(screen.getByRole('button', { name: 'Router work' })).toBeInTheDocument();
+});

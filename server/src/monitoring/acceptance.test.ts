@@ -219,26 +219,26 @@ test('8. a re-paired board does not register a power blip', async () => {
   expect(queue.calls).toEqual([]);
 });
 
+const pause = (minutes: number) =>
+  request(app())
+    .put(`/api/v1/devices/${deviceId}/network-pause`)
+    .set('Authorization', userAuth)
+    .send({ minutes });
+
+async function workerTick() {
+  const deps = { db: t.db, clock, logger: silentLogger(), notifications: queue };
+  await checkOffline(deps);
+  await queueDueOffAlerts(deps);
+}
+
+async function silence(seconds: number) {
+  for (let s = 0; s < seconds; s += 10) {
+    clock.advance(10_000);
+    await workerTick();
+  }
+}
+
 describe('planned network work', () => {
-  const pause = (minutes: number) =>
-    request(app())
-      .put(`/api/v1/devices/${deviceId}/network-pause`)
-      .set('Authorization', userAuth)
-      .send({ minutes });
-
-  async function workerTick() {
-    const deps = { db: t.db, clock, logger: silentLogger(), notifications: queue };
-    await checkOffline(deps);
-    await queueDueOffAlerts(deps);
-  }
-
-  async function silence(seconds: number) {
-    for (let s = 0; s < seconds; s += 10) {
-      clock.advance(10_000);
-      await workerTick();
-    }
-  }
-
   test('a router swap inside the pause leaves no outage and no message', async () => {
     await boot(BOOT_A);
     await pause(15);

@@ -377,16 +377,16 @@ describe('pairing code and token rotation', () => {
   });
 });
 
-describe('network pause', () => {
-  const put = (auth: string, id: string, body: object) =>
-    request(app()).put(`/api/v1/devices/${id}/network-pause`).set('Authorization', auth).send(body);
-  const remove = (auth: string, id: string) =>
-    request(app()).delete(`/api/v1/devices/${id}/network-pause`).set('Authorization', auth);
+const putPause = (auth: string, id: string, body: object) =>
+  request(app()).put(`/api/v1/devices/${id}/network-pause`).set('Authorization', auth).send(body);
+const removePause = (auth: string, id: string) =>
+  request(app()).delete(`/api/v1/devices/${id}/network-pause`).set('Authorization', auth);
 
+describe('network pause', () => {
   test('the owner pauses for 15 min and the device shows it', async () => {
     const { user, auth } = await authed();
     const row = await createDevice(t.db, user.id);
-    const res = await put(auth, row.id, { minutes: 15 });
+    const res = await putPause(auth, row.id, { minutes: 15 });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ until: '2026-11-21T16:57:00.000Z' });
     const shown = await request(app()).get(`/api/v1/devices/${row.id}`).set('Authorization', auth);
@@ -396,8 +396,8 @@ describe('network pause', () => {
   test('cancelling clears the pause', async () => {
     const { user, auth } = await authed();
     const row = await createDevice(t.db, user.id);
-    await put(auth, row.id, { minutes: 15 });
-    expect((await remove(auth, row.id)).status).toBe(204);
+    await putPause(auth, row.id, { minutes: 15 });
+    expect((await removePause(auth, row.id)).status).toBe(204);
     const [stored] = await t.db.select().from(device).where(eq(device.id, row.id));
     expect(stored!.networkPauseUntil).toBeNull();
   });
@@ -414,7 +414,7 @@ describe('network pause', () => {
         offAlertDueAt: new Date('2026-11-21T16:44:00Z'),
       })
       .returning();
-    await put(auth, row.id, { minutes: 10 });
+    await putPause(auth, row.id, { minutes: 10 });
     const [stored] = await t.db.select().from(outage).where(eq(outage.id, open!.id));
     expect(stored!.offAlertDueAt).toEqual(new Date('2026-11-21T16:52:00Z'));
   });
@@ -422,7 +422,7 @@ describe('network pause', () => {
   test('ending the pause brings a held OFF alert back to its normal time', async () => {
     const { user, auth } = await authed();
     const row = await createDevice(t.db, user.id);
-    await put(auth, row.id, { minutes: 60 });
+    await putPause(auth, row.id, { minutes: 60 });
     const [open] = await t.db
       .insert(outage)
       .values({
@@ -432,7 +432,7 @@ describe('network pause', () => {
         offAlertDueAt: new Date('2026-11-21T17:42:00Z'),
       })
       .returning();
-    expect((await remove(auth, row.id)).status).toBe(204);
+    expect((await removePause(auth, row.id)).status).toBe(204);
     const [stored] = await t.db.select().from(outage).where(eq(outage.id, open!.id));
     expect(stored!.offAlertDueAt).toEqual(new Date('2026-11-21T16:42:00Z'));
   });
@@ -449,7 +449,7 @@ describe('network pause', () => {
         offAlertDueAt: new Date('2026-11-21T17:42:00Z'),
       })
       .returning();
-    await put(auth, row.id, { minutes: 10 });
+    await putPause(auth, row.id, { minutes: 10 });
     const [stored] = await t.db.select().from(outage).where(eq(outage.id, open!.id));
     expect(stored!.offAlertDueAt).toEqual(new Date('2026-11-21T16:52:00Z'));
   });
@@ -457,8 +457,8 @@ describe('network pause', () => {
   test('rejects durations outside 5–120 min', async () => {
     const { user, auth } = await authed();
     const row = await createDevice(t.db, user.id);
-    expect((await put(auth, row.id, { minutes: 3 })).status).toBe(400);
-    expect((await put(auth, row.id, { minutes: 121 })).status).toBe(400);
+    expect((await putPause(auth, row.id, { minutes: 3 })).status).toBe(400);
+    expect((await putPause(auth, row.id, { minutes: 121 })).status).toBe(400);
   });
 
   test('a viewer cannot pause or cancel', async () => {
@@ -466,7 +466,7 @@ describe('network pause', () => {
     const viewer = await authed();
     const row = await createDevice(t.db, owner.user.id);
     await addViewer(t.db, row.id, viewer.user.id);
-    expect((await put(viewer.auth, row.id, { minutes: 15 })).status).toBe(403);
-    expect((await remove(viewer.auth, row.id)).status).toBe(403);
+    expect((await putPause(viewer.auth, row.id, { minutes: 15 })).status).toBe(403);
+    expect((await removePause(viewer.auth, row.id)).status).toBe(403);
   });
 });

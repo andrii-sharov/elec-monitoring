@@ -26,6 +26,14 @@ function Tabs({ className, ...props }: TabsPrimitive.Root.Props) {
   );
 }
 
+function revealInRow(list: HTMLElement) {
+  const active = list.querySelector<HTMLElement>('[data-active]');
+  if (!active || list.scrollWidth <= list.clientWidth) return;
+  const end = active.offsetLeft + active.offsetWidth - list.clientWidth;
+  if (end > list.scrollLeft) list.scrollLeft = end;
+  else if (active.offsetLeft < list.scrollLeft) list.scrollLeft = active.offsetLeft;
+}
+
 function TabsList({
   className,
   variant = 'line',
@@ -40,6 +48,7 @@ function TabsList({
       list
         .querySelector('[data-active]')
         ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    revealInRow(list);
     const changed = new MutationObserver(reveal);
     changed.observe(list, { subtree: true, attributeFilter: ['data-active'] });
     return () => changed.disconnect();

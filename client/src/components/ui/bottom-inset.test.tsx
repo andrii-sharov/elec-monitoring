@@ -9,11 +9,12 @@ test('popups keep 8 px from every edge without a bottom nav', () => {
   expect(result.current).toEqual({ top: 8, right: 8, bottom: 8, left: 8 });
 });
 
+const navInset = ({ children }: { children: ReactNode }) => (
+  <BottomInsetProvider value={64}>{children}</BottomInsetProvider>
+);
+
 test('popups stop above the bottom nav', () => {
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <BottomInsetProvider value={64}>{children}</BottomInsetProvider>
-  );
-  const { result } = renderHook(() => usePopupCollisionPadding(), { wrapper });
+  const { result } = renderHook(() => usePopupCollisionPadding(), { wrapper: navInset });
   expect(result.current.bottom).toBe(72);
 });
 

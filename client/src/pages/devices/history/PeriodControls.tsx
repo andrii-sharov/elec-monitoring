@@ -1,5 +1,5 @@
 import { CalendarRange, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -42,12 +42,7 @@ function useRangeLabel(range: Range): string {
   }
 }
 
-function RangeForm({
-  range,
-  today,
-  onChange,
-  title,
-}: Props & { title: (text: string) => ReactNode }) {
+function RangeForm({ range, today, onChange, inDialog }: Props & { inDialog: boolean }) {
   const { t } = useTranslation();
   const [from, setFrom] = useState(range.from);
   const [to, setTo] = useState(range.to > today ? today : range.to);
@@ -62,7 +57,11 @@ function RangeForm({
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
-      {title(t('app.history.custom.title'))}
+      {inDialog ? (
+        <DialogTitle>{t('app.history.custom.title')}</DialogTitle>
+      ) : (
+        <p className="font-medium">{t('app.history.custom.title')}</p>
+      )}
       <div className="grid gap-2 sm:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-1">
           <Label htmlFor="history-from">{t('app.history.custom.from')}</Label>
@@ -117,12 +116,7 @@ function CustomRange({ range, today, onChange }: Props) {
           {trigger}
         </DialogTrigger>
         <DialogContent>
-          <RangeForm
-            range={range}
-            today={today}
-            onChange={choose}
-            title={(text) => <DialogTitle>{text}</DialogTitle>}
-          />
+          <RangeForm range={range} today={today} onChange={choose} inDialog />
         </DialogContent>
       </Dialog>
     );
@@ -133,12 +127,7 @@ function CustomRange({ range, today, onChange }: Props) {
         {trigger}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72">
-        <RangeForm
-          range={range}
-          today={today}
-          onChange={choose}
-          title={(text) => <p className="font-medium">{text}</p>}
-        />
+        <RangeForm range={range} today={today} onChange={choose} inDialog={false} />
       </PopoverContent>
     </Popover>
   );
