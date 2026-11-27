@@ -157,6 +157,7 @@ export function statsFixture(overrides: Partial<DeviceStats> = {}): DeviceStats 
     outages: index === 1 ? 2 : 0,
     power_blips: index === 3 ? 1 : 0,
     total_downtime_s: index === 1 ? 3600 : 0,
+    network_downtime_s: 0,
     availability_pct: index === 1 ? 95.83 : 100,
   }));
   return {
@@ -172,6 +173,7 @@ export function statsFixture(overrides: Partial<DeviceStats> = {}): DeviceStats 
     power_blips: 2,
     by_cause: { power: 5, network: 1, unknown: 1 },
     total_downtime_s: 28800,
+    network_downtime_s: 0,
     avg_outage_s: 4114,
     longest_outage_s: 14400,
     availability_pct: 95.24,

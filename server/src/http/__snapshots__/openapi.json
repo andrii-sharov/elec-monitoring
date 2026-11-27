@@ -5299,6 +5299,11 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
           },
+          "network_downtime_s": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
           "avg_outage_s": {
             "anyOf": [
               {
@@ -5349,6 +5354,7 @@
           "power_blips",
           "by_cause",
           "total_downtime_s",
+          "network_downtime_s",
           "avg_outage_s",
           "longest_outage_s",
           "availability_pct",
@@ -5382,6 +5388,11 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
           },
+          "network_downtime_s": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
           "availability_pct": {
             "type": [
               "number",
@@ -5395,6 +5406,7 @@
           "outages",
           "power_blips",
           "total_downtime_s",
+          "network_downtime_s",
           "availability_pct"
         ],
         "additionalProperties": false

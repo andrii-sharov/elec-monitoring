@@ -37,7 +37,8 @@ The platform is **free** for all users for now.
   - suspected **power** loss, a **network** interruption, or an **unknown**
     cause, based on boot information and uptime.
 - Statistics: number of outages, total / average downtime, availability
-  % per day / week / month.
+  % per day / week / month. Network-only gaps (same boot) count as
+  "no internet", apart from time without power.
 - Separate React apps for users and platform administrators.
 - Remote device settings and signed firmware updates over Wi-Fi (OTA).
 - Ukrainian, English and Russian translations stored by key in the repo.
@@ -589,7 +590,7 @@ the chat). Replies use the channel's language, else the chat owner's, and the ow
 ```
 📊 Last 7 days · 21–27 Nov
 <b>Garage</b> — no data yet
-<b>Home</b> — outages: 3 · without contact: 2 h 15 min · 98.56% · power blips: 2
+<b>Home</b> — outages: 3 · without power: 2 h 15 min · 98.56% · no internet: 12 min · power blips: 2
 <b>Dacha</b> — no outages · 100%
 ```
 

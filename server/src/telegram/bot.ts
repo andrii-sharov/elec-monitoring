@@ -280,9 +280,15 @@ async function statsText(
               downtime: formatDuration(stats.total_downtime_s, (key, o) => t(key, o)),
               availability,
             });
-      return stats.power_blips === 0
-        ? line
-        : line + t('telegram.bot.stats.blips', { count: stats.power_blips });
+      const network =
+        stats.network_downtime_s === 0
+          ? ''
+          : t('telegram.bot.stats.network', {
+              downtime: formatDuration(stats.network_downtime_s, (key, o) => t(key, o)),
+            });
+      const blips =
+        stats.power_blips === 0 ? '' : t('telegram.bot.stats.blips', { count: stats.power_blips });
+      return line + network + blips;
     }),
   );
   return [

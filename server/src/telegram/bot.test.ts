@@ -287,8 +287,24 @@ describe('/stats', () => {
     expect(reply!.text.split('\n')).toEqual([
       '📊 Last 7 days · 21–27 Nov',
       '<b>Garage</b> — no data yet',
-      '<b>Home</b> — outages: 3 · without contact: 2 h 15 min · 98.56% · power blips: 2',
+      '<b>Home</b> — outages: 3 · without power: 2 h 15 min · 98.56% · power blips: 2',
     ]);
+  });
+
+  test('adds internet-only time when there was some', async () => {
+    const { home } = await statsSetup();
+    await t.db.insert(outage).values({
+      deviceId: home.id,
+      type: 'OUTAGE',
+      cause: 'NETWORK',
+      kind: 'SHORT',
+      startedAt: new Date('2026-11-25T08:00:00Z'),
+      endedAt: new Date('2026-11-25T08:12:00Z'),
+    });
+    const reply = await handleUpdate(deps, message('/stats'));
+    expect(reply!.text).toContain(
+      '<b>Home</b> — outages: 3 · without power: 2 h 15 min · 98.56% · no internet: 12 min · power blips: 2',
+    );
   });
 
   test('a device without outages shows full availability', async () => {

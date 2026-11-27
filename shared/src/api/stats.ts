@@ -45,6 +45,7 @@ export const statsBucketSchema = z
     outages: z.number().int(),
     power_blips: z.number().int(),
     total_downtime_s: z.number().int(),
+    network_downtime_s: z.number().int(),
     availability_pct: z.number().nullable(),
   })
   .meta({ id: 'StatsBucket' });
@@ -69,6 +70,7 @@ export const statsSchema = z
       unknown: z.number().int(),
     }),
     total_downtime_s: z.number().int(),
+    network_downtime_s: z.number().int(),
     avg_outage_s: z.number().int().nullable(),
     longest_outage_s: z.number().int().nullable(),
     availability_pct: z.number().nullable(),

@@ -108,8 +108,9 @@ export const en = {
       help: 'Commands:\n/status — your devices\n/stats — last 7 days\n/stop — unlink this chat',
       stats: {
         title: '📊 Last 7 days · {{range}}',
-        line: '<b>{{name}}</b> — outages: {{outages}} · without contact: {{downtime}} · {{availability}}',
+        line: '<b>{{name}}</b> — outages: {{outages}} · without power: {{downtime}} · {{availability}}',
         noOutages: '<b>{{name}}</b> — no outages · {{availability}}',
+        network: ' · no internet: {{downtime}}',
         blips: ' · power blips: {{count}}',
         noData: '<b>{{name}}</b> — no data yet',
       },

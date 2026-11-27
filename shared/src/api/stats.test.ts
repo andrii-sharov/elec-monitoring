@@ -36,6 +36,7 @@ test('parses the documented response', () => {
     outages: 1,
     power_blips: 0,
     total_downtime_s: 3600,
+    network_downtime_s: 0,
     availability_pct: null,
   };
   const body = {
@@ -51,6 +52,7 @@ test('parses the documented response', () => {
     power_blips: 2,
     by_cause: { power: 5, network: 1, unknown: 1 },
     total_downtime_s: 28800,
+    network_downtime_s: 720,
     avg_outage_s: 4114,
     longest_outage_s: 14400,
     availability_pct: 95.24,

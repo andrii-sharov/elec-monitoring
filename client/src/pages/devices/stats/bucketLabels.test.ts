@@ -19,6 +19,7 @@ function hours(fromIso: string, count: number): StatsBucket[] {
       outages: 0,
       power_blips: 0,
       total_downtime_s: 0,
+      network_downtime_s: 0,
       availability_pct: 100,
     };
   });

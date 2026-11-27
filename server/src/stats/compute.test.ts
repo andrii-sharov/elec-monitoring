@@ -113,6 +113,38 @@ describe('computeStats', () => {
     expect(result.to).toBe('2026-11-22T22:00:00.000Z');
   });
 
+  test('a network gap is not time without power', () => {
+    const result = stats({
+      period: 'DAY',
+      from: '2026-11-17',
+      outages: [
+        outage('2026-11-17T08:00:00Z', '2026-11-17T10:00:00Z', { kind: 'LONG' }),
+        outage('2026-11-17T12:00:00Z', '2026-11-17T12:10:00Z', { cause: 'NETWORK' }),
+      ],
+    });
+    expect(result.outages).toBe(1);
+    expect(result.total_downtime_s).toBe(7200);
+    expect(result.network_downtime_s).toBe(600);
+    expect(result.by_cause).toEqual({ power: 1, network: 1, unknown: 0 });
+    expect(result.availability_pct).toBe(91.67);
+    expect(result.longest_outage_s).toBe(7200);
+  });
+
+  test('a network gap across a bucket edge is clipped into both buckets', () => {
+    const result = stats({
+      period: 'DAY',
+      from: '2026-11-17',
+      outages: [outage('2026-11-17T08:50:00Z', '2026-11-17T09:20:00Z', { cause: 'NETWORK' })],
+    });
+    expect(result.buckets[10]).toMatchObject({
+      outages: 0,
+      total_downtime_s: 0,
+      network_downtime_s: 600,
+    });
+    expect(result.buckets[11]).toMatchObject({ network_downtime_s: 1200 });
+    expect(result.availability_pct).toBe(100);
+  });
+
   test('an outage over the spring DST gap lasts one real hour', () => {
     const result = stats({
       period: 'DAY',
@@ -207,7 +239,7 @@ describe('computeStats', () => {
       period: 'WEEK',
       from: '2026-11-16',
       outages: [
-        outage('2026-11-15T20:00:00Z', '2026-11-16T00:00:00Z', { cause: 'NETWORK', kind: 'LONG' }),
+        outage('2026-11-15T20:00:00Z', '2026-11-16T00:00:00Z', { cause: 'UNKNOWN', kind: 'LONG' }),
       ],
     });
     expect(result).toMatchObject({
@@ -215,7 +247,7 @@ describe('computeStats', () => {
       total_downtime_s: 7200,
       longest_outage_s: 14400,
       avg_outage_s: 14400,
-      by_cause: { power: 0, network: 1, unknown: 0 },
+      by_cause: { power: 0, network: 0, unknown: 1 },
     });
   });
 

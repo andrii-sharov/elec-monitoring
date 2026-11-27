@@ -99,10 +99,14 @@ function roundPct(value: number): number {
 
 type Summary = {
   outages: Span[];
+  networkGaps: Span[];
   powerBlips: number;
   downtimeMs: number;
+  networkMs: number;
   availability: number | null;
 };
+
+const isNetworkGap = (span: Span) => span.type === 'OUTAGE' && span.cause === 'NETWORK';
 
 function summarize(
   slot: Slot,
@@ -111,9 +115,11 @@ function summarize(
   monitoringSince: number | null,
 ): Summary {
   const inSlot = spans.filter((span) => overlaps(span, slot));
-  const outages = inSlot.filter((span) => span.type === 'OUTAGE');
+  const networkGaps = inSlot.filter(isNetworkGap);
+  const outages = inSlot.filter((span) => span.type === 'OUTAGE' && !isNetworkGap(span));
   const elapsed = { start: slot.start, end: Math.min(slot.end, now) };
-  const downtimeMs = outages.reduce((total, span) => total + clippedMs(span, elapsed), 0);
+  const sumMs = (list: Span[]) => list.reduce((total, span) => total + clippedMs(span, elapsed), 0);
+  const downtimeMs = sumMs(outages);
   let availability: number | null = null;
   if (monitoringSince !== null) {
     const window = { start: Math.max(slot.start, monitoringSince), end: elapsed.end };
@@ -125,8 +131,10 @@ function summarize(
   }
   return {
     outages,
-    powerBlips: inSlot.length - outages.length,
+    networkGaps,
+    powerBlips: inSlot.filter((span) => span.type === 'POWER_BLIP').length,
     downtimeMs,
+    networkMs: sumMs(networkGaps),
     availability,
   };
 }
@@ -158,6 +166,7 @@ export function computeStats(input: {
       outages: summary.outages.length,
       power_blips: summary.powerBlips,
       total_downtime_s: seconds(summary.downtimeMs),
+      network_downtime_s: seconds(summary.networkMs),
       availability_pct: summary.availability,
     };
   });
@@ -180,10 +189,11 @@ export function computeStats(input: {
     power_blips: total.powerBlips,
     by_cause: {
       power: countCause('POWER'),
-      network: countCause('NETWORK'),
+      network: total.networkGaps.length,
       unknown: countCause('UNKNOWN'),
     },
     total_downtime_s: seconds(total.downtimeMs),
+    network_downtime_s: seconds(total.networkMs),
     avg_outage_s:
       durations.length === 0
         ? null

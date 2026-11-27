@@ -114,8 +114,9 @@ export const uk: Dictionary = {
       help: 'Команди:\n/status — показати стан ваших пристроїв\n/stats — статистика за 7 днів\n/stop — відключити цей чат',
       stats: {
         title: '📊 Останні 7 днів · {{range}}',
-        line: '<b>{{name}}</b> — відключень: {{outages}} · без зв’язку: {{downtime}} · {{availability}}',
+        line: '<b>{{name}}</b> — відключень: {{outages}} · без світла: {{downtime}} · {{availability}}',
         noOutages: '<b>{{name}}</b> — без відключень · {{availability}}',
+        network: ' · без інтернету: {{downtime}}',
         blips: ' · збоїв живлення: {{count}}',
         noData: '<b>{{name}}</b> — даних ще немає',
       },

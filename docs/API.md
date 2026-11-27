@@ -638,13 +638,14 @@ newest first:
   "to": "2026-11-22T22:00:00Z",
   "bucket": "DAY",
   "monitoring_since": "2026-10-02T09:14:05Z",
-  "outages": 7,
+  "outages": 6,
   "long_outages": 3,
   "open_outage": false,
   "power_blips": 2,
   "by_cause": { "power": 5, "network": 1, "unknown": 1 },
   "total_downtime_s": 28800,
-  "avg_outage_s": 4114,
+  "network_downtime_s": 720,
+  "avg_outage_s": 4800,
   "longest_outage_s": 14400,
   "availability_pct": 95.24,
   "buckets": [
@@ -654,6 +655,7 @@ newest first:
       "outages": 1,
       "power_blips": 0,
       "total_downtime_s": 3600,
+      "network_downtime_s": 0,
       "availability_pct": 95.83
     }
   ]
@@ -676,6 +678,12 @@ newest first:
 - `total_downtime_s` adds the outages clipped to the range; an open
   outage runs until now. Power blips count in `power_blips`, never in
   `outages` or downtime. Planned OTA windows create no outages.
+- A closed `NETWORK` outage proves the device kept power (same boot), so
+  it is not time without power: it counts in `by_cause.network` and
+  `network_downtime_s` (clipped like downtime), never in `outages`,
+  `long_outages`, `total_downtime_s`, availability, `avg_outage_s` or
+  `longest_outage_s`. An open outage has no cause yet and counts as
+  downtime until it closes.
 - `long_outages`: closed with kind `LONG`, plus the open outage once it
   reaches the short-outage threshold. `by_cause` counts closed outages;
   `open_outage` marks an open one in the range.

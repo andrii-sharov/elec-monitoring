@@ -114,8 +114,9 @@ export const ru: Dictionary = {
       help: 'Команды:\n/status — показать состояние ваших устройств\n/stats — статистика за 7 дней\n/stop — отключить этот чат',
       stats: {
         title: '📊 Последние 7 дней · {{range}}',
-        line: '<b>{{name}}</b> — отключений: {{outages}} · без связи: {{downtime}} · {{availability}}',
+        line: '<b>{{name}}</b> — отключений: {{outages}} · без света: {{downtime}} · {{availability}}',
         noOutages: '<b>{{name}}</b> — без отключений · {{availability}}',
+        network: ' · без интернета: {{downtime}}',
         blips: ' · сбоев питания: {{count}}',
         noData: '<b>{{name}}</b> — данных пока нет',
       },
