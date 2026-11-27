@@ -556,9 +556,9 @@ export const ru: Dictionary = {
         failing: 'Со сбоями',
       },
       sort: {
-        name: 'Название',
+        name: 'По названию',
         newest: 'Сначала новые',
-        devices: 'Сначала с большим числом устройств',
+        devices: 'Больше устройств',
       },
       count: '{{shown}} из {{total}}',
       noMatch: 'По этим фильтрам ничего не найдено.',

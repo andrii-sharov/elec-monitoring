@@ -231,6 +231,19 @@ test('search, status and device filters narrow the list and live in the URL', as
   expect(await screen.findByText('Office')).toBeInTheDocument();
 });
 
+test('filters keep their width and sorting has its own control', async () => {
+  server.use(http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items: [home] })));
+  renderRoute('/notifications', { me: meFixture() });
+  await screen.findByText('Home chat');
+  for (const name of ['Device', 'Status', 'Sort']) {
+    const trigger = screen.getByRole('combobox', { name });
+    expect(trigger.querySelector('[data-slot="select-value-stack"]')).not.toBeNull();
+  }
+  const sort = screen.getByRole('combobox', { name: 'Sort' });
+  expect(sort.querySelector('.lucide-arrow-down-up')).not.toBeNull();
+  expect(sort).toHaveTextContent('By name');
+});
+
 test('the switch turns a channel off', async () => {
   server.use(http.get(`${base}/api/v1/channels`, () => HttpResponse.json({ items: [home] })));
   const bodies = captureJson('patch', `/api/v1/channels/${home.id}`, () =>

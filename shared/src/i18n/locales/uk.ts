@@ -550,9 +550,9 @@ export const uk: Dictionary = {
       allDevices: 'Усі пристрої',
       status: { all: 'Будь-який стан', active: 'Активні', off: 'Вимкнені', failing: 'Зі збоями' },
       sort: {
-        name: 'Назва',
-        newest: 'Спочатку найновіші',
-        devices: 'Спочатку з більшою кількістю пристроїв',
+        name: 'За назвою',
+        newest: 'Спочатку нові',
+        devices: 'Більше пристроїв',
       },
       count: '{{shown}} з {{total}}',
       noMatch: 'За цими фільтрами нічого не знайдено.',

@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SortSelect } from '@/components/ui/sort-select';
 import { errorMessage } from '@/forms/errorMessage';
 import { ChannelRow } from './ChannelRow';
 import {
@@ -62,8 +63,8 @@ function FilterSelect({
 }) {
   return (
     <Select items={options} value={value} onValueChange={(next) => next && onChange(next)}>
-      <SelectTrigger aria-label={label} className="min-w-32 max-sm:w-full">
-        <SelectValue />
+      <SelectTrigger aria-label={label} className="max-sm:w-full">
+        <SelectValue widthOf={options.map((option) => option.label)} />
       </SelectTrigger>
       <SelectContent align="start">
         {options.map((option) => (
@@ -279,7 +280,7 @@ export function NotificationsPage() {
                   label: t(`app.notifications.status.${status}`),
                 }))}
               />
-              <FilterSelect
+              <SortSelect
                 label={t('app.notifications.sortBy')}
                 value={filters.sort}
                 onChange={(sort) => setFilter({ sort })}

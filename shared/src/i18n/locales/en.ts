@@ -529,7 +529,7 @@ export const en = {
       allTypes: 'All types',
       allDevices: 'All devices',
       status: { all: 'Any status', active: 'Active', off: 'Turned off', failing: 'Failing' },
-      sort: { name: 'Name', newest: 'Newest first', devices: 'Most devices first' },
+      sort: { name: 'By name', newest: 'Newest first', devices: 'Most devices' },
       count: '{{shown}} of {{total}}',
       noMatch: 'No channels match these filters.',
       clearFilters: 'Clear filters',
