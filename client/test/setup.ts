@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
-import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 import { server } from './server.ts';
 
 function noop() {}
@@ -24,16 +24,11 @@ beforeAll(() => {
   server.listen({ onUnhandledFrame: 'error' });
 });
 
-beforeEach(() => {
-  localStorage.setItem('em.appStyle', 'classic');
-});
-
 afterEach(() => {
   cleanup();
   server.resetHandlers();
   localStorage.clear();
   document.documentElement.className = '';
-  delete document.documentElement.dataset.appStyle;
 });
 
 afterAll(() => {

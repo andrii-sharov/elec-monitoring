@@ -1,28 +1,35 @@
-# Underwater Dream
+# Neon Grid
 
-Client and admin app theme. It follows `prefers-color-scheme` by default;
-the user can pick light, dark or system in Account → Appearance (saved in
-`localStorage['em.theme']`).
+Client and admin app theme, from [`assets/BRAND.md`](../assets/BRAND.md).
+Dark is the default; the user can pick dark, light or system in Account →
+Appearance (saved in `localStorage['em.theme']`).
 
-| Color token              | Light     | Dark      | Used for                                |
-| ------------------------ | --------- | --------- | --------------------------------------- |
-| `--background`           | `#DBE9EE` | `#101D24` | Page                                    |
-| `--surface`              | `#FFFFFF` | `#192C36` | Cards, dialogs, menus, inputs           |
-| `--foreground`           | `#203844` | `#E6F1F5` | Text                                    |
-| `--muted-foreground`     | `#476471` | `#B2C8D1` | Secondary text                          |
-| `--primary`              | `#166088` | `#92CBE6` | Main buttons, links                     |
-| `--primary-foreground`   | `#FFFFFF` | `#102530` | Text on primary                         |
-| `--secondary`            | `#C0D6DF` | `#2A414D` | Secondary buttons, hover, muted areas   |
-| `--secondary-foreground` | `#294652` | `#DBE9EE` | Text on secondary                       |
-| `--border`               | `#B6CBD4` | `#405965` | Dividers, card edges                    |
-| `--input`                | `#738E9B` | `#64808D` | Form control borders (≥ 3:1 on surface) |
-| `--ring`                 | `#166088` | `#AADAF0` | Focus ring                              |
-| `--status-online`        | `#146847` | `#79DEB2` | `ONLINE`, recovery                      |
-| `--status-offline`       | `#A43042` | `#FFA0AC` | `OFFLINE`, open outage                  |
-| `--status-pending`       | `#56657A` | `#A5B4CA` | `PENDING`, `UPDATING`, unknown cause    |
-| `--danger`               | `#A43042` | `#FFA0AC` | Destructive actions, errors             |
-| `--danger-foreground`    | `#FFFFFF` | `#102530` | Text on danger                          |
-| `--warning`              | `#855A12` | `#F1C677` | Power blips, settings not yet applied   |
+| Color token              | Light     | Dark      | Used for                                         |
+| ------------------------ | --------- | --------- | ------------------------------------------------ |
+| `--background`           | `#F3F6F8` | `#0B1015` | Page                                             |
+| `--surface`              | `#FFFFFF` | `#151E27` | Cards, dialogs, menus, header                    |
+| `--foreground`           | `#0B1015` | `#E8F0F4` | Text                                             |
+| `--muted-foreground`     | `#4F6070` | `#93A4B0` | Secondary text, labels, timestamps               |
+| `--primary`              | `#4D7A00` | `#C8F560` | Main buttons, links, active nav (signal lime)    |
+| `--primary-foreground`   | `#FFFFFF` | `#0B1015` | Text on primary                                  |
+| `--secondary`            | `#EAEFF2` | `#1D2833` | Raised elements: hover, inputs (dark), chips     |
+| `--secondary-foreground` | `#0B1015` | `#E8F0F4` | Text on secondary                                |
+| `--border`               | `#D3DCE2` | `#2A3742` | Hairlines, dividers, card edges                  |
+| `--input`                | `#7D8D99` | `#5C6E7E` | Form control borders (≥ 3:1 on surface)          |
+| `--ring`                 | `#4D7A00` | `#C8F560` | Focus ring                                       |
+| `--live`                 | `#00757E` | `#5CE1E6` | The "now" dot, check-in ping, network as a cause |
+| `--signal`               | `#C8F560` | `#C8F560` | Lime fill of the power card (both themes)        |
+| `--signal-foreground`    | `#0B1015` | `#0B1015` | Text on `--signal`                               |
+| `--status-online`        | `#4D7A00` | `#C8F560` | `ONLINE`, power on                               |
+| `--status-offline`       | `#C62828` | `#FF7A7A` | `OFFLINE`, open outage                           |
+| `--status-pending`       | `#5E6E7C` | `#8FA3B8` | `PENDING`, `UPDATING`, unknown cause             |
+| `--danger`               | `#C62828` | `#FF7A7A` | Destructive actions, errors                      |
+| `--danger-foreground`    | `#FFFFFF` | `#0B1015` | Text on danger                                   |
+| `--warning`              | `#8A5A00` | `#FFC857` | Power blips, settings not yet applied            |
+
+BRAND's surface-2 is `--secondary` here, and BRAND's cyan `--accent` is
+`--live`, because shadcn uses `--accent` for hover fills. Lime means power
+on or the main action; nothing decorative is lime.
 
 ## shadcn/ui mapping
 
@@ -33,60 +40,50 @@ the user can pick light, dark or system in Account → Appearance (saved in
 ## Contrast
 
 Every text token is at least 4.5:1 on `--background` and `--surface` in both
-modes. Status and warning text is placed on `--surface` or `--background`,
-not on `--secondary` (light `--warning` is 4.0:1 there).
+modes. Light `--live` is darkened from BRAND's `#00808A` to `#00757E` for
+that. Lime and cyan text stays off light `--secondary` (light `--primary`
+is 4.4:1 there). Text on the `--signal` card uses `--signal-foreground`,
+at least 75% opacity.
 
-## App styles
+## Look
 
-An app style changes how the client looks without changing its colors. The
-user picks one in Account → Appearance or on the first-visit picker. It is
-saved per browser in `localStorage['em.appStyle']` and set as
-`data-app-style` on `<html>` before first paint. Unknown values count as
-`classic`.
+| Token                   | Value                                   | Purpose                            |
+| ----------------------- | --------------------------------------- | ---------------------------------- |
+| `--app-font-body`       | Inter Variable, system UI               | Body, buttons, forms (`font-sans`) |
+| `--app-font-heading`    | JetBrains Mono Variable, `ui-monospace` | Titles, durations (`font-heading`) |
+| `--app-font-mono`       | same as heading                         | Labels, times, IDs (`font-mono`)   |
+| `--radius`              | `0.625rem`                              | Buttons and inputs; cards 14 px    |
+| `--app-surface-ring`    | `var(--border)`                         | Card edge                          |
+| `--app-surface-shadow`  | none (dark), `0 1px 2px` at 6 % (light) | Card shadow                        |
+| `--app-motion-duration` | `180ms`                                 | Transitions and animations         |
+| `--app-motion-ease`     | `cubic-bezier(0.22, 1, 0.36, 1)`        | Easing                             |
 
-| Style         | Fonts                              | Look                                                                                 |
-| ------------- | ---------------------------------- | ------------------------------------------------------------------------------------ |
-| `classic`     | System                             | Cards with status badges (the default)                                               |
-| `sonar`       | Geologica                          | Full-width rows, a status dot that rings on each check-in, 7-day power strip         |
-| `switchboard` | Unbounded (headings), Onest (body) | A breaker panel: one tile and lever per device, 7-day power strip                    |
-| `lamp`        | Onest                              | Large soft cards that glow while the device is online; the device page is a sentence |
-
-### Token contract
-
-Each style sets these on `[data-app-style="<id>"]`. Classic values are also
-the `:root` defaults.
-
-| Token                   | Classic value                                             | Purpose                           |
-| ----------------------- | --------------------------------------------------------- | --------------------------------- |
-| `--app-font-body`       | system UI stack                                           | Body text (`font-sans`)           |
-| `--app-font-heading`    | `var(--app-font-body)`                                    | Headings (`font-heading`)         |
-| `--radius`              | `0.625rem`                                                | Base radius for every `rounded-*` |
-| `--app-surface-ring`    | `color-mix(in oklab, var(--foreground) 10%, transparent)` | Card edge                         |
-| `--app-surface-shadow`  | `0 0 transparent`                                         | Card shadow                       |
-| `--app-motion-duration` | `150ms`                                                   | Transitions and animations        |
-| `--app-motion-ease`     | `cubic-bezier(0.4, 0, 0.2, 1)`                            | Easing                            |
-| `--app-backdrop`        | `var(--background)`                                       | Page background                   |
+Both fonts come from `@fontsource-variable` with Cyrillic and are bundled.
 
 ### Rules
 
-- Colors come only from the theme tokens above. A style derives extra
-  shades with `color-mix()` from them, never hex. Light and dark work in
-  every style.
-- A style changes only its tokens, its three slot components
-  (`StatusMark`, `DeviceSummary`, `DeviceHero`) and its own `style.css`.
-  Rules in `style.css` target only class names with the style's prefix
-  (`.sonar-…`), so a preview of one style inside another stays clean.
-- Status is never shown by color or motion alone: every `StatusMark` keeps
-  the translated state text, visible or `sr-only`.
+- Colors come only from the theme tokens above. Extra shades come from
+  `color-mix()` or Tailwind opacity on a token, never hex. Light and dark
+  both work.
+- Status is a word plus a shape, never color alone: `StatusMark` (in
+  `client/src/components/device/`) shows a filled dot for `ONLINE`, a
+  hollow ring for `OFFLINE` and a dashed ring for `PENDING` / `UPDATING`,
+  next to the translated state.
+- The power card (`PowerCard`) is the device hero: `ONLINE` is a
+  `--signal` card with dark text, "● POWER ON" and a big mono duration;
+  `OFFLINE` is a surface card with a 2 px `--status-offline` inset ring;
+  `PENDING` / `UPDATING` have a dashed `--input` border.
+- The 7-day power strip is a square wave: high `--status-online` line for
+  power on, low `--status-offline` line for outages, `--warning` ticks for
+  blips, a dashed `--status-pending` line for no data.
 - Motion follows an action or a real state change from a poll. The
-  exceptions: Sonar's slow ring on an `ONLINE` dot, Sonar's searching arc
-  and inward echo on the device page while `OFFLINE`, the live dot next to
-  an open outage in the timeline, the looping promo video on auth pages,
-  and the entrance (`data-motion="enter"`, staggered by `--i`) of lists,
-  the device hero, history rows, channel rows and member rows. The
-  delivery log is a tab panel inside its channel card, so its rows have
-  no entrance of their own: the panel fades and the card's entrance is
-  the only one.
+  exceptions: the live dot next to an open outage in the timeline, the
+  looping promo video on auth pages and the promo animation on the landing
+  page, and the entrance (`data-motion="enter"`, staggered by `--i`) of
+  lists, the device hero, history rows, channel rows, member rows and the
+  landing hero. The delivery log is a tab panel inside its channel card,
+  so its rows have no entrance of their own: the panel fades and the
+  card's entrance is the only one.
   The tab indicator slides with the motion tokens, and so does the
   `SegmentedControl` indicator.
 - Base controls look and move the same on every page. All dropdown
@@ -99,41 +96,33 @@ the `:root` defaults.
   `min(--i, 8) × 30ms`. Tab and view panels only fade
   (`data-motion="panel"`, `--app-panel-duration`, at most 120 ms).
   Entrances are never nested.
-- Change motion (Classic badge fade, Sonar pulse, Switchboard snap, Lamp
-  flicker) plays only while `useStateChange` reports a real change, never
-  on mount. `client/src/appStyles/motion.test.tsx` checks the style sheets
-  and the first render of every `StatusMark`.
+- Change motion plays only while `useStateChange` reports a real change,
+  never on mount: a hard two-step fade on the status mark and power card
+  when the state flips, and a single `--live` ping around the status dot
+  when a new check-in arrives. `client/src/motion.test.tsx` checks
+  `styles.css` and the first render of `StatusMark`.
   `prefers-reduced-motion: reduce` sets the motion tokens to `0ms`, turns
-  off animation on every `[data-motion]` element and stops the promo
-  video (poster with controls).
+  off animation on every `[data-motion]` element and the ping, and stops
+  the promo video (poster with controls).
 - Illustrations (`assets/illustrations/`, `Illustration` and `EmptyState`
   in the client) are inlined, so their `var(--primary, …)` style fills
   follow the theme tokens and the light/dark toggle. They are decorative
   (`aria-hidden`); the text next to them carries the meaning.
-- The brand mark (`BrandMark`, `assets/logo/`) keeps its own fixed colors
-  from `assets/README.md` in every style and theme; it is the only hex
-  in components.
+- The brand mark (`BrandMark`, `assets/logo/`) keeps its fixed colors
+  (dark tile, lime wave, cyan dot) in both themes; it is the only hex in
+  components. The header wordmark is live text in JetBrains Mono: the
+  first word in the foreground, the rest in `--primary`, then a `--live`
+  underscore.
 - The history grid fills each hour by the share without power with
   `--status-offline`, on a `--status-online` tint; blips are a `--warning`
-  dot. Every cell has a text label.
+  dot; the current hour has a `--live` ring. Every cell has a text label.
 - Stats charts use the same colors: time without power is
   `--status-offline`, power blips `--warning`, causes are power
-  `--status-offline`, network `--primary` and unknown `--status-pending`.
+  `--status-offline`, network `--live` and unknown `--status-pending`.
   The availability meter fills `--status-online` over `--status-offline`.
   Axis text is `--muted-foreground`, grid lines `--border`. Charts never
   animate their bars; the cards enter with `data-motion="enter"`. Each
   chart is `aria-hidden` next to a screen-reader table with its values.
-
-### Adding a style
-
-1. Create `client/src/appStyles/<id>/` with `index.tsx` and `style.css`.
-2. Add the ID to `appStyleIds` and the definition to `appStyles` in
-   `registry.ts`, and the ID to the inline script in `client/index.html`.
-3. Implement the three slots and set `deviceListClassName`.
-4. Load fonts in `loadFonts()` with a dynamic `@fontsource-variable/*`
-   import (Cyrillic included). Classic loads none.
-5. Import `style.css` from `client/src/styles.css`, after `classic`.
-6. Add `app.appStyle.<id>.name` and `.description` in `uk`, `en`, `ru`.
 
 ## Touch tier
 

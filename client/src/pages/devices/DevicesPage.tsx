@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { useDevices } from '@/api/queries';
 import { useSession } from '@/api/session';
-import { useAppStyle } from '@/appStyles/AppStyleProvider';
+import { DeviceCard } from '@/components/device/DeviceCard';
 import { PromoHero } from '@/components/PromoHero';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,8 +16,6 @@ export function DevicesPage() {
   const { me } = useSession();
   const navigate = useNavigate();
   const devices = useDevices();
-  const style = useAppStyle();
-  const { DeviceSummary } = style.slots;
   const verified = Boolean(me?.email_verified || me?.phone_verified);
 
   const addButton = (
@@ -30,7 +28,7 @@ export function DevicesPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="font-heading text-2xl font-semibold">{t('app.devices.title')}</h1>
+        <h1 className="font-heading text-2xl font-bold sm:text-3xl">{t('app.devices.title')}</h1>
         <div className="flex flex-wrap gap-2">
           <Link to="/flash" viewTransition className={buttonVariants({ variant: 'outline' })}>
             <Usb aria-hidden="true" />
@@ -43,9 +41,12 @@ export function DevicesPage() {
         <p className="text-sm text-muted-foreground">{t('app.devices.addNeedsVerified')}</p>
       )}
       {devices.isPending ? (
-        <output aria-label={t('app.common.loading')} className="grid gap-3 sm:grid-cols-2">
-          <Skeleton className="h-28" />
-          <Skeleton className="h-28" />
+        <output
+          aria-label={t('app.common.loading')}
+          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          <Skeleton className="h-40" />
+          <Skeleton className="h-40" />
         </output>
       ) : devices.isError && !devices.data ? (
         <div role="alert" className="flex items-center gap-2 text-danger">
@@ -65,10 +66,10 @@ export function DevicesPage() {
           </CardContent>
         </Card>
       ) : (
-        <ul className={style.deviceListClassName}>
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {devices.data.items.map((device, index) => (
             <li key={device.id} data-motion="enter" style={{ '--i': index } as CSSProperties}>
-              <DeviceSummary device={device} index={index} />
+              <DeviceCard device={device} />
             </li>
           ))}
         </ul>

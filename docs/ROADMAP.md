@@ -42,6 +42,7 @@ Status: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 | M13 | [Public status links](#m13--public-status-links)                                               | ⬜     | M4         | [M04c §Future](plans/M04c-ui-polish-and-channels.md#future--planning-only-no-code-in-this-milestone)                                                          |
 | M14 | [Mobile layout](#m14--mobile-layout)                                                           | 🟡     | M4         | [M14](plans/M14-mobile.md)                                                                                                                                    |
 | M15 | [Channel language, network pause, UI fixes](#m15--channel-language-network-pause-and-ui-fixes) | 🟡     | M9, M14    | [M15](plans/M15-feedback-fixes.md)                                                                                                                            |
+| M16 | [Neon Grid redesign](#m16--neon-grid-redesign)                                                 | 🟡     | M15        | [M16](plans/M16-neon-grid.md)                                                                                                                                 |
 
 M5 (firmware) can run alongside M3–M4 once the check-in endpoints exist.
 M14 comes next, before M9.
@@ -525,3 +526,19 @@ UI fixes from feedback.
 **Done when:** tests cover a pause with the same boot, a new boot and a
 queued alert, and the channel language fallback. 👤 Run the
 [manual checks](plans/M15-feedback-fixes.md#verify-by-hand-after-all-tasks).
+
+## M16 — Neon Grid redesign
+
+**Goal:** the client takes the Neon Grid brand, keeps one look instead of
+four app styles, starts dark, and gets a public landing page.
+**Spec:** [M16](plans/M16-neon-grid.md#design-decisions) · P §9 · theme.md.
+
+- [ ] Neon Grid tokens, Inter and JetBrains Mono, dark by default
+- [ ] One look: app styles, style picker and welcome page removed
+- [ ] Status mark, device card and power card
+- [ ] Square-wave 7-day strip; network shown in cyan
+- [ ] Landing page at `/`
+
+**Done when:** tests cover the power card states, the check-in ping, the
+landing route and the dark default. 👤 Run the
+[manual checks](plans/M16-neon-grid.md#verify-by-hand-after-all-tasks).

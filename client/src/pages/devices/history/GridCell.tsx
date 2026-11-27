@@ -74,7 +74,7 @@ export function GridCell({
         className={cn(
           'relative flex w-full min-w-0 items-center justify-center overflow-hidden rounded-sm border outline-none focus-visible:ring-3 focus-visible:ring-ring/60',
           cell.future ? 'border-dashed border-border bg-transparent' : `border-border ${onTint}`,
-          current && 'ring-2 ring-primary',
+          current && 'ring-2 ring-live',
           className,
         )}
       >

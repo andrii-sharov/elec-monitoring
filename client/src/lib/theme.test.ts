@@ -26,14 +26,14 @@ describe('applyTheme', () => {
 });
 
 describe('readTheme', () => {
-  test('defaults to system', () => {
-    expect(readTheme()).toBe('system');
+  test('defaults to dark', () => {
+    expect(readTheme()).toBe('dark');
   });
 
   test('reads a stored choice and ignores unknown values', () => {
     localStorage.setItem('em.theme', 'dark');
     expect(readTheme()).toBe('dark');
     localStorage.setItem('em.theme', 'sepia');
-    expect(readTheme()).toBe('system');
+    expect(readTheme()).toBe('dark');
   });
 });

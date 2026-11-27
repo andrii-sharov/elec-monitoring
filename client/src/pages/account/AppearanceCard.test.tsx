@@ -9,34 +9,12 @@ async function renderAccount() {
   return view;
 }
 
-test('choosing Sonar applies it to the page and remembers it in this browser', async () => {
-  const { user } = await renderAccount();
-  const styles = screen.getByRole('radiogroup', { name: 'App style' });
-  await user.click(within(styles).getByRole('radio', { name: 'Sonar' }));
-  expect(within(styles).getByRole('radio', { name: 'Sonar' })).toBeChecked();
-  expect(document.documentElement.dataset.appStyle).toBe('sonar');
-  expect(localStorage.getItem('em.appStyle')).toBe('sonar');
-  expect(
-    screen.getByText('How the app looks and moves: theme and style. Saved only in this browser.'),
-  ).toBeInTheDocument();
-});
-
-test('arrow keys move the style selection', async () => {
-  const { user } = await renderAccount();
-  const styles = screen.getByRole('radiogroup', { name: 'App style' });
-  within(styles).getByRole('radio', { name: 'Classic' }).focus();
-  await user.keyboard('{ArrowRight}');
-  expect(within(styles).getByRole('radio', { name: 'Sonar' })).toHaveFocus();
-  expect(localStorage.getItem('em.appStyle')).toBe('sonar');
-});
-
-test('each style option shows a live preview of its own style', async () => {
+test('appearance has the theme choice and no style picker', async () => {
   await renderAccount();
-  for (const id of ['classic', 'sonar', 'switchboard', 'lamp']) {
-    expect(
-      document.querySelector(`[data-app-style="${id}"] [data-app-style-slot="${id}"]`),
-    ).not.toBeNull();
-  }
+  expect(screen.queryByRole('radiogroup', { name: 'App style' })).toBeNull();
+  expect(
+    screen.getByText('Light, dark or the system setting. Saved only in this browser.'),
+  ).toBeInTheDocument();
 });
 
 test('choosing Dark applies the theme without a request', async () => {

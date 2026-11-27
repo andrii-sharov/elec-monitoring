@@ -7,7 +7,7 @@ import { Link } from 'react-router';
 import { newPairingCode } from '@/api/endpoints';
 import { useDevice } from '@/api/queries';
 import { useSession } from '@/api/session';
-import { useAppStyle } from '@/appStyles/AppStyleProvider';
+import { StatusMark } from '@/components/device/StatusMark';
 import { PairingCode } from '@/components/PairingCode';
 import { buttonVariants, Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,7 +47,6 @@ function FlashStep() {
 }
 
 function DoneCard({ device }: { device: Device }) {
-  const { StatusMark } = useAppStyle().slots;
   const { t } = useTranslation();
   return (
     <Card>

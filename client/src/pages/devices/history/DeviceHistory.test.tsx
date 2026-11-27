@@ -114,8 +114,9 @@ test('follows cursors until the week is loaded', async () => {
   const cursors: (string | null)[] = [];
   server.use(
     http.get(outagesUrl, ({ request }) => {
-      const cursor = new URL(request.url).searchParams.get('cursor');
-      cursors.push(cursor);
+      const params = new URL(request.url).searchParams;
+      const cursor = params.get('cursor');
+      if (params.has('from')) cursors.push(cursor);
       return cursor
         ? HttpResponse.json({ items: [outageFixture({ id: 'b' })], next_cursor: null })
         : HttpResponse.json({ items: [outageFixture({ id: 'a' })], next_cursor: 'next' });
@@ -234,7 +235,7 @@ test('a year loads month by month and the grid becomes a calendar', async () => 
   expect(
     within(calendar).getByRole('button', { name: 'Sat 21 Nov · 2 h 15 min without power' }),
   ).toBeInTheDocument();
-  expect(new Set(requests.map((r) => r.from)).size).toBe(12);
+  expect(new Set(requests.filter((r) => r.from !== null).map((r) => r.from)).size).toBe(12);
   expect(screen.queryByRole('navigation', { name: 'Days of the week' })).toBeNull();
 });
 

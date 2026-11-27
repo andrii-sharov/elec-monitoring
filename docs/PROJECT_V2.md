@@ -728,9 +728,10 @@ errors, rate limits, and request and response shapes.
 
 Vite + React + TypeScript, React Router, TanStack Query, shadcn/ui
 components on Tailwind CSS, forms with React Hook Form and Zod, and
-i18next for translations. All data goes through our API. Colors, the
-light, dark and system themes, and the four app styles (Classic, Sonar,
-Switchboard, Lamp) follow [theme.md](theme.md). Icons are Lucide, always
+i18next for translations. All data goes through our API. The look is
+Neon Grid ([`assets/BRAND.md`](../assets/BRAND.md)): colors, fonts (Inter
+and JetBrains Mono) and the dark (default), light and system themes
+follow [theme.md](theme.md). Icons are Lucide, always
 next to text and hidden from screen readers; the client uses no emoji
 status markers (Telegram messages keep theirs).
 
@@ -774,23 +775,23 @@ Pages:
   once accepted) goes to the Device page. Signed in as another account:
   "This invite is for … You're signed in as …" with **Sign out**. An
   expired, revoked or unknown invite says so and asks for a new one.
-- **Welcome** — on the first signed-in page load in a browser with no
-  saved app style, the user is sent to `/welcome/appearance?next=…` to
-  pick one, with a live preview of the whole page. **Use this style** or
-  **Keep Classic** saves the choice and continues to `next` (checked like
-  every `next`). It happens once per browser.
-- **Devices** — rendered by the app style's `DeviceSummary`: state with
+- **Landing** (`/`, public) — signed-out visitors see what the product
+  does: hero with the promo animation, how setup works, the outage
+  timeline, Telegram alerts and sharing, and **Create free account**.
+  Signed-in users go to Devices. The old `/welcome/appearance` link goes
+  to Devices.
+- **Devices** — a card per device: state with
   a status mark and its text, how long the state has lasted, last seen;
   shared devices marked. The header links to Flash firmware next to Add
   device. An `OFFLINE` device with an open outage counts from the
   outage's `started_at` (its last check-in), not from `state_since` (the
   missed deadline), so cards, hero, timeline and the 🔴 alert's "Last
   signal" agree.
-- **Device** — the app style's `DeviceHero` on top: in Sonar, Switchboard
-  and Lamp a live duration that ticks every second ("Power on for 3 h 12 min",
-  "No contact for 25 min", "Waiting for the first check-in", "Updating"),
-  and in Sonar and Switchboard a 7-day power strip built from the loaded
-  outages (time before the oldest loaded outage is unknown while more
+- **Device** — the device hero on top: the name with its status mark, a
+  power card with a live duration that ticks every second (lime-filled
+  "Power on", coral-edged "No contact", dashed "Waiting" / "Updating"),
+  and a 7-day square-wave power strip built from the loaded outages
+  (time before the oldest loaded outage is unknown while more
   pages exist). The owner can start **Router work** (10, 15, 30 or 60 min,
   §5 Planned network work); while it runs everyone sees "Network alerts
   paused until 14:30" and the owner can resume alerts. Below the hero, tabs (kept in `?tab=`): **History**,
@@ -861,7 +862,7 @@ Pages:
 - **API docs** — Swagger UI backed by the generated OpenAPI document.
 - **Account** — tabs kept in `?tab=`: Profile (name, timezone, language),
   Appearance, Sign-in & security (emails and phones, linked Google,
-  password, sessions, log out everywhere) and Danger zone (delete account). Appearance: theme and app style, applied at
+  password, sessions, log out everywhere) and Danger zone (delete account). Appearance: theme (dark by default), applied at
   once and saved in this browser.
 
 ### Device settings and owner actions in the client

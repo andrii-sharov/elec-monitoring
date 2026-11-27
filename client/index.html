@@ -12,7 +12,7 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <meta name="theme-color" content="#166088" />
+    <meta name="theme-color" content="#0B1015" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Electricity Monitor" />
     <meta
@@ -26,16 +26,11 @@
     <script>
       (function () {
         var choice = null;
-        var appStyle = null;
         try {
           choice = localStorage.getItem('em.theme');
-          appStyle = localStorage.getItem('em.appStyle');
         } catch (error) {}
-        var appStyles = ['classic', 'sonar', 'switchboard', 'lamp'];
-        document.documentElement.dataset.appStyle =
-          appStyles.indexOf(appStyle) === -1 ? 'classic' : appStyle;
         var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        var dark = choice === 'dark' || (choice !== 'light' && prefersDark);
+        var dark = choice === 'system' ? prefersDark : choice !== 'light';
         document.documentElement.classList.toggle('dark', dark);
       })();
     </script>

@@ -1,54 +1,60 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
-@import './appStyles/classic/style.css';
-@import './appStyles/sonar/style.css';
-@import './appStyles/switchboard/style.css';
-@import './appStyles/lamp/style.css';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
 
 @custom-variant dark (&:is(.dark *));
 @custom-variant compact (@media (width >= 48rem) and (pointer: fine));
 
 :root {
   color-scheme: light;
-  --background: #dbe9ee;
+  --background: #f3f6f8;
   --surface: #ffffff;
-  --foreground: #203844;
-  --muted-foreground: #476471;
-  --primary: #166088;
+  --foreground: #0b1015;
+  --muted-foreground: #4f6070;
+  --primary: #4d7a00;
   --primary-foreground: #ffffff;
-  --secondary: #c0d6df;
-  --secondary-foreground: #294652;
-  --border: #b6cbd4;
-  --input: #738e9b;
-  --ring: #166088;
-  --status-online: #146847;
-  --status-offline: #a43042;
-  --status-pending: #56657a;
-  --danger: #a43042;
+  --secondary: #eaeff2;
+  --secondary-foreground: #0b1015;
+  --border: #d3dce2;
+  --input: #7d8d99;
+  --ring: #4d7a00;
+  --live: #00757e;
+  --signal: #c8f560;
+  --signal-foreground: #0b1015;
+  --status-online: #4d7a00;
+  --status-offline: #c62828;
+  --status-pending: #5e6e7c;
+  --danger: #c62828;
   --danger-foreground: #ffffff;
-  --warning: #855a12;
+  --warning: #8a5a00;
+  --app-surface-shadow: 0 1px 2px rgb(11 16 21 / 0.06);
 }
 
 .dark {
   color-scheme: dark;
-  --background: #101d24;
-  --surface: #192c36;
-  --foreground: #e6f1f5;
-  --muted-foreground: #b2c8d1;
-  --primary: #92cbe6;
-  --primary-foreground: #102530;
-  --secondary: #2a414d;
-  --secondary-foreground: #dbe9ee;
-  --border: #405965;
-  --input: #64808d;
-  --ring: #aadaf0;
-  --status-online: #79deb2;
-  --status-offline: #ffa0ac;
-  --status-pending: #a5b4ca;
-  --danger: #ffa0ac;
-  --danger-foreground: #102530;
-  --warning: #f1c677;
+  --background: #0b1015;
+  --surface: #151e27;
+  --foreground: #e8f0f4;
+  --muted-foreground: #93a4b0;
+  --primary: #c8f560;
+  --primary-foreground: #0b1015;
+  --secondary: #1d2833;
+  --secondary-foreground: #e8f0f4;
+  --border: #2a3742;
+  --input: #5c6e7e;
+  --ring: #c8f560;
+  --live: #5ce1e6;
+  --signal: #c8f560;
+  --signal-foreground: #0b1015;
+  --status-online: #c8f560;
+  --status-offline: #ff7a7a;
+  --status-pending: #8fa3b8;
+  --danger: #ff7a7a;
+  --danger-foreground: #0b1015;
+  --warning: #ffc857;
+  --app-surface-shadow: 0 0 transparent;
 }
 
 :root,
@@ -64,9 +70,24 @@
   --destructive-foreground: var(--danger-foreground);
 }
 
+:root {
+  --app-font-body: 'Inter Variable', system-ui, sans-serif;
+  --app-font-heading: 'JetBrains Mono Variable', ui-monospace, Menlo, Consolas, monospace;
+  --app-font-mono: var(--app-font-heading);
+  --radius: 0.625rem;
+  --app-surface-ring: var(--border);
+  --app-motion-duration: 180ms;
+  --app-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --app-backdrop: var(--background);
+}
+
 @theme inline {
   --font-sans: var(--app-font-body);
   --font-heading: var(--app-font-heading);
+  --font-mono: var(--app-font-mono);
+  --color-live: var(--live);
+  --color-signal: var(--signal);
+  --color-signal-foreground: var(--signal-foreground);
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-foreground: var(--foreground);
@@ -111,11 +132,12 @@
     background: var(--app-backdrop);
     background-attachment: fixed;
   }
-  [data-app-style] {
-    font-family: var(--app-font-body);
-  }
   html {
     @apply font-sans;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  :is(h1, h2, h3) {
+    letter-spacing: -0.01em;
   }
 }
 
@@ -149,8 +171,7 @@
   animation-timing-function: var(--app-motion-ease);
 }
 
-:root,
-[data-app-style] {
+:root {
   --app-enter-duration: min(calc(var(--app-motion-duration) * 2), 240ms);
   --app-panel-duration: min(var(--app-motion-duration), 120ms);
 }
@@ -178,8 +199,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root,
-  [data-app-style] {
+  :root {
     --app-motion-duration: 0ms;
   }
   [data-motion],
@@ -191,6 +211,72 @@
   }
   ::view-transition-old(root),
   ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
+.status-dot {
+  position: relative;
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+}
+
+.status-dot[data-state='ONLINE'] {
+  background: currentColor;
+}
+
+.status-dot:is([data-state='PENDING'], [data-state='UPDATING']) {
+  border-style: dashed;
+  border-width: 1.5px;
+}
+
+.status-dot::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 2px solid var(--live);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes status-ping {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+
+.status-dot[data-pulse]::after {
+  animation: status-ping 900ms var(--app-motion-ease) both;
+}
+
+@keyframes status-edge {
+  0% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.status-mark[data-motion='change'],
+.power-card[data-motion='change'] {
+  animation: status-edge calc(var(--app-motion-duration) * 2) steps(2, jump-none);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-dot[data-pulse]::after,
+  .status-mark[data-motion='change'],
+  .power-card[data-motion='change'] {
     animation: none;
   }
 }

@@ -80,7 +80,7 @@ test file run locally.
   - nothing stays invisible longer than `--app-enter-duration` (240 ms max);
   - decorative animation (flicker, pulse, snap) runs only on a real state
     change through `useStateChange`, never on mount.
-  - `client/src/appStyles/motion.test.tsx` enforces this. Extend its
+  - `client/src/motion.test.tsx` enforces this. Extend its
     ambient list only for motion that `theme.md` allows.
 - Client base controls: pages and features build every control from
   `client/src/components/ui` and never restyle its padding, size or motion.

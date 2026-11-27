@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 import { useDevice } from '@/api/queries';
 import { isApiError } from '@/api/errors';
-import { useAppStyle } from '@/appStyles/AppStyleProvider';
 import { BackLink } from '@/components/BackLink';
+import { DeviceHero } from '@/components/device/DeviceHero';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@/components/ui/tabs';
@@ -50,7 +50,6 @@ function SetupSection({ deviceId }: { deviceId: string }) {
 
 function DeviceContent() {
   const { t } = useTranslation();
-  const { DeviceHero } = useAppStyle().slots;
   const { id = '' } = useParams();
   const device = useDevice(id);
 
@@ -67,7 +66,7 @@ function DeviceContent() {
       return (
         <div className="flex flex-col items-start gap-3">
           <Illustration name="notFound" className="w-44" />
-          <h1 className="font-heading text-2xl font-semibold">{t('app.device.notFoundTitle')}</h1>
+          <h1 className="font-heading text-2xl font-bold">{t('app.device.notFoundTitle')}</h1>
           <p className="text-muted-foreground">{t('app.device.notFoundBody')}</p>
         </div>
       );

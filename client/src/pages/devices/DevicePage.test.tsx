@@ -98,7 +98,7 @@ test('an offline device keeps the last reported uptime', async () => {
   expect(detail('Uptime')).toBe('1 min');
 });
 
-test('an offline device shows the open outage start', async () => {
+test('an offline device shows the open outage start in its power card', async () => {
   server.use(
     http.get(`${base}/api/v1/devices/${id}`, () =>
       HttpResponse.json(
@@ -110,7 +110,8 @@ test('an offline device shows the open outage start', async () => {
     ),
   );
   renderRoute(`/devices/${id}`, { me: meFixture() });
-  expect(await screen.findByText('Offline since 21 Nov 18:42')).toBeInTheDocument();
+  const card = await screen.findByRole('region', { name: 'No contact' });
+  expect(within(card).getByText(/since 21 Nov 18:42/)).toBeInTheDocument();
 });
 
 test('an unknown device shows not found with a link back', async () => {
@@ -234,5 +235,7 @@ test('an offline device counts from its last check-in, like its open outage', as
     ),
   );
   renderRoute(`/devices/${id}`, { me: meFixture() });
-  expect(await screen.findByText(/since 21 Nov 18:40 · 2 h 2 min/)).toBeInTheDocument();
+  const card = await screen.findByRole('region', { name: 'No contact' });
+  expect(within(card).getByText(/since 21 Nov 18:40/)).toBeInTheDocument();
+  expect(within(card).getByText('2 h 2 min')).toBeInTheDocument();
 });

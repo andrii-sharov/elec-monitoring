@@ -5,7 +5,7 @@ import { useFormatters } from '@/lib/format';
 
 const causes = [
   { key: 'power', color: 'var(--status-offline)' },
-  { key: 'network', color: 'var(--primary)' },
+  { key: 'network', color: 'var(--live)' },
   { key: 'unknown', color: 'var(--status-pending)' },
 ] as const;
 

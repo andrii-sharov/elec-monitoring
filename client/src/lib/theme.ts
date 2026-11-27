@@ -14,7 +14,7 @@ export function applyTheme(choice: ThemeChoice, prefersDark: boolean): void {
 const themePreference = createPreference({
   key: 'em.theme',
   choices: themeChoices,
-  fallback: 'system',
+  fallback: 'dark',
   apply: (choice) => applyTheme(choice, window.matchMedia(darkQuery).matches),
 });
 

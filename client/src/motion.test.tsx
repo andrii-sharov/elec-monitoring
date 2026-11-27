@@ -2,14 +2,10 @@ import { readFileSync } from 'node:fs';
 import { render } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import { expect, test } from 'vitest';
-import { createClientI18n } from '../lib/i18n.ts';
-import { appStyleIds, appStyles } from './registry.ts';
+import { StatusMark } from './components/device/StatusMark.tsx';
+import { createClientI18n } from './lib/i18n.ts';
 
-const ambient = new Set([
-  ".sonar-dot[data-state='ONLINE']::after",
-  ".sonar-dot[data-state='OFFLINE'][data-size='lg']::after",
-  ".sonar-dot[data-state='OFFLINE'][data-size='lg']:not([data-pulse])::before",
-]);
+const ambient = new Set<string>([]);
 
 const changeMarkers = "[data-snap], [data-pulse], [data-motion='change'], [data-motion='flicker']";
 
@@ -43,10 +39,8 @@ function styleSheet(path: string): string {
   return readFileSync(new URL(path, import.meta.url), 'utf8');
 }
 
-const sheets = ['../styles.css', ...appStyleIds.map((id) => `./${id}/style.css`)];
-
-test.each(sheets)('%s animates only on a state change, an entrance or an ambient rule', (path) => {
-  const offenders = animatedSelectors(styleSheet(path))
+test('styles.css animates only on a state change, an entrance or an ambient rule', () => {
+  const offenders = animatedSelectors(styleSheet('./styles.css'))
     .filter((selector) => !selector.includes('prefers-reduced-motion'))
     .filter((selector) =>
       selector
@@ -62,8 +56,7 @@ test.each(sheets)('%s animates only on a state change, an entrance or an ambient
   expect(offenders).toEqual([]);
 });
 
-test.each(appStyleIds)('%s status mark plays no change motion on first render', (id) => {
-  const { StatusMark } = appStyles[id].slots;
+test('the status mark plays no change motion on first render', () => {
   const { container, rerender } = render(
     <I18nextProvider i18n={createClientI18n('en')}>
       <StatusMark state="ONLINE" lastSeenAt="2026-11-21T18:41:30Z" />
@@ -81,4 +74,19 @@ test.each(appStyleIds)('%s status mark plays no change motion on first render', 
     </I18nextProvider>,
   );
   expect(container.querySelector(changeMarkers)).not.toBeNull();
+});
+
+test('the live dot pings when a new check-in arrives, not on first render', () => {
+  const { container, rerender } = render(
+    <I18nextProvider i18n={createClientI18n('en')}>
+      <StatusMark state="ONLINE" lastSeenAt="2026-11-21T18:41:00Z" />
+    </I18nextProvider>,
+  );
+  expect(container.querySelector('[data-pulse]')).toBeNull();
+  rerender(
+    <I18nextProvider i18n={createClientI18n('en')}>
+      <StatusMark state="ONLINE" lastSeenAt="2026-11-21T18:41:30Z" />
+    </I18nextProvider>,
+  );
+  expect(container.querySelector('[data-pulse]')).not.toBeNull();
 });

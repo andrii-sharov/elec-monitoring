@@ -4,7 +4,6 @@ import { useId, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormatters } from '@/lib/format';
 import { createPreference } from '@/lib/preference';
-import { stateStart } from '@/lib/stateStart';
 import { useNow } from '@/lib/useNow';
 import { cn } from '@/lib/utils';
 import { liveTickMs } from './StateDuration';
@@ -76,16 +75,12 @@ function Details({ device, now }: { device: Device; now: number }) {
 
 export function DeviceTelemetry({ device, className }: { device: Device; className?: string }) {
   const { t } = useTranslation();
-  const format = useFormatters();
   const now = useNow(liveTickMs);
   const [state, setState] = detailsPreference.use();
   const open = state === 'open';
   const panelId = useId();
   return (
     <div className={cn('flex flex-col gap-2 text-sm text-muted-foreground', className)}>
-      <Moment iso={stateStart(device)} className="w-fit">
-        {t('app.device.since', { moment: format.since(stateStart(device), new Date(now)) })}
-      </Moment>
       <button
         type="button"
         aria-expanded={open}

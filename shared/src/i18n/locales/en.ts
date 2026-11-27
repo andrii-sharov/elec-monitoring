@@ -184,27 +184,61 @@ export const en = {
       light: 'Light',
       dark: 'Dark',
     },
-    welcome: {
-      lead: 'Choose a style for Elec. You can change it later in your account settings.',
-      useStyle: 'Use this style',
-      keepClassic: 'Keep Classic',
-    },
     appearance: {
       title: 'Appearance',
-      hint: 'How the app looks and moves: theme and style. Saved only in this browser.',
-      style: 'App style',
+      hint: 'Light, dark or the system setting. Saved only in this browser.',
     },
-    appStyle: {
-      classic: {
-        name: 'Classic',
-        description: "Device cards with a badge showing each device's status.",
+    landing: {
+      signup: 'Create free account',
+      login: 'Log in',
+      api: 'API docs',
+      navLabel: 'Main',
+      footerLabel: 'Links',
+      hero: {
+        title: 'Power outage alerts for your home',
+        lead: 'A small device in a wall socket checks in every 20 seconds. When it goes quiet, a Telegram message tells you, and another one when the power is back.',
+        how: 'See how it works',
+        fact: 'Pings every 20 s · alert after 40 s · free for now',
       },
-      sonar: { name: 'Sonar', description: 'The indicator pulses whenever a device checks in.' },
-      switchboard: {
-        name: 'Switchboard',
-        description: 'A breaker panel with a switch for each device.',
+      how: {
+        title: 'Three steps to your first alert',
+        lead: 'You need a device, your Wi-Fi password and a Telegram account.',
+        steps: {
+          device: {
+            title: 'Plug in a device',
+            body: 'Use our ready device, or flash your own ESP32-C3 from Chrome or Edge with one button.',
+          },
+          wifi: {
+            title: 'Connect it to Wi-Fi',
+            body: 'The device opens its own setup page. Pick your network and enter the pairing code from the app.',
+          },
+          alerts: {
+            title: 'Get alerts in Telegram',
+            body: 'Our bot writes when contact is lost and when it returns. Webhooks send the same events to your own systems.',
+          },
+        },
       },
-      lamp: { name: 'Lamp', description: 'Cards light up while the power is on.' },
+      history: {
+        title: 'Every outage on one timeline',
+        lead: "The app separates short blips from long outages, and a power cut from a dropped internet line, using the device's restart data.",
+      },
+      alerts: {
+        title: 'Alerts for the whole family',
+        lead: 'Share a device by email or phone number. Everyone you invite sees its history and gets alerts in their own Telegram chat and language.',
+      },
+      start: {
+        title: 'Monitoring is free for now',
+        lead: 'Create an account, plug in a device and watch its first check-in arrive.',
+      },
+      demo: {
+        device: 'Home',
+      },
+    },
+    power: {
+      ONLINE: 'Power on',
+      OFFLINE: 'No contact',
+      PENDING: 'Waiting',
+      UPDATING: 'Updating',
     },
     auth: {
       email: 'Email',
@@ -534,8 +568,17 @@ export const en = {
       sortBy: 'Sort',
       allTypes: 'All types',
       allDevices: 'All devices',
-      status: { all: 'Any status', active: 'Active', off: 'Turned off', failing: 'Failing' },
-      sort: { name: 'By name', newest: 'Newest first', devices: 'Most devices' },
+      status: {
+        all: 'Any status',
+        active: 'Active',
+        off: 'Turned off',
+        failing: 'Failing',
+      },
+      sort: {
+        name: 'By name',
+        newest: 'Newest first',
+        devices: 'Most devices',
+      },
       state: { active: 'Active', off: 'Turned off', failing: 'Failing' },
       overview: 'Overview',
       language: 'Notification language',
@@ -758,7 +801,13 @@ export const en = {
         custom: 'This week',
       },
       period: 'Period',
-      periods: { day: 'Day', week: 'Week', month: 'Month', year: 'Year', custom: 'Custom' },
+      periods: {
+        day: 'Day',
+        week: 'Week',
+        month: 'Month',
+        year: 'Year',
+        custom: 'Custom',
+      },
       custom: {
         title: 'Choose a date range',
         from: 'From',
@@ -809,11 +858,20 @@ export const en = {
     powerStrip: {
       title: 'Last 7 days',
       summary: 'Last 7 days: outages {{outages}}, power blips {{blips}}',
-      kind: { on: 'Power on', outage: 'Outage', blip: 'Power blip', unknown: 'No data' },
+      kind: {
+        on: 'Power on',
+        outage: 'Outage',
+        blip: 'Power blip',
+        unknown: 'No data',
+      },
     },
     outage: {
       type: { OUTAGE: 'Outage', POWER_BLIP: 'Power blip' },
-      cause: { POWER: 'Power outage', NETWORK: 'Network outage', UNKNOWN: 'Unknown cause' },
+      cause: {
+        POWER: 'Power outage',
+        NETWORK: 'Network outage',
+        UNKNOWN: 'Unknown cause',
+      },
       kind: { SHORT: 'Short', LONG: 'Long' },
       ongoingSince: 'Ongoing since {{moment}}',
       empty: 'No outages yet',

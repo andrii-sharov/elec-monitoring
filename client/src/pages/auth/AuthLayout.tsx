@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
-import { BrandMark } from '@/components/BrandMark';
+import { BrandMark, Wordmark } from '@/components/BrandMark';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PromoVideo } from '@/components/PromoVideo';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
@@ -14,7 +13,6 @@ type AuthLayoutProps = {
 };
 
 export function AuthLayout({ title, description, children, footer }: AuthLayoutProps) {
-  const { t } = useTranslation();
   const wide = useMediaQuery('(min-width: 64rem)');
   return (
     <main className="flex min-h-svh items-center justify-center gap-12 px-4 pt-20 pb-6 sm:p-6">
@@ -22,9 +20,9 @@ export function AuthLayout({ title, description, children, footer }: AuthLayoutP
         <LanguageSwitcher />
       </div>
       <div className="flex w-full max-w-sm flex-col items-center gap-4">
-        <span className="flex items-center gap-2 font-heading text-lg font-semibold">
+        <span className="flex items-center gap-2.5">
           <BrandMark className="size-9" />
-          {t('common.appName')}
+          <Wordmark className="text-lg" />
         </span>
         <Card className="w-full">
           <CardHeader>

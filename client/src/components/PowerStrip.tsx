@@ -10,14 +10,14 @@ import { cn } from '@/lib/utils';
 const day = 86_400_000;
 const windowMs = 7 * day;
 
-const segmentColor: Record<StripSegment['kind'], string> = {
-  on: 'bg-status-online',
-  outage: 'bg-status-offline',
-  blip: 'bg-warning',
-  unknown: 'bg-secondary',
+const segmentLook: Record<StripSegment['kind'], string> = {
+  on: 'inset-y-0 border-t-2 border-status-online bg-status-online/10',
+  outage: 'inset-y-0 border-b-2 border-status-offline bg-status-offline/15',
+  blip: 'inset-y-0 z-1 min-w-0.5 bg-warning',
+  unknown: 'top-1/2 h-0 border-t-2 border-dashed border-status-pending',
 };
 
-function Segment({ segment, from }: { segment: StripSegment; from: number }) {
+function Segment({ segment, from, edge }: { segment: StripSegment; from: number; edge: boolean }) {
   const { t } = useTranslation();
   const format = useFormatters();
   const label = `${t(`app.powerStrip.kind.${segment.kind}`)}: ${format.range(
@@ -31,9 +31,9 @@ function Segment({ segment, from }: { segment: StripSegment; from: number }) {
       type="button"
       aria-label={label}
       className={cn(
-        'group/segment absolute inset-y-0 cursor-default outline-none focus-visible:z-10 focus-visible:ring-3 focus-visible:ring-ring/50',
-        segment.kind === 'blip' ? 'z-1 min-w-1' : '',
-        segmentColor[segment.kind],
+        'group/segment absolute cursor-default outline-none focus-visible:z-10 focus-visible:ring-3 focus-visible:ring-ring/50',
+        segmentLook[segment.kind],
+        edge && 'border-l-2',
       )}
       style={{ left: `${left}%`, width: `${width}%` }}
     >
@@ -45,6 +45,16 @@ function Segment({ segment, from }: { segment: StripSegment; from: number }) {
       </span>
     </button>
   );
+}
+
+function levelEdges(segments: StripSegment[]): boolean[] {
+  let level: StripSegment['kind'] | null = null;
+  return segments.map((segment) => {
+    if (segment.kind === 'blip') return false;
+    const edge = level !== null && level !== segment.kind && segment.kind !== 'unknown';
+    level = segment.kind;
+    return edge;
+  });
 }
 
 function dayTicks(from: number, timezone: string, language: string) {
@@ -71,23 +81,29 @@ export function PowerStrip({ deviceId, className }: { deviceId: string; classNam
     complete: !outages.hasNextPage,
   });
   const from = now - windowMs;
+  const edges = levelEdges(segments);
   const count = (kind: StripSegment['kind']) => segments.filter((s) => s.kind === kind).length;
   const timezone = me?.timezone ?? browserTimezone();
 
   return (
     <figure className={cn('flex flex-col gap-1.5', className)}>
-      <figcaption className="text-xs font-medium text-muted-foreground">
+      <figcaption className="font-mono text-xs font-medium tracking-wider text-muted-foreground uppercase">
         <span aria-hidden="true">{t('app.powerStrip.title')}</span>
         <span className="sr-only">
           {t('app.powerStrip.summary', { outages: count('outage'), blips: count('blip') })}
         </span>
       </figcaption>
-      <div className="relative h-4 rounded-sm bg-secondary">
-        {segments.map((segment) => (
-          <Segment key={`${segment.kind}-${segment.start}`} segment={segment} from={from} />
+      <div className="relative h-10">
+        {segments.map((segment, index) => (
+          <Segment
+            key={`${segment.kind}-${segment.start}`}
+            segment={segment}
+            from={from}
+            edge={edges[index] ?? false}
+          />
         ))}
       </div>
-      <div aria-hidden="true" className="relative h-5 text-xs text-muted-foreground">
+      <div aria-hidden="true" className="relative h-5 font-mono text-xs text-muted-foreground">
         {dayTicks(from, timezone, i18n.resolvedLanguage ?? 'en').map((tick) => (
           <span
             key={tick.left}

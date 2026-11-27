@@ -2,7 +2,7 @@ import { Bell, Cpu, type LucideIcon } from 'lucide-react';
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, Outlet } from 'react-router';
-import { BrandMark } from '@/components/BrandMark';
+import { BrandMark, Wordmark } from '@/components/BrandMark';
 import { BottomInsetProvider, useFixedBottomInset } from '@/components/ui/bottom-inset';
 import { cn } from '@/lib/utils';
 import { AccountMenu } from './AccountMenu';
@@ -10,10 +10,11 @@ import { VerifyBanner } from './VerifyBanner';
 
 function navClass({ isActive }: { isActive: boolean }) {
   return cn(
-    'flex flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-secondary focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none sm:flex-none sm:flex-row sm:gap-1.5 sm:py-1 sm:text-sm',
+    'relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-2 py-1.5 text-xs transition-colors duration-(--app-motion-duration) hover:bg-secondary hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none sm:flex-none sm:flex-row sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-sm',
+    'sm:after:absolute sm:after:inset-x-3 sm:after:-bottom-[0.6875rem] sm:after:h-0.5 sm:after:rounded-full sm:after:transition-colors',
     isActive
-      ? 'font-medium text-primary sm:bg-secondary sm:text-secondary-foreground'
-      : 'text-muted-foreground sm:text-foreground',
+      ? 'font-medium text-primary sm:text-foreground sm:after:bg-primary'
+      : 'text-muted-foreground',
   );
 }
 
@@ -34,14 +35,14 @@ export function Layout() {
     <BottomInsetProvider value={bottomInset}>
       <div className="flex min-h-svh flex-col">
         <header className="app-header relative z-40 border-b border-border bg-surface">
-          <div className="mx-auto flex w-full max-w-5xl items-center gap-2 px-4 py-2">
+          <div className="mx-auto flex w-full max-w-5xl items-center gap-2 px-4 py-2 sm:gap-6 sm:px-6">
             <Link
               to="/devices"
               viewTransition
-              className="flex items-center gap-1.5 rounded-md font-heading font-semibold focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+              className="flex min-w-0 items-center gap-2 rounded-md focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
             >
               <BrandMark className="size-7" />
-              Elec
+              <Wordmark className="truncate text-sm sm:text-base" />
             </Link>
             <nav
               ref={navRef}
@@ -56,7 +57,7 @@ export function Layout() {
             </div>
           </div>
         </header>
-        <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 p-4 pb-24 sm:pb-4">
+        <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 p-4 pb-24 sm:px-6 sm:pt-8 sm:pb-10">
           <VerifyBanner />
           <Outlet />
         </main>

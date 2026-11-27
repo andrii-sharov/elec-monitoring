@@ -2,7 +2,6 @@ import { Navigate, Outlet, type RouteObject } from 'react-router';
 import { RequireAnon, RequireAuth, SessionProvider } from '@/api/session';
 import { AccountPage } from '@/pages/account/AccountPage';
 import { Layout } from './Layout';
-import { RequireAppearance } from './RequireAppearance';
 import { AddDevicePage } from '@/pages/devices/AddDevicePage';
 import { DevicePage } from '@/pages/devices/DevicePage';
 import { DevicesPage } from '@/pages/devices/DevicesPage';
@@ -17,7 +16,7 @@ import { InvitePage } from '@/pages/invite/InvitePage';
 import { NotificationsPage } from '@/pages/notifications/NotificationsPage';
 import { WebhookGuidePage } from '@/pages/notifications/WebhookGuidePage';
 import { NotFound } from '@/pages/NotFound';
-import { WelcomeAppearancePage } from '@/pages/welcome/WelcomeAppearancePage';
+import { HomeRoute } from '@/pages/landing/HomeRoute';
 
 export const routes: RouteObject[] = [
   {
@@ -35,6 +34,7 @@ export const routes: RouteObject[] = [
           { path: 'forgot-password', Component: ForgotPasswordPage },
         ],
       },
+      { index: true, Component: HomeRoute },
       { path: 'verify-email', Component: VerifyEmailPage },
       { path: 'invite', Component: InvitePage },
       { path: 'reset-password', Component: ResetPasswordPage },
@@ -42,23 +42,17 @@ export const routes: RouteObject[] = [
       {
         Component: RequireAuth,
         children: [
-          { path: 'welcome/appearance', Component: WelcomeAppearancePage },
+          { path: 'welcome/appearance', element: <Navigate to="/devices" replace /> },
           {
-            Component: RequireAppearance,
+            Component: Layout,
             children: [
-              {
-                Component: Layout,
-                children: [
-                  { path: '/', element: <Navigate to="/devices" replace /> },
-                  { path: 'devices', Component: DevicesPage },
-                  { path: 'devices/new', Component: AddDevicePage },
-                  { path: 'devices/:id', Component: DevicePage },
-                  { path: 'flash', Component: FlashPage },
-                  { path: 'notifications', Component: NotificationsPage },
-                  { path: 'notifications/webhooks/guide', Component: WebhookGuidePage },
-                  { path: 'account', Component: AccountPage },
-                ],
-              },
+              { path: 'devices', Component: DevicesPage },
+              { path: 'devices/new', Component: AddDevicePage },
+              { path: 'devices/:id', Component: DevicePage },
+              { path: 'flash', Component: FlashPage },
+              { path: 'notifications', Component: NotificationsPage },
+              { path: 'notifications/webhooks/guide', Component: WebhookGuidePage },
+              { path: 'account', Component: AccountPage },
             ],
           },
         ],
