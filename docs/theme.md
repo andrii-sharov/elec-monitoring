@@ -115,6 +115,13 @@ the `:root` defaults.
 - The history grid fills each hour by the share without power with
   `--status-offline`, on a `--status-online` tint; blips are a `--warning`
   dot. Every cell has a text label.
+- Stats charts use the same colors: time without contact is
+  `--status-offline`, power blips `--warning`, causes are power
+  `--status-offline`, network `--primary` and unknown `--status-pending`.
+  The availability meter fills `--status-online` over `--status-offline`.
+  Axis text is `--muted-foreground`, grid lines `--border`. Charts never
+  animate their bars; the cards enter with `data-motion="enter"`. Each
+  chart is `aria-hidden` next to a screen-reader table with its values.
 
 ### Adding a style
 
@@ -156,7 +163,10 @@ the touch size, and `compact:` restores the desktop size.
   (`styles.css`), so iOS Safari lets them shrink to their column.
 - Charts and grids pick a phone form instead of shrinking: the history
   grid shows hours by day for up to 7 days on a phone (31 on wider
-  screens) and a calendar of days beyond that.
+  screens) and a calendar of days beyond that. The stats chart hides
+  its duration axis on a phone and labels every 3rd hour or every 2nd or
+  5th day; it never scrolls sideways (at most 31 bars). Stat tiles sit two
+  per row on a phone.
 - Segmented controls fill one row on phones and scroll sideways only
   when they can't fit. Line tabs share the width equally, icon above a
   wrapping label.

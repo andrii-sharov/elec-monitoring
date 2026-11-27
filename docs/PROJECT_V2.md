@@ -772,8 +772,8 @@ Pages:
   and in Sonar and Switchboard a 7-day power strip built from the loaded
   outages (time before the oldest loaded outage is unknown while more
   pages exist). Below the hero, tabs (kept in `?tab=`): **History**,
-  **Notifications** (channels for this device), **Members** (members &
-  invites), later **Stats**. History shows one period in the user's timezone: **Day · Week · Month ·
+  **Stats**, **Notifications** (channels for this device), **Members**
+  (members & invites). History shows one period in the user's timezone: **Day · Week · Month ·
   Year · Custom** (up to 366 days), kept in the URL (`?period=&from=&to=`;
   the old `?week=` still opens that week), with previous / next and a
   button back to the current period. Three views (`?view=`, last choice
@@ -782,8 +782,16 @@ Pages:
   heatmap of days for longer ranges), and **Table**. Ranges over 31 days
   load month by month in parallel; only a range that includes today polls.
   An open outage
-  shows a live duration that ticks every second. Then stats (day / week / month),
-  settings and their applied status, firmware version, update availability,
+  shows a live duration that ticks every second. **Stats** shares the
+  History period controls and URL, so switching tabs keeps the range. It
+  shows tiles (availability with a meter, time without contact, outages
+  and long ones, average and longest outage, power blips), a bar chart of
+  time without contact per hour, day or month with power blips as a thin
+  second bar and a tooltip on hover or tap, and the outage causes as
+  labeled bars with "still going" for an open outage. The chart (Recharts)
+  loads only when the tab opens; a screen-reader table carries the same
+  values. Before the first check-in the tab says statistics start after
+  it. Then settings and their applied status, firmware version, update availability,
   Install button, automatic update setting, queued and running updates,
   update result, members & invites, channels, "re-pair", "rotate token",
   "delete". While the device is `PENDING`, the owner sees "Finish setting

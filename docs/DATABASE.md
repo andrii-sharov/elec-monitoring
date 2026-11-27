@@ -766,7 +766,10 @@ Each query states the index it relies on.
 - **Pagination.** Keyset (cursor) everywhere, never `offset`. The opaque API
   cursor encodes the last row's sort columns.
 - **Stats** are computed from `outage` on request. At this scale no rollup
-  tables are needed. Day and week buckets use the caller's timezone.
+  tables are needed. Buckets use the caller's timezone. One query reads the
+  outages overlapping the range (`outage_device_started_idx`), another
+  `min(device_boot.first_seen_at)` as the start of monitoring (boot rows
+  survive a re-pair). An outage counts in every bucket it overlaps.
 - **Connections.** Use the Supabase transaction pooler (port 6543). Turn off
   prepared statements in the driver (`prepare: false` in postgres.js) and
   avoid session state (`set`, session advisory locks, `listen`). Set a

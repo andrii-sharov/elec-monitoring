@@ -35,7 +35,7 @@ Status: ⬜ not started · 🟡 in progress · ✅ done · ⛔ blocked
 | M6  | [Sharing](#m6--sharing)                                               | ✅     | M4         | [M06](plans/M06-sharing.md)                                                                                                                                   |
 | M7  | [Phone sign-in via Telegram](#m7--phone-sign-in-via-telegram)         | ✅     | M4         | [M07](plans/M07-phone-auth.md) · [M07a](plans/M07a-phone-input.md)                                                                                            |
 | M8  | [Webhooks](#m8--webhooks)                                             | ✅     | M4         | [M08](plans/M08-webhooks.md)                                                                                                                                  |
-| M9  | [Statistics](#m9--statistics)                                         | ⬜     | M4         | [M09](plans/M09-statistics.md)                                                                                                                                |
+| M9  | [Statistics](#m9--statistics)                                         | 🟡     | M4         | [M09](plans/M09-statistics.md)                                                                                                                                |
 | M10 | [Admin app](#m10--admin-app)                                          | ⬜     | M4         | —                                                                                                                                                             |
 | M11 | [Remote management and OTA](#m11--remote-device-management-and-ota)   | ⬜     | M4, M5     | —                                                                                                                                                             |
 | M12 | [Launch readiness](#m12--launch-readiness)                            | ⬜     | all        | —                                                                                                                                                             |
@@ -381,11 +381,13 @@ a webhook receiver on staging.
 **Goal:** outage counts, downtime and availability per day, week, month.
 **Spec:** P §2 Statistics, §5 Power blips · A §4 Outages and stats.
 
-- [ ] Stats from `outage`: periods in the caller's timezone, buckets,
-      availability, `by_cause`, power blips counted separately, outages
-      clipped to the range, open outage counted up to now
+- [ ] Stats from `outage`: History periods (Day · Week · Month · Year ·
+      Custom) in the caller's timezone, buckets, availability from the
+      first check-in, `by_cause`, power blips counted separately, outages
+      counted in every bucket they overlap and clipped to it, open outage
+      counted up to now
 - [ ] `GET /devices/:id/stats`; `/stats` bot command (last 7 days)
-- [ ] Client: stats and charts on the Device page
+- [ ] Client: Stats tab with tiles and Recharts charts on the Device page
 
 **Done when:** tests cover a DST change (a zone with DST), an outage
 spanning bucket edges, and an open outage. 👤 Check the charts.
