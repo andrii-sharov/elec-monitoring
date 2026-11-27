@@ -122,6 +122,16 @@ export function GridCell({
                 <Duration seconds={Math.max(0, elapsed - cell.offMs) / 1000} />
               </dd>
             </div>
+            {cell.networkMs > 0 ? (
+              <div>
+                <dt className="text-xs text-muted-foreground">
+                  {t('app.history.cell.withoutInternet')}
+                </dt>
+                <dd className="font-medium text-muted-foreground">
+                  <Duration seconds={cell.networkMs / 1000} />
+                </dd>
+              </div>
+            ) : null}
           </dl>
         )}
         {touching.length === 0 && !cell.future ? (

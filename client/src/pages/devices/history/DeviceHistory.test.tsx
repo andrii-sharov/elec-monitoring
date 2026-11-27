@@ -171,6 +171,26 @@ test('a busy cell card scrolls its outage list and keeps the totals in view', as
   expect(list.parentElement).not.toContainElement(within(card).getByText('Without power'));
 });
 
+test('a cell card shows time without internet only when there was some', async () => {
+  serveOutages([
+    outageFixture({
+      cause: 'NETWORK',
+      kind: 'SHORT',
+      started_at: '2026-11-21T17:00:00Z',
+      ended_at: '2026-11-21T17:12:00Z',
+    }),
+  ]);
+  const { user } = renderRoute(`/devices/${id}?view=grid`, { me: meFixture() });
+  const grid = await screen.findByRole('region', { name: 'Grid' });
+  await user.click(within(grid).getByRole('button', { name: /^Sat 21 19:00–20:00/ }));
+  const card = await screen.findByRole('dialog');
+  expect(within(card).getByText('No internet')).toBeInTheDocument();
+  expect(within(card).getByText('12 min')).toBeInTheDocument();
+  await user.keyboard('{Escape}');
+  await user.click(within(grid).getByRole('button', { name: /^Sat 21 20:00–21:00/ }));
+  expect(within(await screen.findByRole('dialog')).queryByText('No internet')).toBeNull();
+});
+
 test('the table lists outages and the choice is remembered', async () => {
   localStorage.setItem('em.historyView', 'table');
   serveOutages([

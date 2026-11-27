@@ -144,3 +144,21 @@ test('sums a whole day without power and its blips', async () => {
   expect(summary.blips).toBe(1);
   expect(summary.future).toBe(false);
 });
+
+test('a network gap is time without internet, not without power', async () => {
+  const { daySummary } = await import('./week.ts');
+  const day = weekDays('2026-11-23', kyiv)[0];
+  if (!day) throw new Error('no day');
+  const outages = [
+    outageFixture({
+      cause: 'NETWORK',
+      started_at: '2026-11-23T08:00:00Z',
+      ended_at: '2026-11-23T08:10:00Z',
+    }),
+  ];
+  const now = Date.parse('2026-11-24T00:00:00Z');
+  const cell = hourCells(day, outages, now)[10];
+  expect(cell?.offMs).toBe(0);
+  expect(cell?.networkMs).toBe(600_000);
+  expect(daySummary(day, outages, now)).toMatchObject({ offMs: 0, networkMs: 600_000 });
+});

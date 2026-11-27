@@ -711,6 +711,7 @@ export const en = {
       availability: 'Availability',
       noData: 'No data yet',
       downtime: 'Without power',
+      noInternet: 'No internet: {{duration}}',
       outages: 'Outages',
       longOutages: 'Long: {{count}}',
       average: 'Average outage',
@@ -768,6 +769,7 @@ export const en = {
       cell: {
         withoutPower: 'Without power',
         withPower: 'With power',
+        withoutInternet: 'No internet',
         blipAt: 'Power blip at {{time}}',
         none: 'No outages this hour',
         showInTimeline: 'Show this day in the timeline',

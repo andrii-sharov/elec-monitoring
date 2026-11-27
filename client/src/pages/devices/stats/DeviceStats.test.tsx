@@ -60,6 +60,20 @@ test('shows the summary tiles for the current week', async () => {
   expect(within(tile('Power blips')).getByText('2')).toBeInTheDocument();
 });
 
+test('time without internet shows under time without power only when there was some', async () => {
+  serveStats(statsFixture({ network_downtime_s: 720 }));
+  open();
+  await screen.findByText('95.24%');
+  expect(within(tile('Without power')).getByText('No internet: 12 min')).toBeInTheDocument();
+});
+
+test('no internet hint is hidden when there was none', async () => {
+  serveStats();
+  open();
+  await screen.findByText('95.24%');
+  expect(within(tile('Without power')).queryByText(/No internet/)).toBeNull();
+});
+
 test('the period is shared with the History tab through the URL', async () => {
   const requests = serveStats();
   const { user, router } = open();

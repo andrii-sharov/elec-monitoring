@@ -71,6 +71,11 @@ export function StatsSummary({ stats }: { stats: DeviceStats }) {
         index={1}
         label={t('app.stats.downtime')}
         value={format.duration(stats.total_downtime_s)}
+        hint={
+          stats.network_downtime_s > 0
+            ? t('app.stats.noInternet', { duration: format.duration(stats.network_downtime_s) })
+            : undefined
+        }
       />
       <Tile
         index={2}

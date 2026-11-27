@@ -17,6 +17,7 @@ export type Day = Slot & { date: LocalDate; weekday: number; hours: Slot[] };
 
 export type HourCell = Slot & {
   offMs: number;
+  networkMs: number;
   blips: number;
   future: boolean;
 };
@@ -59,17 +60,32 @@ export function outageSlot(outage: OutageItem, now: number): Slot {
   return { start, end: Math.max(start, end) };
 }
 
+const isNetworkGap = (outage: OutageItem) => outage.type === 'OUTAGE' && outage.cause === 'NETWORK';
+
+function gapSlots(outages: OutageItem[], now: number) {
+  const gaps = outages.filter((outage) => outage.type === 'OUTAGE');
+  return {
+    off: gaps.filter((outage) => !isNetworkGap(outage)).map((o) => outageSlot(o, now)),
+    network: gaps.filter(isNetworkGap).map((o) => outageSlot(o, now)),
+  };
+}
+
+function coveredMs(slot: Slot, spans: Slot[]): number {
+  return Math.min(
+    slot.end - slot.start,
+    spans.reduce((total, span) => total + overlap(span, slot), 0),
+  );
+}
+
 export function hourCells(day: Day, outages: OutageItem[], now: number): HourCell[] {
-  const off = outages.filter((outage) => outage.type === 'OUTAGE').map((o) => outageSlot(o, now));
+  const { off, network } = gapSlots(outages, now);
   const blips = outages
     .filter((outage) => outage.type === 'POWER_BLIP')
     .map((outage) => Date.parse(outage.started_at));
   return day.hours.map((slot) => ({
     ...slot,
-    offMs: Math.min(
-      slot.end - slot.start,
-      off.reduce((total, outage) => total + overlap(outage, slot), 0),
-    ),
+    offMs: coveredMs(slot, off),
+    networkMs: coveredMs(slot, network),
     blips: blips.filter((at) => at >= slot.start && at < slot.end).length,
     future: slot.start >= now,
   }));
@@ -96,7 +112,7 @@ export function outagesIn(slot: Slot, outages: OutageItem[], now: number): Outag
 }
 
 export function daySummary(day: Day, outages: OutageItem[], now: number): HourCell {
-  const off = outages.filter((outage) => outage.type === 'OUTAGE').map((o) => outageSlot(o, now));
+  const { off, network } = gapSlots(outages, now);
   const blips = outages.filter(
     (outage) =>
       outage.type === 'POWER_BLIP' &&
@@ -106,10 +122,8 @@ export function daySummary(day: Day, outages: OutageItem[], now: number): HourCe
   return {
     start: day.start,
     end: day.end,
-    offMs: Math.min(
-      day.end - day.start,
-      off.reduce((total, outage) => total + overlap(outage, day), 0),
-    ),
+    offMs: coveredMs(day, off),
+    networkMs: coveredMs(day, network),
     blips,
     future: day.start >= now,
   };

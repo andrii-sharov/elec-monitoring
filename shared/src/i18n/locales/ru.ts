@@ -745,6 +745,7 @@ export const ru: Dictionary = {
       availability: 'Доступность',
       noData: 'Данных пока нет',
       downtime: 'Без света',
+      noInternet: 'Без интернета: {{duration}}',
       outages: 'Отключения',
       longOutages: 'Долгих: {{count}}',
       average: 'Среднее отключение',
@@ -802,6 +803,7 @@ export const ru: Dictionary = {
       cell: {
         withoutPower: 'Без света',
         withPower: 'Со светом',
+        withoutInternet: 'Без интернета',
         blipAt: 'Сбой питания в {{time}}',
         none: 'В этот час отключений не было',
         showInTimeline: 'Показать этот день в ленте',

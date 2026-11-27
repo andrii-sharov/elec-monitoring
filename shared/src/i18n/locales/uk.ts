@@ -739,6 +739,7 @@ export const uk: Dictionary = {
       availability: 'Доступність',
       noData: 'Даних ще немає',
       downtime: 'Без світла',
+      noInternet: 'Без інтернету: {{duration}}',
       outages: 'Відключення',
       longOutages: 'Довгих: {{count}}',
       average: 'Середнє відключення',
@@ -802,6 +803,7 @@ export const uk: Dictionary = {
       cell: {
         withoutPower: 'Без світла',
         withPower: 'Зі світлом',
+        withoutInternet: 'Без інтернету',
         blipAt: 'Збій живлення о {{time}}',
         none: 'Цієї години відключень не було',
         showInTimeline: 'Показати цей день у стрічці',
