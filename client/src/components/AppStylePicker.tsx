@@ -28,6 +28,7 @@ function sampleDevices(now: number): DeviceListItem[] {
       last_seen_at: new Date(now).toISOString(),
       open_outage: null,
       settings,
+      network_pause_until: null,
     },
     {
       id: 'preview-garage',
@@ -38,6 +39,7 @@ function sampleDevices(now: number): DeviceListItem[] {
       last_seen_at: new Date(now - 27 * 60_000).toISOString(),
       open_outage: null,
       settings,
+      network_pause_until: null,
     },
   ];
 }

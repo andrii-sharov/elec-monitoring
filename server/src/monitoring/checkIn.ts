@@ -32,6 +32,10 @@ async function persistEvent(
   now: Date,
 ): Promise<void> {
   const deviceId = current.id;
+  if (event.type === 'DISCARD_OUTAGE') {
+    await tx.delete(outage).where(eq(outage.id, event.outageId));
+    return;
+  }
   if (event.type === 'CLOSE_OUTAGE') {
     const startedAt = open?.startedAt ?? now;
     const endedAt = startedAt.getTime() > now.getTime() ? startedAt : now;

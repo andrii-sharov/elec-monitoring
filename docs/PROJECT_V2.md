@@ -459,6 +459,20 @@ as `SHORT` when it is below the device's short-outage threshold (default
 It includes time spent booting and reconnecting. The exact duration of
 power loss is unavailable.
 
+### Planned network work
+
+Before restarting or moving the router, the owner can pause network
+alerts for 5–120 min (`network_pause_until` on the device). The device
+state stays truthful; only alerts and history change:
+
+- No OFF alert is queued before the pause ends. An open outage's
+  unqueued alert waits for the end.
+- A gap that starts in the pause and ends with the **same** `boot_id`,
+  with no OFF alert queued, is dropped: no outage, no message.
+- A **new** boot is recorded and notified as usual (the power dropped).
+- If the device is still silent when the pause ends, the OFF alert goes
+  out then and the outage follows the normal rules.
+
 ### Power blips before the offline timeout
 
 When an `ONLINE` device reports a new boot with a `POWER` cause before

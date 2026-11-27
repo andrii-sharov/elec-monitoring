@@ -40,21 +40,41 @@ describe('offAlertDueAt', () => {
   const T = new Date('2026-11-21T16:42:00Z');
   const at = (s: number) => new Date(T.getTime() + s * 1000);
 
+  test('waits for the end of a network pause', () => {
+    expect(
+      offAlertDueAt(T, at(120), {
+        notifyShortOutages: true,
+        shortOutageThresholdS: 180,
+        networkPauseUntil: at(600),
+      }),
+    ).toEqual(at(600));
+  });
+
+  test('ignores a pause that already ended', () => {
+    expect(
+      offAlertDueAt(T, at(120), {
+        notifyShortOutages: true,
+        shortOutageThresholdS: 180,
+        networkPauseUntil: at(60),
+      }),
+    ).toEqual(at(120));
+  });
+
   test('is now when short outages notify', () => {
     expect(
-      offAlertDueAt(T, at(120), { notifyShortOutages: true, shortOutageThresholdS: 180 }),
+      offAlertDueAt(T, at(120), { notifyShortOutages: true, shortOutageThresholdS: 180, networkPauseUntil: null }),
     ).toEqual(at(120));
   });
 
   test('waits for the short-outage threshold when they do not', () => {
     expect(
-      offAlertDueAt(T, at(120), { notifyShortOutages: false, shortOutageThresholdS: 180 }),
+      offAlertDueAt(T, at(120), { notifyShortOutages: false, shortOutageThresholdS: 180, networkPauseUntil: null }),
     ).toEqual(at(180));
   });
 
   test('is never in the past', () => {
     expect(
-      offAlertDueAt(T, at(120), { notifyShortOutages: false, shortOutageThresholdS: 60 }),
+      offAlertDueAt(T, at(120), { notifyShortOutages: false, shortOutageThresholdS: 60, networkPauseUntil: null }),
     ).toEqual(at(120));
   });
 });

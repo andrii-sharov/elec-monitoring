@@ -18,6 +18,7 @@ function row(overrides: Partial<DeviceRow> = {}): DeviceRow {
     stateSince: LAST_SEEN,
     lastSeenAt: null,
     offlineAt: null,
+    networkPauseUntil: null,
     bootId: null,
     seq: null,
     uptimeS: null,

@@ -252,6 +252,7 @@ create table device (
   state_since              timestamptz not null default now(),
   last_seen_at             timestamptz,
   offline_at               timestamptz,
+  network_pause_until      timestamptz,
   boot_id                  uuid,
   seq                      integer,
   uptime_s                 integer,

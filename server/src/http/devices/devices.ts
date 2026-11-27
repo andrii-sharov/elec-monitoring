@@ -5,13 +5,15 @@ import {
   deviceParamsSchema,
   devicePatchSchema,
   deviceSchema,
+  networkPauseBodySchema,
+  networkPauseSchema,
   pairingCodeSchema,
 } from '@elec/shared/api';
-import { count, eq } from 'drizzle-orm';
+import { and, count, eq, isNull, lt } from 'drizzle-orm';
 import { Router, type Request } from 'express';
 import { z } from 'zod';
 import type { ZodOpenApiPathsObject } from 'zod-openapi';
-import { appUser, device } from '../../db/schema/index.ts';
+import { appUser, device, outage } from '../../db/schema/index.ts';
 import { getAccessibleDevice } from '../../devices/access.ts';
 import { PAIRING_CODE_TTL_MS, hashPairingCode, newPairingCode } from '../../devices/credentials.ts';
 import { findDeviceView, findDeviceViews } from '../../devices/queries.ts';
@@ -128,6 +130,34 @@ export const devicesPaths: ZodOpenApiPathsObject = {
       },
     },
   },
+  '/api/v1/devices/{id}/network-pause': {
+    put: {
+      summary: 'Pause network alerts for planned router work',
+      description:
+        'For the next `minutes` (5–120), no OFF alert is queued. A gap that starts in the pause and ends with the same boot is dropped: no outage, no message. A new boot is recorded as usual. An OFF alert not yet queued for an open outage waits for the end of the pause.',
+      security: bearer,
+      requestParams: { path: deviceParamsSchema },
+      requestBody: { content: json(networkPauseBodySchema) },
+      responses: {
+        '200': { description: 'Paused', content: json(networkPauseSchema) },
+        '400': errorResponse('`validation_error`'),
+        '401': unauthorized,
+        '403': ownerOnly,
+        '404': deviceNotFound,
+      },
+    },
+    delete: {
+      summary: 'End a network pause now',
+      security: bearer,
+      requestParams: { path: deviceParamsSchema },
+      responses: {
+        '204': { description: 'Pause ended' },
+        '401': unauthorized,
+        '403': ownerOnly,
+        '404': deviceNotFound,
+      },
+    },
+  },
   '/api/v1/devices/{id}/rotate-token': {
     post: {
       summary: 'Invalidate the device token',
@@ -227,6 +257,35 @@ export function devicesRouter(deps: AppDeps): Router {
       pairing_code: pairing.code,
       pairing_code_expires_at: pairing.expiresAt.toISOString(),
     });
+  });
+
+  router.put('/api/v1/devices/:id/network-pause', auth, async (req, res) => {
+    const id = deviceIdParam(req);
+    const { minutes } = networkPauseBodySchema.parse(req.body ?? {});
+    const until = new Date(clock.now().getTime() + minutes * 60_000);
+    await db.transaction(async (tx) => {
+      await getAccessibleDevice(tx, getAuth(res).user.id, id, 'manage', { lock: true });
+      await tx.update(device).set({ networkPauseUntil: until }).where(eq(device.id, id));
+      await tx
+        .update(outage)
+        .set({ offAlertDueAt: until })
+        .where(
+          and(
+            eq(outage.deviceId, id),
+            isNull(outage.endedAt),
+            isNull(outage.offAlertQueuedAt),
+            lt(outage.offAlertDueAt, until),
+          ),
+        );
+    });
+    res.json({ until: until.toISOString() });
+  });
+
+  router.delete('/api/v1/devices/:id/network-pause', auth, async (req, res) => {
+    const id = deviceIdParam(req);
+    await getAccessibleDevice(db, getAuth(res).user.id, id, 'manage');
+    await db.update(device).set({ networkPauseUntil: null }).where(eq(device.id, id));
+    res.status(204).end();
   });
 
   router.post('/api/v1/devices/:id/rotate-token', auth, async (req, res) => {

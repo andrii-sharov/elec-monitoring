@@ -396,6 +396,15 @@ it for a given device. A viewer calling an owner-only endpoint gets
 | DELETE | `/devices/:id`              | signed in | owner         | Delete device                     |
 | POST   | `/devices/:id/pairing-code` | signed in | owner         | New pairing code (re-pair)        |
 | POST   | `/devices/:id/rotate-token` | signed in | owner         | Invalidate device token           |
+| PUT    | `/devices/:id/network-pause` | signed in | owner        | Pause network alerts (router work) |
+| DELETE | `/devices/:id/network-pause` | signed in | owner        | End the pause now                 |
+
+`PUT /devices/:id/network-pause` `{ "minutes": 5–120 }` → `200 { "until": "…" }`.
+Planned network work (P §5): until `until` no OFF alert is queued, and a
+gap that starts in the pause and ends with the same boot is dropped. An
+open outage's unqueued OFF alert waits for `until`. Devices show the
+stored value as `network_pause_until` (`null` when cancelled; clients
+treat a past value as no pause). `DELETE` → `204`.
 
 `POST /devices` body `{ "name": "Home" }` (trimmed, 1–64 chars) → `201`.
 The response `device` is the full device object below. The pairing code

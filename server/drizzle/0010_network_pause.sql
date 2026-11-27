@@ -1,0 +1,1 @@
+ALTER TABLE "device" ADD COLUMN "network_pause_until" timestamp with time zone;

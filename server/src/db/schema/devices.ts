@@ -35,6 +35,7 @@ export const device = pgTable(
     stateSince: tstz().notNull().defaultNow(),
     lastSeenAt: tstz(),
     offlineAt: tstz(),
+    networkPauseUntil: tstz(),
     bootId: uuid(),
     seq: integer(),
     uptimeS: integer(),

@@ -71,6 +71,13 @@
       "when": 1795799319026,
       "tag": "0009_channel_language_network_pause",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795799471466,
+      "tag": "0010_network_pause",
+      "breakpoints": true
     }
   ]
 }

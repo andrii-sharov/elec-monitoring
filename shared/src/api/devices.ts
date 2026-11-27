@@ -67,6 +67,7 @@ export const deviceListItemSchema = z
     last_seen_at: isoDate.nullable(),
     open_outage: outageItemSchema.nullable(),
     settings: deviceSettingsSchema,
+    network_pause_until: isoDate.nullable(),
   })
   .meta({ id: 'DeviceListItem' });
 
@@ -96,6 +97,15 @@ export type Device = z.infer<typeof deviceSchema>;
 export const deviceListSchema = z.object({ items: z.array(deviceListItemSchema) });
 
 export const createDeviceBodySchema = z.object({ name: deviceNameSchema });
+
+export const NETWORK_PAUSE_MIN = 5;
+export const NETWORK_PAUSE_MAX = 120;
+
+export const networkPauseBodySchema = z.strictObject({
+  minutes: z.number().int().min(NETWORK_PAUSE_MIN).max(NETWORK_PAUSE_MAX),
+});
+
+export const networkPauseSchema = z.object({ until: isoDate }).meta({ id: 'NetworkPause' });
 
 export const devicePatchSchema = z.strictObject({
   name: deviceNameSchema.optional(),

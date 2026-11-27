@@ -4,8 +4,9 @@ import { testApp, testConfig } from '../../test/app.ts';
 import { createUser, signIn } from '../../test/auth.ts';
 import { createTestDb, type TestDb } from '../../test/db.ts';
 import { markOffline, pairDevice } from '../../test/devices.ts';
-import { FakeClock, RecordingNotificationQueue } from '../../test/fakes.ts';
+import { FakeClock, RecordingNotificationQueue, silentLogger } from '../../test/fakes.ts';
 import { appUser } from '../db/schema/index.ts';
+import { checkOffline, queueDueOffAlerts } from './offline.ts';
 
 const T = new Date('2026-11-21T16:42:00Z');
 const BOOT_A = '0193a1c4-0000-7000-8000-00000000000a';
@@ -216,4 +217,49 @@ test('8. a re-paired board does not register a power blip', async () => {
   await boot(BOOT_B);
   expect(await getOutages()).toEqual([]);
   expect(queue.calls).toEqual([]);
+});
+
+describe('planned network work', () => {
+  const pause = (minutes: number) =>
+    request(app())
+      .put(`/api/v1/devices/${deviceId}/network-pause`)
+      .set('Authorization', userAuth)
+      .send({ minutes });
+
+  async function workerTick() {
+    const deps = { db: t.db, clock, logger: silentLogger(), notifications: queue };
+    await checkOffline(deps);
+    await queueDueOffAlerts(deps);
+  }
+
+  async function silence(seconds: number) {
+    for (let s = 0; s < seconds; s += 10) {
+      clock.advance(10_000);
+      await workerTick();
+    }
+  }
+
+  test('a router swap inside the pause leaves no outage and no message', async () => {
+    await boot(BOOT_A);
+    await pause(15);
+    await silence(180);
+    expect((await getDevice()).state).toBe('OFFLINE');
+    await ping(BOOT_A, 188);
+    expect(await getOutages()).toEqual([]);
+    expect(queue.calls).toEqual([]);
+    expect((await getDevice()).state).toBe('ONLINE');
+  });
+
+  test('silence past the pause alerts at its end and keeps the outage', async () => {
+    await boot(BOOT_A);
+    await pause(5);
+    await silence(290);
+    expect(queue.calls).toEqual([]);
+    await silence(20);
+    expect(queue.calls.map((c) => c.kind)).toEqual(['offAlert']);
+    clock.advance(180_000);
+    await ping(BOOT_A, 498);
+    expect(await getOutages()).toMatchObject([{ type: 'OUTAGE', cause: 'NETWORK' }]);
+    expect(queue.calls.map((c) => c.kind)).toEqual(['offAlert', 'recovery']);
+  });
 });

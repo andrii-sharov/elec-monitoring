@@ -39,6 +39,7 @@ export function toDeviceListItem(view: DeviceView): DeviceListItem {
       quiet_hours: start && end ? { start, end } : null,
       auto_update: d.autoUpdate,
     },
+    network_pause_until: d.networkPauseUntil?.toISOString() ?? null,
   };
 }
 

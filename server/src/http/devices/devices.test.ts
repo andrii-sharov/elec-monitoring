@@ -5,6 +5,7 @@ import { testApp, testConfig } from '../../../test/app.ts';
 import { createUser, signIn } from '../../../test/auth.ts';
 import { createTestDb, type TestDb } from '../../../test/db.ts';
 import { createDevice } from '../../../test/devices.ts';
+import { addViewer } from '../../../test/sharing.ts';
 import { FakeClock } from '../../../test/fakes.ts';
 import { appUser, device, deviceBoot, deviceDiagnostic, outage } from '../../db/schema/index.ts';
 import { sha256 } from '../../lib/crypto.ts';
@@ -196,6 +197,7 @@ describe('GET /api/v1/devices/:id', () => {
       settings: { ...defaultSettings, quiet_hours: { start: '23:00', end: '07:00' } },
       settings_sync: { desired_version: 1, applied_version: null, pending: true },
       firmware: { version: '2.0.0', available: null, update: null },
+      network_pause_until: null,
     });
     expect(res.body.open_outage).toMatchObject({ type: 'OUTAGE', ended_at: null, cause: null });
   });
@@ -372,5 +374,64 @@ describe('pairing code and token rotation', () => {
     const [unchanged] = await t.db.select().from(device).where(eq(device.id, row.id));
     expect(unchanged!.name).toBe('Home');
     expect(unchanged!.tokenHash).toEqual(sha256('token'));
+  });
+});
+
+describe('network pause', () => {
+  const put = (auth: string, id: string, body: object) =>
+    request(app()).put(`/api/v1/devices/${id}/network-pause`).set('Authorization', auth).send(body);
+  const remove = (auth: string, id: string) =>
+    request(app()).delete(`/api/v1/devices/${id}/network-pause`).set('Authorization', auth);
+
+  test('the owner pauses for 15 min and the device shows it', async () => {
+    const { user, auth } = await authed();
+    const row = await createDevice(t.db, user.id);
+    const res = await put(auth, row.id, { minutes: 15 });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ until: '2026-11-21T16:57:00.000Z' });
+    const shown = await request(app()).get(`/api/v1/devices/${row.id}`).set('Authorization', auth);
+    expect(shown.body.network_pause_until).toBe('2026-11-21T16:57:00.000Z');
+  });
+
+  test('cancelling clears the pause', async () => {
+    const { user, auth } = await authed();
+    const row = await createDevice(t.db, user.id);
+    await put(auth, row.id, { minutes: 15 });
+    expect((await remove(auth, row.id)).status).toBe(204);
+    const [stored] = await t.db.select().from(device).where(eq(device.id, row.id));
+    expect(stored!.networkPauseUntil).toBeNull();
+  });
+
+  test('pushes back an OFF alert that is not queued yet', async () => {
+    const { user, auth } = await authed();
+    const row = await createDevice(t.db, user.id);
+    const [open] = await t.db
+      .insert(outage)
+      .values({
+        deviceId: row.id,
+        type: 'OUTAGE',
+        startedAt: new Date('2026-11-21T16:41:00Z'),
+        offAlertDueAt: new Date('2026-11-21T16:44:00Z'),
+      })
+      .returning();
+    await put(auth, row.id, { minutes: 10 });
+    const [stored] = await t.db.select().from(outage).where(eq(outage.id, open!.id));
+    expect(stored!.offAlertDueAt).toEqual(new Date('2026-11-21T16:52:00Z'));
+  });
+
+  test('rejects durations outside 5–120 min', async () => {
+    const { user, auth } = await authed();
+    const row = await createDevice(t.db, user.id);
+    expect((await put(auth, row.id, { minutes: 3 })).status).toBe(400);
+    expect((await put(auth, row.id, { minutes: 121 })).status).toBe(400);
+  });
+
+  test('a viewer cannot pause or cancel', async () => {
+    const owner = await authed();
+    const viewer = await authed();
+    const row = await createDevice(t.db, owner.user.id);
+    await addViewer(t.db, row.id, viewer.user.id);
+    expect((await put(viewer.auth, row.id, { minutes: 15 })).status).toBe(403);
+    expect((await remove(viewer.auth, row.id)).status).toBe(403);
   });
 });

@@ -15,6 +15,7 @@ function device(overrides: Partial<DeviceSnapshot> = {}): DeviceSnapshot {
     bootId: 'A',
     seq: 5,
     shortOutageThresholdS: 180,
+    networkPauseUntil: null,
     ...overrides,
   };
 }
@@ -171,5 +172,56 @@ test('UPDATING stays UPDATING with no event', () => {
     state: 'UPDATING',
     stateSince: STATE_SINCE,
     event: null,
+  });
+});
+
+describe('planned network pause', () => {
+  const paused = (overrides: Partial<DeviceSnapshot> = {}) =>
+    device({
+      state: 'OFFLINE',
+      offlineAt: null,
+      networkPauseUntil: at(900),
+      ...overrides,
+    });
+
+  test('the same boot drops a gap that started during the pause', () => {
+    expect(planCheckIn(paused(), openOutage(null), sameBoot(), at(180))).toEqual({
+      action: 'ACCEPT',
+      state: 'ONLINE',
+      stateSince: at(180),
+      event: { type: 'DISCARD_OUTAGE', outageId: 'o1' },
+    });
+  });
+
+  test('a power reset during the pause is still recorded', () => {
+    const plan = planCheckIn(paused(), openOutage(null), newBoot('POWER_ON'), at(180));
+    expect(plan).toMatchObject({ event: { type: 'CLOSE_OUTAGE', cause: 'POWER' } });
+  });
+
+  test('an OFF alert already queued keeps the outage and its recovery', () => {
+    const plan = planCheckIn(paused(), openOutage(at(60)), sameBoot(), at(180));
+    expect(plan).toMatchObject({
+      event: { type: 'CLOSE_OUTAGE', cause: 'NETWORK', notify: 'RECOVERY' },
+    });
+  });
+
+  test('a gap that started after the pause ended is kept', () => {
+    const plan = planCheckIn(
+      paused({ networkPauseUntil: T }),
+      openOutage(null),
+      sameBoot(),
+      at(180),
+    );
+    expect(plan).toMatchObject({ event: { type: 'CLOSE_OUTAGE', cause: 'NETWORK' } });
+  });
+
+  test('a late gap with the same boot during the pause records nothing', () => {
+    const online = device({ offlineAt: at(40), networkPauseUntil: at(900) });
+    expect(planCheckIn(online, null, sameBoot(), at(180))).toEqual({
+      action: 'ACCEPT',
+      state: 'ONLINE',
+      stateSince: STATE_SINCE,
+      event: null,
+    });
   });
 });

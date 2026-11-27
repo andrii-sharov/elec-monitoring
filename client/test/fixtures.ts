@@ -55,6 +55,7 @@ export function deviceFixture(overrides: Partial<Device> = {}): Device {
     state_since: '2026-11-21T14:02:00Z',
     last_seen_at: '2026-11-21T16:41:30Z',
     open_outage: null,
+    network_pause_until: null,
     settings: {
       ping_interval_s: 30,
       offline_timeout_s: 120,

@@ -9,6 +9,7 @@ export type DeviceSnapshot = {
   bootId: string | null;
   seq: number | null;
   shortOutageThresholdS: number;
+  networkPauseUntil: Date | null;
 };
 
 export type OpenOutage = { id: string; startedAt: Date; offAlertQueuedAt: Date | null };
@@ -24,7 +25,8 @@ export type CheckInEvent =
       notify: 'RECOVERY' | 'SUMMARY';
     }
   | { type: 'LATE_OUTAGE'; startedAt: Date; cause: OutageCause; kind: OutageKind }
-  | { type: 'POWER_BLIP'; startedAt: Date; kind: OutageKind };
+  | { type: 'POWER_BLIP'; startedAt: Date; kind: OutageKind }
+  | { type: 'DISCARD_OUTAGE'; outageId: string };
 
 export type CheckInPlan =
   | { action: 'DUPLICATE' }
@@ -32,6 +34,10 @@ export type CheckInPlan =
 
 function gapStart(start: Date, now: Date): Date {
   return start.getTime() > now.getTime() ? now : start;
+}
+
+function pausedAt(device: DeviceSnapshot, startedAt: Date): boolean {
+  return device.networkPauseUntil !== null && startedAt < device.networkPauseUntil;
 }
 
 function planOnline(device: DeviceSnapshot, checkIn: CheckInFacts, now: Date): CheckInPlan {
@@ -42,6 +48,7 @@ function planOnline(device: DeviceSnapshot, checkIn: CheckInFacts, now: Date): C
   const cause = classifyCause({ previousBootId: device.bootId, ...checkIn });
 
   if (device.offlineAt && now.getTime() >= device.offlineAt.getTime()) {
+    if (cause === 'NETWORK' && pausedAt(device, startedAt)) return { ...unchanged, event: null };
     return {
       action: 'ACCEPT',
       state: 'ONLINE',
@@ -64,12 +71,16 @@ function planOffline(
 ): CheckInPlan {
   const recovered = { action: 'ACCEPT', state: 'ONLINE', stateSince: now } as const;
   if (!open) return { ...recovered, event: null };
+  const cause = classifyCause({ previousBootId: device.bootId, ...checkIn });
+  if (cause === 'NETWORK' && !open.offAlertQueuedAt && pausedAt(device, open.startedAt)) {
+    return { ...recovered, event: { type: 'DISCARD_OUTAGE', outageId: open.id } };
+  }
   return {
     ...recovered,
     event: {
       type: 'CLOSE_OUTAGE',
       outageId: open.id,
-      cause: classifyCause({ previousBootId: device.bootId, ...checkIn }),
+      cause,
       kind: classifyKind(gapStart(open.startedAt, now), now, device.shortOutageThresholdS),
       notify: open.offAlertQueuedAt ? 'RECOVERY' : 'SUMMARY',
     },

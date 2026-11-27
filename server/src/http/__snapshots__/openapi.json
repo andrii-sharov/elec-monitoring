@@ -1785,6 +1785,162 @@
         }
       }
     },
+    "/api/v1/devices/{id}/network-pause": {
+      "put": {
+        "summary": "Pause network alerts for planned router work",
+        "description": "For the next `minutes` (5–120), no OFF alert is queued. A gap that starts in the pause and ends with the same boot is dropped: no outage, no message. A new boot is recorded as usual. An OFF alert not yet queued for an open outage waits for the end of the pause.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Devices"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "minutes": {
+                    "type": "integer",
+                    "minimum": 5,
+                    "maximum": 120
+                  }
+                },
+                "required": [
+                  "minutes"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Paused",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NetworkPause"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`validation_error`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: only the device owner can do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Device not found or not accessible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "End a network pause now",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Devices"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Pause ended"
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: only the device owner can do this",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Device not found or not accessible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/devices/{id}/rotate-token": {
       "post": {
         "summary": "Invalidate the device token",
@@ -4612,6 +4768,17 @@
               "auto_update"
             ],
             "additionalProperties": false
+          },
+          "network_pause_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "example": "2026-11-21T16:42:00Z"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -4622,7 +4789,8 @@
           "state_since",
           "last_seen_at",
           "open_outage",
-          "settings"
+          "settings",
+          "network_pause_until"
         ],
         "additionalProperties": false
       },
@@ -4828,6 +4996,17 @@
             ],
             "additionalProperties": false
           },
+          "network_pause_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "example": "2026-11-21T16:42:00Z"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "telemetry": {
             "type": "object",
             "properties": {
@@ -4948,9 +5127,23 @@
           "last_seen_at",
           "open_outage",
           "settings",
+          "network_pause_until",
           "telemetry",
           "settings_sync",
           "firmware"
+        ],
+        "additionalProperties": false
+      },
+      "NetworkPause": {
+        "type": "object",
+        "properties": {
+          "until": {
+            "type": "string",
+            "example": "2026-11-21T16:42:00Z"
+          }
+        },
+        "required": [
+          "until"
         ],
         "additionalProperties": false
       },

@@ -20,9 +20,10 @@ export function notificationEvent(
 export function offAlertDueAt(
   startedAt: Date,
   now: Date,
-  s: { notifyShortOutages: boolean; shortOutageThresholdS: number },
+  s: { notifyShortOutages: boolean; shortOutageThresholdS: number; networkPauseUntil: Date | null },
 ): Date {
-  if (s.notifyShortOutages) return now;
-  const afterThreshold = startedAt.getTime() + s.shortOutageThresholdS * 1000;
-  return new Date(Math.max(now.getTime(), afterThreshold));
+  const afterThreshold = s.notifyShortOutages
+    ? now.getTime()
+    : startedAt.getTime() + s.shortOutageThresholdS * 1000;
+  return new Date(Math.max(now.getTime(), afterThreshold, s.networkPauseUntil?.getTime() ?? 0));
 }
