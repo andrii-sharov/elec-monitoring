@@ -52,7 +52,7 @@ test('shows the summary tiles for the current week', async () => {
   expect(requests[0]?.get('period')).toBe('WEEK');
   expect(requests[0]?.get('from')).toBe('2026-11-16');
   expect(requests[0]?.has('to')).toBe(false);
-  expect(within(tile('Without contact')).getByText('8 h')).toBeInTheDocument();
+  expect(within(tile('Without power')).getByText('8 h')).toBeInTheDocument();
   expect(within(tile('Outages')).getByText('7')).toBeInTheDocument();
   expect(within(tile('Outages')).getByText('Long: 3')).toBeInTheDocument();
   expect(within(tile('Average outage')).getByText('1 h 8 min')).toBeInTheDocument();
@@ -95,7 +95,7 @@ test('a device that never checked in explains when stats start', async () => {
 test('a table lists every bucket for screen readers', async () => {
   serveStats();
   open();
-  const table = await screen.findByRole('table', { name: 'Time without contact by period' });
+  const table = await screen.findByRole('table', { name: 'Time without power by period' });
   const rows = within(table).getAllByRole('row');
   expect(rows).toHaveLength(8);
   expect(within(rows[2]!).getByText('1 h')).toBeInTheDocument();
@@ -117,7 +117,7 @@ test('the chart loads lazily and causes show shares and an open outage', async (
 test('an unavailable range shows "No data yet"', async () => {
   serveStats(statsFixture({ availability_pct: null }));
   open();
-  await screen.findByText('Without contact', { selector: '[data-stat-label]' });
+  await screen.findByText('Without power', { selector: '[data-stat-label]' });
   expect(within(tile('Availability')).getByText('No data yet')).toBeInTheDocument();
 });
 

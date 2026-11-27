@@ -115,7 +115,7 @@ the `:root` defaults.
 - The history grid fills each hour by the share without power with
   `--status-offline`, on a `--status-online` tint; blips are a `--warning`
   dot. Every cell has a text label.
-- Stats charts use the same colors: time without contact is
+- Stats charts use the same colors: time without power is
   `--status-offline`, power blips `--warning`, causes are power
   `--status-offline`, network `--primary` and unknown `--status-pending`.
   The availability meter fills `--status-online` over `--status-offline`.

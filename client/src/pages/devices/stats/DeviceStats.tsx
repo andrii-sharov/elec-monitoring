@@ -25,7 +25,7 @@ const chartHeight = 'h-52 sm:h-64';
 function BucketsTable({ stats }: { stats: Stats }) {
   const { t } = useTranslation();
   const format = useFormatters();
-  const labels = bucketLabels(stats.bucket, format);
+  const labels = bucketLabels(stats.bucket, format, stats.buckets);
   return (
     <table className="sr-only">
       <caption>{t('app.stats.tableCaption')}</caption>

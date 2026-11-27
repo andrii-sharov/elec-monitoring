@@ -32,7 +32,7 @@ export default function StatsChart({ stats }: { stats: DeviceStats }) {
   const { t } = useTranslation();
   const format = useFormatters();
   const phone = useMediaQuery('(width < 40rem)');
-  const labels = bucketLabels(stats.bucket, format);
+  const labels = bucketLabels(stats.bucket, format, stats.buckets);
   const data: Datum[] = stats.buckets.map((bucket) => ({
     label: labels.axis(bucket),
     title: labels.full(bucket),

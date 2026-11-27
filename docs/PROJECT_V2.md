@@ -784,13 +784,14 @@ Pages:
   An open outage
   shows a live duration that ticks every second. **Stats** shares the
   History period controls and URL, so switching tabs keeps the range. It
-  shows tiles (availability with a meter, time without contact, outages
+  shows tiles (availability with a meter, time without power, outages
   and long ones, average and longest outage, power blips), a bar chart of
-  time without contact per hour, day or month with power blips as a thin
+  time without power per hour, day or month with power blips as a thin
   second bar and a tooltip on hover or tap, and the outage causes as
   labeled bars with "still going" for an open outage. The chart (Recharts)
   loads only when the tab opens; a screen-reader table carries the same
-  values. Before the first check-in the tab says statistics start after
+  values. On the autumn DST day the repeated hour is labeled with its UTC
+  offset (`02:00–03:00 (GMT+2)`, then `(GMT+1)`). Before the first check-in the tab says statistics start after
   it. Then settings and their applied status, firmware version, update availability,
   Install button, automatic update setting, queued and running updates,
   update result, members & invites, channels, "re-pair", "rotate token",
