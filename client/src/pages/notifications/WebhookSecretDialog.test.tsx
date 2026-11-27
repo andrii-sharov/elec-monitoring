@@ -90,8 +90,8 @@ test('rotate asks first, then shows the new secret without keeping it', async ()
     }),
   );
   const { user, queryClient } = renderRoute('/notifications', { me: meFixture() });
-  await user.click(await screen.findByRole('button', { name: 'Details for Automation' }));
-  await user.click(screen.getByRole('button', { name: 'New secret' }));
+  await user.click(await screen.findByRole('button', { name: 'More actions for Automation' }));
+  await user.click(await screen.findByRole('menuitem', { name: 'New secret' }));
   const confirm = within(screen.getByRole('alertdialog'));
   expect(rotate).not.toHaveBeenCalled();
   await user.click(confirm.getByRole('button', { name: 'New secret' }));
@@ -112,8 +112,8 @@ test('a click outside does not lose the secret', async () => {
     ),
   );
   const { user } = renderRoute('/notifications', { me: meFixture() });
-  await user.click(await screen.findByRole('button', { name: 'Details for Automation' }));
-  await user.click(screen.getByRole('button', { name: 'New secret' }));
+  await user.click(await screen.findByRole('button', { name: 'More actions for Automation' }));
+  await user.click(await screen.findByRole('menuitem', { name: 'New secret' }));
   await user.click(
     within(screen.getByRole('alertdialog')).getByRole('button', { name: 'New secret' }),
   );

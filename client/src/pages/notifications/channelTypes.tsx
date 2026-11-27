@@ -21,10 +21,7 @@ export const channelTypeInfo: Record<ChannelType, ChannelTypeInfo> = {
   WEBHOOK: {
     icon: Webhook,
     available: true,
-    summary: (channel) =>
-      'url' in channel.config
-        ? `${new URL(channel.config.url).host} · ${channel.config.events.join(', ')}`
-        : null,
+    summary: (channel) => ('url' in channel.config ? new URL(channel.config.url).host : null),
   },
 };
 

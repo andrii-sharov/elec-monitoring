@@ -41,7 +41,7 @@ beforeEach(() => {
 async function openLog() {
   const view = renderRoute('/notifications', { me: meFixture() });
   await view.user.click(await screen.findByRole('button', { name: 'Details for Automation' }));
-  await view.user.click(screen.getByRole('button', { name: 'Delivery log' }));
+  await view.user.click(screen.getByRole('tab', { name: 'Delivery log' }));
   return { ...view, log: await screen.findByRole('region', { name: 'Delivery log' }) };
 }
 
@@ -78,16 +78,13 @@ test('rows show the event, device, status, attempts, error and local time', asyn
   expect(within(log).queryByRole('button', { name: 'Load more' })).toBeNull();
 });
 
-test('the log is a panel with staggered rows that are not inside another entrance', async () => {
+test('the log is a tab panel inside the card and its rows have no entrance of their own', async () => {
   deliveries(() => ({ items: [failed, sent], next_cursor: null }));
   const { log } = await openLog();
   await within(log).findByText('HTTP 502');
-  expect(log).toHaveAttribute('data-motion', 'panel');
-  const [first, second] = rows(log) as HTMLElement[];
-  expect(first).toHaveAttribute('data-motion', 'enter');
-  expect(second).toHaveAttribute('data-motion', 'enter');
-  expect(second!.style.getPropertyValue('--i')).toBe('1');
-  expect(log.closest('[data-motion="enter"]')).toBeNull();
+  expect(log.closest('[data-motion="panel"]')).not.toBeNull();
+  for (const row of rows(log)) expect(row).not.toHaveAttribute('data-motion');
+  expect(log.closest('li')).toHaveTextContent('Automation');
 });
 
 test('load more follows the next cursor', async () => {
@@ -172,8 +169,8 @@ test('an empty log says so and a deleted device is named as unknown', async () =
   const { user, log } = await openLog();
   expect(await within(log).findByText('No deliveries yet.')).toBeInTheDocument();
   items = [deliveryFixture({ device_id: '5d1a7b2c-3e4f-4a5b-8c6d-7e8f9a0b1c09' })];
-  await user.click(screen.getByRole('button', { name: 'Delivery log' }));
-  await user.click(screen.getByRole('button', { name: 'Delivery log' }));
+  await user.click(screen.getByRole('tab', { name: 'Overview' }));
+  await user.click(screen.getByRole('tab', { name: 'Delivery log' }));
   expect(await screen.findByText('Unknown device')).toBeInTheDocument();
 });
 

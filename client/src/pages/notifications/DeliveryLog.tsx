@@ -2,7 +2,6 @@ import type { DeliveryStatus } from '@elec/shared';
 import type { Channel, DeliveryItem, DeviceListItem } from '@elec/shared/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CircleAlert, CircleCheck, Clock, RotateCw } from 'lucide-react';
-import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { redeliver } from '@/api/endpoints';
@@ -29,10 +28,9 @@ type RowProps = {
   channel: Channel;
   delivery: DeliveryItem;
   deviceName: string;
-  index: number;
 };
 
-function DeliveryRow({ channel, delivery, deviceName, index }: RowProps) {
+function DeliveryRow({ channel, delivery, deviceName }: RowProps) {
   const { t } = useTranslation();
   const { api } = useSession();
   const queryClient = useQueryClient();
@@ -60,11 +58,7 @@ function DeliveryRow({ channel, delivery, deviceName, index }: RowProps) {
   });
 
   return (
-    <li
-      data-motion="enter"
-      style={{ '--i': index } as CSSProperties}
-      className="flex flex-col gap-1 border-t border-border pt-2"
-    >
+    <li className="flex flex-col gap-1 border-t border-border pt-2">
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1">
         <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
           <code className="font-mono text-xs break-all">{delivery.event}</code>
@@ -100,9 +94,9 @@ function DeliveryRow({ channel, delivery, deviceName, index }: RowProps) {
   );
 }
 
-type Props = { id: string; channel: Channel; devices: DeviceListItem[] };
+type Props = { channel: Channel; devices: DeviceListItem[] };
 
-export function DeliveryLog({ id, channel, devices }: Props) {
+export function DeliveryLog({ channel, devices }: Props) {
   const { t } = useTranslation();
   const log = useDeliveries(channel.id);
   const pages = log.data?.pages ?? [];
@@ -110,12 +104,9 @@ export function DeliveryLog({ id, channel, devices }: Props) {
 
   return (
     <section
-      id={id}
-      data-motion="panel"
       aria-label={t('app.notifications.webhook.log')}
-      className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3 text-sm"
+      className="flex flex-col gap-2 text-sm"
     >
-      <h3 className="font-medium">{t('app.notifications.webhook.log')}</h3>
       {log.isPending ? (
         <output aria-label={t('app.common.loading')}>
           <Skeleton className="h-10" />
@@ -136,12 +127,11 @@ export function DeliveryLog({ id, channel, devices }: Props) {
           )}
           <ul className="flex flex-col gap-2">
             {pages.flatMap((page) =>
-              page.items.map((delivery, index) => (
+              page.items.map((delivery) => (
                 <DeliveryRow
                   key={delivery.id}
                   channel={channel}
                   delivery={delivery}
-                  index={index}
                   deviceName={
                     devices.find((device) => device.id === delivery.device_id)?.name ??
                     t('app.notifications.webhook.unknownDevice')

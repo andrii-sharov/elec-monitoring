@@ -1,24 +1,24 @@
 import type { Channel, DeviceListItem } from '@elec/shared/api';
 import { useMutation } from '@tanstack/react-query';
 import { ChevronDown, CircleAlert, CirclePause, CircleCheck, TriangleAlert } from 'lucide-react';
-import { useId, useState, type CSSProperties, type FormEvent } from 'react';
+import { useId, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { deleteChannel, patchChannel, rotateSecret, testChannel } from '@/api/endpoints';
 import { isApiError } from '@/api/errors';
 import { useSession } from '@/api/session';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Tag } from '@/components/OutageTags';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsList, TabsPanel, TabsTab } from '@/components/ui/tabs';
 import { errorMessage } from '@/forms/errorMessage';
 import { cn } from '@/lib/utils';
+import { ChannelActionsMenu } from './ChannelActionsMenu';
 import { channelStatus } from './channelFilters';
+import { ChannelOverview } from './ChannelOverview';
 import { channelTypeInfo } from './channelTypes';
 import { DeliveryLog } from './DeliveryLog';
-import { EditDevicesDialog } from './EditDevicesDialog';
 import { useChannelRefresh } from './useChannelRefresh';
 import { WebhookForm } from './WebhookForm';
 
@@ -43,11 +43,8 @@ export function ChannelRow({ channel, devices, selected, onSelect, index, onSecr
   const refresh = useChannelRefresh();
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
-  const [name, setName] = useState(channel.name);
   const [editing, setEditing] = useState(false);
-  const [logOpen, setLogOpen] = useState(false);
   const panelId = useId();
-  const logId = useId();
   const webhook = channel.type === 'WEBHOOK';
   const info = channelTypeInfo[channel.type];
   const Icon = info.icon;
@@ -100,13 +97,27 @@ export function ChannelRow({ channel, devices, selected, onSelect, index, onSecr
     onError: fail,
   });
 
-  function submitName(event: FormEvent) {
-    event.preventDefault();
-    if (name.trim()) rename.mutate(name.trim());
-  }
+  const overview = (
+    <ChannelOverview
+      key={renaming ? 'renaming' : 'idle'}
+      channel={channel}
+      devices={devices}
+      deviceNames={names}
+      renaming={renaming}
+      renamePending={rename.isPending}
+      onRename={(value) => rename.mutate(value)}
+      onRenameCancel={() => setRenaming(false)}
+      testPending={test.isPending}
+      onTest={() => test.mutate()}
+      onEditWebhook={() => {
+        setRenaming(false);
+        setEditing(true);
+      }}
+    />
+  );
 
   return (
-    <li className="flex flex-col gap-2">
+    <li>
       <div
         data-motion="enter"
         style={{ '--i': index } as CSSProperties}
@@ -126,7 +137,7 @@ export function ChannelRow({ channel, devices, selected, onSelect, index, onSecr
               <Icon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
               <span className="font-medium break-words">{channel.name}</span>
             </span>
-            <Tag {...statusTag[status]}>{t(`app.notifications.status.${status}`)}</Tag>
+            <Tag {...statusTag[status]}>{t(`app.notifications.state.${status}`)}</Tag>
             {webhook && channel.failures > 0 ? (
               <Tag icon={TriangleAlert} look="outline-offline">
                 {t('app.notifications.webhook.failures', { failures: channel.failures })}
@@ -149,12 +160,22 @@ export function ChannelRow({ channel, devices, selected, onSelect, index, onSecr
               )}
             </span>
           </div>
-          <span className="flex items-center gap-2">
+          <span className="flex items-center gap-1">
             <Switch
               checked={channel.enabled}
               disabled={toggle.isPending || status === 'failing'}
               onCheckedChange={(value) => toggle.mutate(value)}
               aria-label={t('app.notifications.sendAlerts', { name: channel.name })}
+              className="me-1"
+            />
+            <ChannelActionsMenu
+              channel={channel}
+              onRename={() => {
+                setOpen(true);
+                setRenaming(true);
+              }}
+              onRotate={() => rotate.mutate()}
+              onRemove={() => remove.mutate()}
             />
             <Button
               variant="ghost"
@@ -175,121 +196,24 @@ export function ChannelRow({ channel, devices, selected, onSelect, index, onSecr
           </span>
         </div>
         {open ? (
-          <div
-            id={panelId}
-            data-motion="panel"
-            className="flex flex-col gap-3 border-t border-border p-3 text-sm"
-          >
-            {info.summary(channel, t) ? (
-              <p className="text-muted-foreground">{info.summary(channel, t)}</p>
-            ) : null}
-            {status === 'failing' ? (
-              <p className="text-status-offline">{t('app.notifications.failingHint')}</p>
-            ) : null}
-            {names.length > 0 ? (
-              <ul className="flex flex-wrap gap-1">
-                {names.map((device) => (
-                  <li key={device} className="rounded-full bg-secondary px-2 py-0.5 text-xs">
-                    {device}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-            {renaming ? (
-              <form
-                onSubmit={submitName}
-                className="flex flex-wrap items-center gap-2 max-sm:*:grow"
-              >
-                <Input
-                  aria-label={t('app.notifications.name')}
-                  value={name}
-                  maxLength={64}
-                  onChange={(event) => setName(event.target.value)}
-                  className="sm:w-56"
-                />
-                <Button type="submit" size="sm" disabled={rename.isPending || !name.trim()}>
-                  {t('app.common.save')}
-                </Button>
-                <Button type="button" variant="ghost" size="sm" onClick={() => setRenaming(false)}>
-                  {t('app.common.cancel')}
-                </Button>
-              </form>
-            ) : null}
-            <div className="flex flex-wrap gap-2 max-sm:*:grow">
-              <EditDevicesDialog channel={channel} devices={devices} />
-              {webhook ? (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setRenaming(false);
-                      setEditing(true);
-                    }}
-                  >
-                    {t('app.notifications.webhook.edit')}
-                  </Button>
-                  <ConfirmDialog
-                    trigger={
-                      <Button variant="outline" size="sm" disabled={rotate.isPending}>
-                        {t('app.notifications.webhook.rotate')}
-                      </Button>
-                    }
-                    title={t('app.notifications.webhook.rotateTitle')}
-                    body={t('app.notifications.webhook.rotateBody')}
-                    confirmLabel={t('app.notifications.webhook.rotate')}
-                    onConfirm={() => rotate.mutate()}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    aria-expanded={logOpen}
-                    aria-controls={logId}
-                    onClick={() => setLogOpen(!logOpen)}
-                  >
-                    {t('app.notifications.webhook.log')}
-                  </Button>
-                </>
-              ) : null}
-              {info.available ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={test.isPending}
-                  onClick={() => test.mutate()}
-                >
-                  {t('app.notifications.test')}
-                </Button>
-              ) : null}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setName(channel.name);
-                  setRenaming(true);
-                }}
-              >
-                {t('app.notifications.rename')}
-              </Button>
-              <ConfirmDialog
-                trigger={
-                  <Button variant="outline" size="sm">
-                    {t('app.notifications.remove')}
-                  </Button>
-                }
-                title={t('app.notifications.removeTitle')}
-                body={t('app.notifications.removeBody')}
-                confirmLabel={t('app.notifications.remove')}
-                destructive
-                onConfirm={() => remove.mutate()}
-              />
-            </div>
+          <div id={panelId} className="border-t border-border p-3">
+            {webhook ? (
+              <Tabs defaultValue="overview" className="gap-3">
+                <TabsList variant="pill">
+                  <TabsTab value="overview">{t('app.notifications.overview')}</TabsTab>
+                  <TabsTab value="log">{t('app.notifications.webhook.log')}</TabsTab>
+                </TabsList>
+                <TabsPanel value="overview">{overview}</TabsPanel>
+                <TabsPanel value="log">
+                  <DeliveryLog channel={channel} devices={devices} />
+                </TabsPanel>
+              </Tabs>
+            ) : (
+              <div data-motion="panel">{overview}</div>
+            )}
           </div>
         ) : null}
       </div>
-      {webhook && open && logOpen ? (
-        <DeliveryLog id={logId} channel={channel} devices={devices} />
-      ) : null}
       {webhook ? <WebhookForm channel={channel} open={editing} onOpenChange={setEditing} /> : null}
     </li>
   );

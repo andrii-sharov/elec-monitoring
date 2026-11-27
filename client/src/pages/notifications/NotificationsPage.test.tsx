@@ -39,6 +39,15 @@ async function expand(user: ReturnType<typeof renderRoute>['user'], name: string
   await user.click(await screen.findByRole('button', { name: `Details for ${name}` }));
 }
 
+async function menuAction(
+  user: ReturnType<typeof renderRoute>['user'],
+  channel: string,
+  action: string,
+) {
+  await user.click(await screen.findByRole('button', { name: `More actions for ${channel}` }));
+  await user.click(await screen.findByRole('menuitem', { name: action }));
+}
+
 afterEach(() => {
   vi.useRealTimers();
 });
@@ -166,8 +175,7 @@ test('remove asks for confirmation, deletes and the channel disappears', async (
   );
   const { user } = renderRoute('/notifications', { me: meFixture() });
   await screen.findByText('Home chat');
-  await expand(user, 'Home chat');
-  await user.click(screen.getByRole('button', { name: 'Remove' }));
+  await menuAction(user, 'Home chat', 'Remove');
   await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Remove' }));
   await vi.waitFor(() => expect(screen.queryByText('Home chat')).not.toBeInTheDocument());
   expect(deleted).toHaveBeenCalledOnce();
@@ -182,8 +190,7 @@ test('a failed remove shows the error', async () => {
     ),
   );
   const { user } = renderRoute('/notifications', { me: meFixture() });
-  await expand(user, 'Home chat');
-  await user.click(await screen.findByRole('button', { name: 'Remove' }));
+  await menuAction(user, 'Home chat', 'Remove');
   await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Remove' }));
   expect(await screen.findByText('Not found.')).toBeInTheDocument();
 });
@@ -353,15 +360,13 @@ test('a webhook row shows the host, the events and the failures', async () => {
   const row = (await screen.findByText('Automation')).closest('li') as HTMLElement;
   expect(within(row).getByText('Failures in a row: 3')).toBeInTheDocument();
   await expand(user, 'Automation');
-  expect(
-    within(row).getByText('hooks.example.com · device.offline, device.online'),
-  ).toBeInTheDocument();
+  expect(within(row).getByText('hooks.example.com')).toBeInTheDocument();
+  expect(within(row).getByText('Device went offline')).toBeInTheDocument();
   expect(within(row).getByRole('button', { name: 'Send test' })).toBeInTheDocument();
   const telegram = screen.getByText('Home chat').closest('li') as HTMLElement;
   expect(within(telegram).queryByText(/Failures in a row/)).toBeNull();
   await expand(user, 'Home chat');
-  expect(within(telegram).queryByRole('button', { name: 'Delivery log' })).toBeNull();
-  expect(within(telegram).queryByRole('button', { name: 'New secret' })).toBeNull();
+  expect(within(telegram).queryByRole('tab', { name: 'Delivery log' })).toBeNull();
 });
 
 test('a healthy webhook has no failure tag', async () => {
@@ -434,7 +439,7 @@ test('rename starts from the current name after the webhook was edited', async (
   await user.click(form.getByRole('button', { name: 'Save' }));
   await screen.findByText('Relay');
   await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-  await user.click(screen.getByRole('button', { name: 'Rename' }));
+  await menuAction(user, 'Relay', 'Rename');
   expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Relay');
 });
 
