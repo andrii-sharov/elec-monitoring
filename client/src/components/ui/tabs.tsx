@@ -62,6 +62,7 @@ function TabsTab({ className, ...props }: TabsPrimitive.Tab.Props) {
       className={cn(
         tabClassName,
         'in-data-[variant=pill]:min-h-10 in-data-[variant=pill]:py-1.5 compact:in-data-[variant=pill]:min-h-0',
+        'max-sm:in-data-[variant=line]:flex-1 max-sm:in-data-[variant=line]:flex-col max-sm:in-data-[variant=line]:gap-1 max-sm:in-data-[variant=line]:px-1 max-sm:in-data-[variant=line]:text-xs max-sm:in-data-[variant=line]:text-center max-sm:in-data-[variant=line]:whitespace-normal',
         className,
       )}
       {...props}

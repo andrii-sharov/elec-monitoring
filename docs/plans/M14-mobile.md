@@ -62,16 +62,20 @@ replaced by `text-xs`.
 - Channel rows: checkbox, name block and switch sit in a three-column
   grid; the name block wraps tags and devices. Row actions become a
   two-column grid of full-width buttons.
-- Line tabs (Device, Account) run to the screen edges on phones, so a
-  tab that doesn't fit peeks in and shows the strip scrolls.
+- Line tabs (Device, Account) share the width equally on phones, icon
+  above a wrapping label, like the bottom tab bar. Nothing is cut off.
+- Device details on phones are one row per item, label left and value
+  right, in sentence case; the show/hide toggle gets touch height.
 - The theme control (System, Light, Dark) gets touch height and fills the
   row on phones.
 - Device names in the Sonar and Switchboard heroes wrap instead of being
   cut off with an ellipsis.
 - Delivery log rows stack event, status and time; Redeliver goes full
   width.
-- The history period control scrolls sideways instead of wrapping into a
-  second pill row; period arrows and the label span the width.
+- The history period control fits one row on phones: Custom shows only
+  its calendar icon (the label stays for screen readers) and segments
+  are tighter. It scrolls sideways only below about 340 px. Period
+  arrows and the label span the width.
 - Inputs and buttons that sit side by side (invite link + Copy, rename
   - Save) stack on phones.
 - Auth pages keep the language switcher out of the brand row.
@@ -146,14 +150,14 @@ dark, in each app style:
 - Sign up and log in: no zoom when focusing an input; the language
   switcher doesn't cover the brand.
 - Every button, select, tab and checkbox is easy to hit with a thumb.
-- Device page: period control scrolls sideways, grid cells open their
+- Device page: period control fits one row, grid cells open their
   popover, table rows read well.
 - Notifications: channel row layout, actions grid, delivery log,
   add-webhook sheet, secret sheet, guide page with code samples that
   scroll sideways rather than overflow.
 - Dialogs open as bottom sheets on a phone and centered on desktop.
-- Device and Account tabs: the last tab peeks in at the screen edge and
-  the strip scrolls.
+- Device and Account tabs fit the screen, icon above label, nothing cut
+  off; device details read as label / value rows.
 - A device with a long name: the hero shows the whole name in every style.
 - Desktop with a mouse at full width looks the same as before.
 - Phone field with Ukraine: `671234567`, `0671234567`, `380671234567`

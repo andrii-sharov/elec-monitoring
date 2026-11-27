@@ -59,7 +59,7 @@ function CustomRange({ range, today, onChange }: Props) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger render={<Segment aria-pressed={range.period === 'custom'} />}>
         <CalendarRange aria-hidden="true" />
-        {t('app.history.periods.custom')}
+        <span className="max-sm:sr-only">{t('app.history.periods.custom')}</span>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72">
         <form onSubmit={submit} className="flex flex-col gap-3">

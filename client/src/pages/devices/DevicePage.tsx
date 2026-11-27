@@ -110,7 +110,7 @@ function DeviceSections({ device }: { device: Device }) {
   );
   return (
     <Tabs value={tab} onValueChange={(value) => select(value as Section)}>
-      <TabsList aria-label={t('app.device.tabs.label')} className="max-sm:-mx-4 max-sm:px-4">
+      <TabsList aria-label={t('app.device.tabs.label')}>
         {sections.map(({ value, icon: Icon }) => (
           <TabsTab key={value} value={value}>
             <Icon aria-hidden="true" />

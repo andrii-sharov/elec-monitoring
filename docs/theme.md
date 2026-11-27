@@ -151,6 +151,8 @@ the touch size, and `compact:` restores the desktop size.
 - Below 640 px, dialogs and alert dialogs are bottom sheets: full width,
   attached to the bottom, scrollable, padded for the home indicator.
 - Popovers are never wider than the screen.
-- Segmented controls scroll sideways on phones instead of wrapping.
+- Segmented controls fill one row on phones and scroll sideways only
+  when they can't fit. Line tabs share the width equally, icon above a
+  wrapping label.
 - Pages never set control heights or text smaller than `text-xs`;
   `components/ui/consistency.test.ts` enforces both.

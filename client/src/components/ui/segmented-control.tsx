@@ -9,7 +9,7 @@ import {
 
 export const segmentClassName = cn(
   tabClassName,
-  'min-h-10 py-1.5 aria-pressed:text-foreground max-sm:grow compact:min-h-0',
+  'min-h-10 py-1.5 aria-pressed:text-foreground max-sm:grow max-sm:px-2.5 compact:min-h-0',
 );
 
 type Box = { left: number; top: number; width: number; height: number };

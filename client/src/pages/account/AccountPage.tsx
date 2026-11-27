@@ -32,7 +32,7 @@ export function AccountPage() {
       <h1 className="font-heading text-2xl font-semibold">{t('app.account.title')}</h1>
       {me ? (
         <Tabs value={tab} onValueChange={(value) => select(value as (typeof sections)[number])}>
-          <TabsList aria-label={t('app.account.tabs.label')} className="max-sm:-mx-4 max-sm:px-4">
+          <TabsList aria-label={t('app.account.tabs.label')}>
             {sections.map((section) => {
               const Icon = icons[section];
               return (
