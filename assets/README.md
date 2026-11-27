@@ -8,20 +8,20 @@ ending in a cyan "live" dot. The mark keeps these fixed colours on light and dar
 backgrounds. Wordmark: JetBrains Mono 700 with an underscore cursor, converted to
 paths, so no font loading is needed.
 
-| Folder           | What                                                                                        |
-| ---------------- | ------------------------------------------------------------------------------------------- |
-| `logo/`          | `logo-mark.svg` (app tile), `logo-mark-mono.svg` (`currentColor`), `logo-animated.svg`      |
-|                  | `logo-{en,uk,ru}.svg` follow `prefers-color-scheme`; `-light` / `-dark` are fixed           |
-| `favicon/`       | `favicon.svg` (thicker lines for 16 px), `favicon.ico` (16/32/48), PNG icons, manifest      |
-| `social/`        | `og-image-{en,uk,ru}.png` 1200×630 (+ SVG sources)                                          |
-| `hero/`          | `hero-{en,uk,ru}.svg` 12 s looping promo, plus MP4 (1920×1080) and WebP poster              |
-| `email/`         | `layout.html` (branded email reference), `email-logo.png` 96×96 (shown at 40 px)            |
-| `telegram/`      | `bot-avatar.png` 640×640, `bot-description.png` 640×360 (+ SVG sources)                     |
-| `illustrations/` | `not-found.svg`, `history-empty.svg`, `channels-empty.svg`, 240×160, theme-aware            |
-| `portal/`        | `portal-mark.svg` (< 1 KB) and `portal.css` for the device setup page                       |
-| `source/`        | Generators, run from `source/`: `python3 gen.py && python3 anim.py && python3 extras.py`   |
-|                  | write every SVG to `out/`. `brand.py` holds the palette and mark geometry                  |
-|                  | `./png.sh <svg> <png> <w> <h>` rasterises; `snap.mjs` / `video.mjs` render hero frames      |
+| Folder           | What                                                                                     |
+| ---------------- | ---------------------------------------------------------------------------------------- |
+| `logo/`          | `logo-mark.svg` (app tile), `logo-mark-mono.svg` (`currentColor`), `logo-animated.svg`   |
+|                  | `logo-{en,uk,ru}.svg` follow `prefers-color-scheme`; `-light` / `-dark` are fixed        |
+| `favicon/`       | `favicon.svg` (thicker lines for 16 px), `favicon.ico` (16/32/48), PNG icons, manifest   |
+| `social/`        | `og-image-{en,uk,ru}.png` 1200×630 (+ SVG sources)                                       |
+| `hero/`          | `hero-{en,uk,ru}.svg` 12 s looping promo, plus MP4 (1920×1080) and WebP poster           |
+| `email/`         | `layout.html` (branded email reference), `email-logo.png` 96×96 (shown at 40 px)         |
+| `telegram/`      | `bot-avatar.png` 640×640, `bot-description.png` 640×360 (+ SVG sources)                  |
+| `illustrations/` | `not-found.svg`, `history-empty.svg`, `channels-empty.svg`, 240×160, theme-aware         |
+| `portal/`        | `portal-mark.svg` (< 1 KB) and `portal.css` for the device setup page                    |
+| `source/`        | Generators, run from `source/`: `python3 gen.py && python3 anim.py && python3 extras.py` |
+|                  | write every SVG to `out/`. `brand.py` holds the palette and mark geometry                |
+|                  | `./png.sh <svg> <png> <w> <h>` rasterises; `snap.mjs` / `video.mjs` render hero frames   |
 
 All animations are pure CSS inside the SVG and stop under `prefers-reduced-motion`
 (the hero then shows its final frame: power on, both notifications).

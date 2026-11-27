@@ -24,14 +24,14 @@ monitoring: terminals, oscilloscopes, Grafana panels.
 OFF (low) and ON (high), ending in a cyan **live dot**. It reads as "power
 signal, currently online".
 
-| File                                            | Use                                                                      |
-| ----------------------------------------------- | ------------------------------------------------------------------------ |
-| `logo/logo-mark.svg`                            | App icon, avatar, anywhere ≥ 32 px                                       |
-| `favicon/favicon.svg`                           | 16–32 px. A simpler one-step wave with thicker lines                     |
-| `logo/logo-mark-mono.svg`                       | One colour (`currentColor`), e.g. a header icon tinted by text colour    |
-| `logo/logo-animated.svg`                        | Splash or loading. A highlight runs along the wave, then the dot pings   |
-| `logo/logo-{en,uk,ru}.svg`                      | Mark + wordmark. Follows the system light/dark setting                   |
-| `logo/logo-{lang}-light.svg` / `-dark.svg`      | Fixed versions for light or dark backgrounds                             |
+| File                                       | Use                                                                    |
+| ------------------------------------------ | ---------------------------------------------------------------------- |
+| `logo/logo-mark.svg`                       | App icon, avatar, anywhere ≥ 32 px                                     |
+| `favicon/favicon.svg`                      | 16–32 px. A simpler one-step wave with thicker lines                   |
+| `logo/logo-mark-mono.svg`                  | One colour (`currentColor`), e.g. a header icon tinted by text colour  |
+| `logo/logo-animated.svg`                   | Splash or loading. A highlight runs along the wave, then the dot pings |
+| `logo/logo-{en,uk,ru}.svg`                 | Mark + wordmark. Follows the system light/dark setting                 |
+| `logo/logo-{lang}-light.svg` / `-dark.svg` | Fixed versions for light or dark backgrounds                           |
 
 **Wordmark:** JetBrains Mono Bold. The first word is in the foreground colour,
 the second in signal lime (olive `#4D7A00` on light), followed by a cyan
@@ -55,21 +55,21 @@ so the new values drop straight into `docs/theme.md`. The illustrations already 
 
 ### Dark (main theme)
 
-| Token                       | Hex       | Role                                                                     |
-| --------------------------- | --------- | ------------------------------------------------------------------------ |
-| `--background`              | `#0B1015` | App background ("ground")                                                |
-| `--surface`                 | `#151E27` | Cards, sheets, nav bars. Also the logo tile                              |
-| `--card` / surface-2        | `#1D2833` | Raised elements on a surface: list rows on hover, inputs, chips          |
-| `--border`                  | `#2A3742` | Hairlines, dividers, input borders                                       |
-| `--foreground`              | `#E8F0F4` | Main text (16.6:1 on ground)                                             |
-| `--muted-foreground`        | `#93A4B0` | Secondary text, labels, timestamps (6.6:1 on surface)                    |
-| `--primary`                 | `#C8F560` | **Signal lime.** Primary buttons, active states, focus rings, links      |
-| `--primary-foreground`      | `#0B1015` | Text on lime (15.2:1)                                                    |
-| `--accent`                  | `#5CE1E6` | **Live cyan.** The "now" dot, live indicators, info highlights. Use rarely |
-| `--status-online`           | `#C8F560` | Power ON                                                                 |
-| `--status-offline`          | `#FF7A7A` | Power OFF / outage, destructive actions (6.7:1 on surface)               |
-| `--status-pending`          | `#8FA3B8` | Waiting for the device to check in, unknown                              |
-| `--warning`                 | `#FFC857` | Warnings, weak signal, "lamp light" in illustrations                     |
+| Token                  | Hex       | Role                                                                       |
+| ---------------------- | --------- | -------------------------------------------------------------------------- |
+| `--background`         | `#0B1015` | App background ("ground")                                                  |
+| `--surface`            | `#151E27` | Cards, sheets, nav bars. Also the logo tile                                |
+| `--card` / surface-2   | `#1D2833` | Raised elements on a surface: list rows on hover, inputs, chips            |
+| `--border`             | `#2A3742` | Hairlines, dividers, input borders                                         |
+| `--foreground`         | `#E8F0F4` | Main text (16.6:1 on ground)                                               |
+| `--muted-foreground`   | `#93A4B0` | Secondary text, labels, timestamps (6.6:1 on surface)                      |
+| `--primary`            | `#C8F560` | **Signal lime.** Primary buttons, active states, focus rings, links        |
+| `--primary-foreground` | `#0B1015` | Text on lime (15.2:1)                                                      |
+| `--accent`             | `#5CE1E6` | **Live cyan.** The "now" dot, live indicators, info highlights. Use rarely |
+| `--status-online`      | `#C8F560` | Power ON                                                                   |
+| `--status-offline`     | `#FF7A7A` | Power OFF / outage, destructive actions (6.7:1 on surface)                 |
+| `--status-pending`     | `#8FA3B8` | Waiting for the device to check in, unknown                                |
+| `--warning`            | `#FFC857` | Warnings, weak signal, "lamp light" in illustrations                       |
 
 ### Light
 
@@ -102,11 +102,11 @@ in lightness, so they stay distinguishable for colour-blind users.
 
 ## 4. Typography
 
-| Role                                                  | Font                | Weight   | Notes                                                    |
-| ----------------------------------------------------- | ------------------- | -------- | -------------------------------------------------------- |
-| Wordmark, screen titles, big numbers (durations, times, voltages) | **JetBrains Mono** | 700 / 800 | Tabular by nature, so timers don't jitter              |
-| Small labels, chips, code, IDs, timestamps            | JetBrains Mono      | 500      | Uppercase + 0.05em tracking for tiny section labels       |
-| Body text, buttons, forms, long messages              | **Inter**           | 400 / 500 / 600 | Mono is too wide for paragraphs, especially Cyrillic |
+| Role                                                              | Font               | Weight          | Notes                                                |
+| ----------------------------------------------------------------- | ------------------ | --------------- | ---------------------------------------------------- |
+| Wordmark, screen titles, big numbers (durations, times, voltages) | **JetBrains Mono** | 700 / 800       | Tabular by nature, so timers don't jitter            |
+| Small labels, chips, code, IDs, timestamps                        | JetBrains Mono     | 500             | Uppercase + 0.05em tracking for tiny section labels  |
+| Body text, buttons, forms, long messages                          | **Inter**          | 400 / 500 / 600 | Mono is too wide for paragraphs, especially Cyrillic |
 
 Both are free (Google Fonts / Fontsource) and include Cyrillic (uk, ru).
 Fallbacks: `ui-monospace, Menlo, Consolas, monospace` and `system-ui, sans-serif`.
