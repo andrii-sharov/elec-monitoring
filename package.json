@@ -14,9 +14,14 @@
     "fmt:check": "oxfmt --check",
     "typecheck": "npm run typecheck --workspaces",
     "build": "npm run build -w shared -w server -w client",
-    "test": "npm run test --workspaces"
+    "test": "npm run test --workspaces",
+    "prepare": "git config core.hooksPath .githooks || true"
+  },
+  "lint-staged": {
+    "*": "oxfmt --no-error-on-unmatched-pattern"
   },
   "devDependencies": {
+    "lint-staged": "^17.6.2",
     "oxfmt": "^0.79.0",
     "oxlint": "^1.94.0"
   },
