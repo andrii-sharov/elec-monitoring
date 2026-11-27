@@ -105,30 +105,22 @@
         "app_user_email_key": {
           "name": "app_user_email_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         },
         "app_user_phone_key": {
           "name": "app_user_phone_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "phone"
-          ]
+          "columns": ["phone"]
         },
         "app_user_telegram_user_id_key": {
           "name": "app_user_telegram_user_id_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "telegram_user_id"
-          ]
+          "columns": ["telegram_user_id"]
         },
         "app_user_google_sub_key": {
           "name": "app_user_google_sub_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "google_sub"
-          ]
+          "columns": ["google_sub"]
         }
       },
       "policies": {},
@@ -256,12 +248,8 @@
           "name": "one_time_token_user_id_app_user_id_fk",
           "tableFrom": "one_time_token",
           "tableTo": "app_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -343,12 +331,8 @@
           "name": "refresh_token_session_id_session_id_fk",
           "tableFrom": "refresh_token",
           "tableTo": "session",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["session_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -423,12 +407,8 @@
           "name": "session_user_id_app_user_id_fk",
           "tableFrom": "session",
           "tableTo": "app_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -674,12 +654,8 @@
           "name": "device_owner_id_app_user_id_fk",
           "tableFrom": "device",
           "tableTo": "app_user",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -689,16 +665,12 @@
         "device_token_hash_key": {
           "name": "device_token_hash_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "token_hash"
-          ]
+          "columns": ["token_hash"]
         },
         "device_pairing_code_hash_key": {
           "name": "device_pairing_code_hash_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "pairing_code_hash"
-          ]
+          "columns": ["pairing_code_hash"]
         }
       },
       "policies": {},
@@ -887,12 +859,8 @@
           "name": "device_invite_device_id_device_id_fk",
           "tableFrom": "device_invite",
           "tableTo": "device",
-          "columnsFrom": [
-            "device_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["device_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -900,12 +868,8 @@
           "name": "device_invite_invited_by_app_user_id_fk",
           "tableFrom": "device_invite",
           "tableTo": "app_user",
-          "columnsFrom": [
-            "invited_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["invited_by"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -915,9 +879,7 @@
         "device_invite_token_hash_key": {
           "name": "device_invite_token_hash_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "token_hash"
-          ]
+          "columns": ["token_hash"]
         }
       },
       "policies": {},
@@ -983,12 +945,8 @@
           "name": "device_viewer_device_id_device_id_fk",
           "tableFrom": "device_viewer",
           "tableTo": "device",
-          "columnsFrom": [
-            "device_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["device_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -996,12 +954,8 @@
           "name": "device_viewer_user_id_app_user_id_fk",
           "tableFrom": "device_viewer",
           "tableTo": "app_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1009,10 +963,7 @@
       "compositePrimaryKeys": {
         "device_viewer_device_id_user_id_pk": {
           "name": "device_viewer_device_id_user_id_pk",
-          "columns": [
-            "device_id",
-            "user_id"
-          ]
+          "columns": ["device_id", "user_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1094,16 +1045,12 @@
         "firmware_release_version_key": {
           "name": "firmware_release_version_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "version"
-          ]
+          "columns": ["version"]
         },
         "firmware_release_version_code_key": {
           "name": "firmware_release_version_code_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "version_code"
-          ]
+          "columns": ["version_code"]
         }
       },
       "policies": {},
@@ -1300,12 +1247,8 @@
           "name": "firmware_update_attempt_device_id_device_id_fk",
           "tableFrom": "firmware_update_attempt",
           "tableTo": "device",
-          "columnsFrom": [
-            "device_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["device_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1313,12 +1256,8 @@
           "name": "firmware_update_attempt_release_id_firmware_release_id_fk",
           "tableFrom": "firmware_update_attempt",
           "tableTo": "firmware_release",
-          "columnsFrom": [
-            "release_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["release_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1326,12 +1265,8 @@
           "name": "firmware_update_attempt_requested_by_app_user_id_fk",
           "tableFrom": "firmware_update_attempt",
           "tableTo": "app_user",
-          "columnsFrom": [
-            "requested_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["requested_by"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1407,12 +1342,8 @@
           "name": "device_boot_device_id_device_id_fk",
           "tableFrom": "device_boot",
           "tableTo": "device",
-          "columnsFrom": [
-            "device_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["device_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1420,10 +1351,7 @@
       "compositePrimaryKeys": {
         "device_boot_device_id_boot_id_pk": {
           "name": "device_boot_device_id_boot_id_pk",
-          "columns": [
-            "device_id",
-            "boot_id"
-          ]
+          "columns": ["device_id", "boot_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1526,14 +1454,8 @@
           "name": "device_diagnostic_boot_fkey",
           "tableFrom": "device_diagnostic",
           "tableTo": "device_boot",
-          "columnsFrom": [
-            "device_id",
-            "boot_id"
-          ],
-          "columnsTo": [
-            "device_id",
-            "boot_id"
-          ],
+          "columnsFrom": ["device_id", "boot_id"],
+          "columnsTo": ["device_id", "boot_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1541,11 +1463,7 @@
       "compositePrimaryKeys": {
         "device_diagnostic_device_id_boot_id_local_id_pk": {
           "name": "device_diagnostic_device_id_boot_id_local_id_pk",
-          "columns": [
-            "device_id",
-            "boot_id",
-            "local_id"
-          ]
+          "columns": ["device_id", "boot_id", "local_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1729,12 +1647,8 @@
           "name": "outage_device_id_device_id_fk",
           "tableFrom": "outage",
           "tableTo": "device",
-          "columnsFrom": [
-            "device_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["device_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1742,12 +1656,8 @@
           "name": "outage_ota_attempt_id_firmware_update_attempt_id_fk",
           "tableFrom": "outage",
           "tableTo": "firmware_update_attempt",
-          "columnsFrom": [
-            "ota_attempt_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["ota_attempt_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1963,12 +1873,8 @@
           "name": "delivery_outage_id_outage_id_fk",
           "tableFrom": "delivery",
           "tableTo": "outage",
-          "columnsFrom": [
-            "outage_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["outage_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1976,12 +1882,8 @@
           "name": "delivery_channel_id_notification_channel_id_fk",
           "tableFrom": "delivery",
           "tableTo": "notification_channel",
-          "columnsFrom": [
-            "channel_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["channel_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2047,12 +1949,8 @@
           "name": "device_channel_device_id_device_id_fk",
           "tableFrom": "device_channel",
           "tableTo": "device",
-          "columnsFrom": [
-            "device_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["device_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2060,12 +1958,8 @@
           "name": "device_channel_channel_id_notification_channel_id_fk",
           "tableFrom": "device_channel",
           "tableTo": "notification_channel",
-          "columnsFrom": [
-            "channel_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["channel_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2073,10 +1967,7 @@
       "compositePrimaryKeys": {
         "device_channel_device_id_channel_id_pk": {
           "name": "device_channel_device_id_channel_id_pk",
-          "columns": [
-            "device_id",
-            "channel_id"
-          ]
+          "columns": ["device_id", "channel_id"]
         }
       },
       "uniqueConstraints": {},
@@ -2237,12 +2128,8 @@
           "name": "notification_channel_user_id_app_user_id_fk",
           "tableFrom": "notification_channel",
           "tableTo": "app_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2361,66 +2248,37 @@
     "public.device_state": {
       "name": "device_state",
       "schema": "public",
-      "values": [
-        "PENDING",
-        "ONLINE",
-        "OFFLINE",
-        "UPDATING"
-      ]
+      "values": ["PENDING", "ONLINE", "OFFLINE", "UPDATING"]
     },
     "public.diagnostic_kind": {
       "name": "diagnostic_kind",
       "schema": "public",
-      "values": [
-        "WIFI",
-        "API"
-      ]
+      "values": ["WIFI", "API"]
     },
     "public.outage_cause": {
       "name": "outage_cause",
       "schema": "public",
-      "values": [
-        "POWER",
-        "NETWORK",
-        "UNKNOWN"
-      ]
+      "values": ["POWER", "NETWORK", "UNKNOWN"]
     },
     "public.outage_kind": {
       "name": "outage_kind",
       "schema": "public",
-      "values": [
-        "SHORT",
-        "LONG"
-      ]
+      "values": ["SHORT", "LONG"]
     },
     "public.outage_type": {
       "name": "outage_type",
       "schema": "public",
-      "values": [
-        "OUTAGE",
-        "POWER_BLIP"
-      ]
+      "values": ["OUTAGE", "POWER_BLIP"]
     },
     "public.reset_reason": {
       "name": "reset_reason",
       "schema": "public",
-      "values": [
-        "POWER_ON",
-        "BROWNOUT",
-        "SOFTWARE",
-        "WATCHDOG",
-        "PANIC",
-        "UNKNOWN"
-      ]
+      "values": ["POWER_ON", "BROWNOUT", "SOFTWARE", "WATCHDOG", "PANIC", "UNKNOWN"]
     },
     "public.update_outcome": {
       "name": "update_outcome",
       "schema": "public",
-      "values": [
-        "SUCCEEDED",
-        "FAILED",
-        "ROLLED_BACK"
-      ]
+      "values": ["SUCCEEDED", "FAILED", "ROLLED_BACK"]
     }
   },
   "schemas": {},

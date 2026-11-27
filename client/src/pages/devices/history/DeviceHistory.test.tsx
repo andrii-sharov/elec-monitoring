@@ -160,6 +160,17 @@ test('a grid cell opens a card with its outages and arrow keys move between cell
   expect(await screen.findByRole('tab', { name: 'Timeline', selected: true })).toBeInTheDocument();
 });
 
+test('a busy cell card scrolls its outage list and keeps the totals in view', async () => {
+  serveOutages([outageFixture()]);
+  const { user } = renderRoute(`/devices/${id}?view=grid`, { me: meFixture() });
+  const grid = await screen.findByRole('region', { name: 'Grid' });
+  await user.click(within(grid).getByRole('button', { name: /^Sat 21 19:00–20:00/ }));
+  const card = await screen.findByRole('dialog');
+  const list = within(card).getByRole('list');
+  expect(list.parentElement).toHaveClass('overflow-y-auto');
+  expect(list.parentElement).not.toContainElement(within(card).getByText('Without power'));
+});
+
 test('the table lists outages and the choice is remembered', async () => {
   localStorage.setItem('em.historyView', 'table');
   serveOutages([

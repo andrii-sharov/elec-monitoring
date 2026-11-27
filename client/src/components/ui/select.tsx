@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Select as SelectPrimitive } from '@base-ui/react/select';
 import { cn } from 'cn';
+import { usePopupCollisionPadding } from './bottom-inset';
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from 'lucide-react';
 
 export const selectTriggerClassName =
@@ -71,9 +72,11 @@ function SelectContent({
     SelectPrimitive.Positioner.Props,
     'align' | 'alignOffset' | 'side' | 'sideOffset' | 'alignItemWithTrigger'
   >) {
+  const collisionPadding = usePopupCollisionPadding();
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Positioner
+        collisionPadding={collisionPadding}
         side={side}
         sideOffset={sideOffset}
         align={align}

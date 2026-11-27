@@ -62,19 +62,31 @@ describe('offAlertDueAt', () => {
 
   test('is now when short outages notify', () => {
     expect(
-      offAlertDueAt(T, at(120), { notifyShortOutages: true, shortOutageThresholdS: 180, networkPauseUntil: null }),
+      offAlertDueAt(T, at(120), {
+        notifyShortOutages: true,
+        shortOutageThresholdS: 180,
+        networkPauseUntil: null,
+      }),
     ).toEqual(at(120));
   });
 
   test('waits for the short-outage threshold when they do not', () => {
     expect(
-      offAlertDueAt(T, at(120), { notifyShortOutages: false, shortOutageThresholdS: 180, networkPauseUntil: null }),
+      offAlertDueAt(T, at(120), {
+        notifyShortOutages: false,
+        shortOutageThresholdS: 180,
+        networkPauseUntil: null,
+      }),
     ).toEqual(at(180));
   });
 
   test('is never in the past', () => {
     expect(
-      offAlertDueAt(T, at(120), { notifyShortOutages: false, shortOutageThresholdS: 60, networkPauseUntil: null }),
+      offAlertDueAt(T, at(120), {
+        notifyShortOutages: false,
+        shortOutageThresholdS: 60,
+        networkPauseUntil: null,
+      }),
     ).toEqual(at(120));
   });
 });

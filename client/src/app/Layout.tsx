@@ -1,7 +1,9 @@
 import { Bell, Cpu, type LucideIcon } from 'lucide-react';
+import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, Outlet } from 'react-router';
 import { BrandMark } from '@/components/BrandMark';
+import { BottomInsetProvider, useFixedBottomInset } from '@/components/ui/bottom-inset';
 import { cn } from '@/lib/utils';
 import { AccountMenu } from './AccountMenu';
 import { VerifyBanner } from './VerifyBanner';
@@ -26,34 +28,39 @@ function NavItem({ to, icon: Icon, label }: { to: string; icon: LucideIcon; labe
 
 export function Layout() {
   const { t } = useTranslation();
+  const navRef = useRef<HTMLElement>(null);
+  const bottomInset = useFixedBottomInset(navRef);
   return (
-    <div className="flex min-h-svh flex-col">
-      <header className="app-header relative z-40 border-b border-border bg-surface">
-        <div className="mx-auto flex w-full max-w-5xl items-center gap-2 px-4 py-2">
-          <Link
-            to="/devices"
-            viewTransition
-            className="flex items-center gap-1.5 rounded-md font-heading font-semibold focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-          >
-            <BrandMark className="size-7" />
-            Elec
-          </Link>
-          <nav
-            aria-label={t('app.nav.main')}
-            className="fixed inset-x-0 bottom-0 z-40 flex items-stretch gap-1 border-t border-border bg-surface px-2 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:static sm:z-auto sm:flex-1 sm:items-center sm:border-0 sm:bg-transparent sm:p-0"
-          >
-            <NavItem to="/devices" icon={Cpu} label={t('app.nav.devices')} />
-            <NavItem to="/notifications" icon={Bell} label={t('app.nav.notifications')} />
-          </nav>
-          <div className="ml-auto sm:ml-0">
-            <AccountMenu />
+    <BottomInsetProvider value={bottomInset}>
+      <div className="flex min-h-svh flex-col">
+        <header className="app-header relative z-40 border-b border-border bg-surface">
+          <div className="mx-auto flex w-full max-w-5xl items-center gap-2 px-4 py-2">
+            <Link
+              to="/devices"
+              viewTransition
+              className="flex items-center gap-1.5 rounded-md font-heading font-semibold focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+            >
+              <BrandMark className="size-7" />
+              Elec
+            </Link>
+            <nav
+              ref={navRef}
+              aria-label={t('app.nav.main')}
+              className="fixed inset-x-0 bottom-0 z-40 flex items-stretch gap-1 border-t border-border bg-surface px-2 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] sm:static sm:z-auto sm:flex-1 sm:items-center sm:border-0 sm:bg-transparent sm:p-0"
+            >
+              <NavItem to="/devices" icon={Cpu} label={t('app.nav.devices')} />
+              <NavItem to="/notifications" icon={Bell} label={t('app.nav.notifications')} />
+            </nav>
+            <div className="ml-auto sm:ml-0">
+              <AccountMenu />
+            </div>
           </div>
-        </div>
-      </header>
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 p-4 pb-24 sm:pb-4">
-        <VerifyBanner />
-        <Outlet />
-      </main>
-    </div>
+        </header>
+        <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 p-4 pb-24 sm:pb-4">
+          <VerifyBanner />
+          <Outlet />
+        </main>
+      </div>
+    </BottomInsetProvider>
   );
 }

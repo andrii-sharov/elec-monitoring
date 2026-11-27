@@ -1,5 +1,6 @@
 import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip';
 import { cn } from 'cn';
+import { usePopupCollisionPadding } from './bottom-inset';
 import type { ReactElement, ReactNode } from 'react';
 
 function TooltipProvider(props: TooltipPrimitive.Provider.Props) {
@@ -15,13 +16,19 @@ type TooltipProps = {
 };
 
 function Tooltip({ content, trigger, children, side = 'top', className }: TooltipProps) {
+  const collisionPadding = usePopupCollisionPadding();
   return (
     <TooltipPrimitive.Root>
       <TooltipPrimitive.Trigger data-slot="tooltip-trigger" render={trigger}>
         {children}
       </TooltipPrimitive.Trigger>
       <TooltipPrimitive.Portal>
-        <TooltipPrimitive.Positioner side={side} sideOffset={6} className="isolate z-50">
+        <TooltipPrimitive.Positioner
+          side={side}
+          sideOffset={6}
+          collisionPadding={collisionPadding}
+          className="isolate z-50"
+        >
           <TooltipPrimitive.Popup
             data-slot="tooltip-content"
             className={cn(

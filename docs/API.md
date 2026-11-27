@@ -387,17 +387,17 @@ it for a given device. A viewer calling an owner-only endpoint gets
 
 ### Devices
 
-| Method | Path                        | Auth      | Role          | Purpose                           |
-| ------ | --------------------------- | --------- | ------------- | --------------------------------- |
-| GET    | `/devices`                  | signed in | owner, viewer | Own and shared devices with state |
-| POST   | `/devices`                  | signed in | verified user | Create device → pairing code      |
-| GET    | `/devices/:id`              | signed in | owner, viewer | Device details                    |
-| PATCH  | `/devices/:id`              | signed in | owner         | Name and settings                 |
-| DELETE | `/devices/:id`              | signed in | owner         | Delete device                     |
-| POST   | `/devices/:id/pairing-code` | signed in | owner         | New pairing code (re-pair)        |
-| POST   | `/devices/:id/rotate-token` | signed in | owner         | Invalidate device token           |
-| PUT    | `/devices/:id/network-pause` | signed in | owner        | Pause network alerts (router work) |
-| DELETE | `/devices/:id/network-pause` | signed in | owner        | End the pause now                 |
+| Method | Path                         | Auth      | Role          | Purpose                            |
+| ------ | ---------------------------- | --------- | ------------- | ---------------------------------- |
+| GET    | `/devices`                   | signed in | owner, viewer | Own and shared devices with state  |
+| POST   | `/devices`                   | signed in | verified user | Create device → pairing code       |
+| GET    | `/devices/:id`               | signed in | owner, viewer | Device details                     |
+| PATCH  | `/devices/:id`               | signed in | owner         | Name and settings                  |
+| DELETE | `/devices/:id`               | signed in | owner         | Delete device                      |
+| POST   | `/devices/:id/pairing-code`  | signed in | owner         | New pairing code (re-pair)         |
+| POST   | `/devices/:id/rotate-token`  | signed in | owner         | Invalidate device token            |
+| PUT    | `/devices/:id/network-pause` | signed in | owner         | Pause network alerts (router work) |
+| DELETE | `/devices/:id/network-pause` | signed in | owner         | End the pause now                  |
 
 `PUT /devices/:id/network-pause` `{ "minutes": 5–120 }` → `200 { "until": "…" }`.
 Planned network work (P §5): until `until` no OFF alert is queued, and a

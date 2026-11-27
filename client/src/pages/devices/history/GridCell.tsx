@@ -127,24 +127,29 @@ export function GridCell({
         {touching.length === 0 && !cell.future ? (
           <p className="text-muted-foreground">{t('app.history.cell.none')}</p>
         ) : null}
-        <ul className="flex flex-col gap-2">
-          {touching.map((outage) => (
-            <li key={outage.id} className="flex flex-col gap-1 rounded-md border border-border p-2">
-              {outage.type === 'POWER_BLIP' ? (
-                <Moment iso={outage.started_at}>
-                  {t('app.history.cell.blipAt', { time: format.time(outage.started_at) })}
-                </Moment>
-              ) : outage.ended_at ? (
-                <MomentRange from={outage.started_at} to={outage.ended_at} />
-              ) : (
-                <Moment iso={outage.started_at}>
-                  {t('app.outage.ongoingSince', { moment: format.moment(outage.started_at) })}
-                </Moment>
-              )}
-              <OutageTags outage={outage} />
-            </li>
-          ))}
-        </ul>
+        <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
+          <ul className="flex flex-col gap-2">
+            {touching.map((outage) => (
+              <li
+                key={outage.id}
+                className="flex flex-col gap-1 rounded-md border border-border p-2"
+              >
+                {outage.type === 'POWER_BLIP' ? (
+                  <Moment iso={outage.started_at}>
+                    {t('app.history.cell.blipAt', { time: format.time(outage.started_at) })}
+                  </Moment>
+                ) : outage.ended_at ? (
+                  <MomentRange from={outage.started_at} to={outage.ended_at} />
+                ) : (
+                  <Moment iso={outage.started_at}>
+                    {t('app.outage.ongoingSince', { moment: format.moment(outage.started_at) })}
+                  </Moment>
+                )}
+                <OutageTags outage={outage} />
+              </li>
+            ))}
+          </ul>
+        </div>
         {onShowDay ? (
           <button
             type="button"
