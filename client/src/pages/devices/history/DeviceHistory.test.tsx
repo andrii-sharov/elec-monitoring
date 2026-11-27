@@ -229,3 +229,49 @@ test('the day period shows one row of hours', async () => {
   expect(within(grid).getAllByRole('button')).toHaveLength(24);
   expect(screen.getByText('Sat, 21 Nov 2026')).toBeInTheDocument();
 });
+
+function phoneScreen() {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: query === '(width < 40rem)',
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  }));
+}
+
+test('on a phone a month grid becomes a calendar of days', async () => {
+  const original = window.matchMedia;
+  phoneScreen();
+  try {
+    serveOutages([outageFixture()]);
+    renderRoute(`/devices/${id}?period=month&view=grid`, { me: meFixture() });
+    const calendar = await screen.findByRole('region', { name: 'Grid' });
+    expect(within(calendar).getAllByRole('button')).toHaveLength(30);
+  } finally {
+    vi.stubGlobal('matchMedia', original);
+  }
+});
+
+test('on a phone a week keeps the hour grid', async () => {
+  const original = window.matchMedia;
+  phoneScreen();
+  try {
+    serveOutages([outageFixture()]);
+    renderRoute(`/devices/${id}?view=grid`, { me: meFixture() });
+    const grid = await screen.findByRole('region', { name: 'Grid' });
+    expect(within(grid).getAllByRole('button')).toHaveLength(7 * 24);
+  } finally {
+    vi.stubGlobal('matchMedia', original);
+  }
+});
+
+test('on a wide screen a month keeps the hour grid', async () => {
+  serveOutages([outageFixture()]);
+  renderRoute(`/devices/${id}?period=month&view=grid`, { me: meFixture() });
+  const grid = await screen.findByRole('region', { name: 'Grid' });
+  expect(within(grid).getAllByRole('button')).toHaveLength(30 * 24);
+});

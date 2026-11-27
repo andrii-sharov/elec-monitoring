@@ -7,6 +7,7 @@ export type Range = { period: Period; from: LocalDate; to: LocalDate };
 
 export const MAX_CUSTOM_DAYS = 366;
 export const GRID_MAX_DAYS = 31;
+export const PHONE_GRID_MAX_DAYS = 7;
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 

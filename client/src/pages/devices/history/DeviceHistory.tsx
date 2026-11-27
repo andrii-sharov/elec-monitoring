@@ -10,11 +10,13 @@ import { Tabs, TabsList, TabsPanel, TabsTab } from '@/components/ui/tabs';
 import { errorMessage } from '@/forms/errorMessage';
 import { useFormatters } from '@/lib/format';
 import { createPreference } from '@/lib/preference';
+import { useMediaQuery } from '@/lib/useMediaQuery';
 import { useNow } from '@/lib/useNow';
 import { cn } from '@/lib/utils';
 import {
   containsToday,
   GRID_MAX_DAYS,
+  PHONE_GRID_MAX_DAYS,
   monthChunks,
   parseRange,
   rangeParams,
@@ -90,7 +92,8 @@ export function DeviceHistory({ deviceId }: { deviceId: string }) {
     setFocusDay(date);
     setView('timeline');
   };
-  const long = days.length > GRID_MAX_DAYS;
+  const phone = useMediaQuery('(width < 40rem)');
+  const long = days.length > (phone ? PHONE_GRID_MAX_DAYS : GRID_MAX_DAYS);
 
   return (
     <Tabs value={view} onValueChange={(value) => setView(value as View)} className="gap-3">

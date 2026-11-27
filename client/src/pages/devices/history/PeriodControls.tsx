@@ -64,7 +64,7 @@ function CustomRange({ range, today, onChange }: Props) {
       <PopoverContent align="end" className="w-72">
         <form onSubmit={submit} className="flex flex-col gap-3">
           <p className="font-medium">{t('app.history.custom.title')}</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             <div className="flex flex-col gap-1">
               <Label htmlFor="history-from">{t('app.history.custom.from')}</Label>
               <Input

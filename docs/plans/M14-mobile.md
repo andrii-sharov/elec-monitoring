@@ -80,7 +80,10 @@ replaced by `text-xs`.
   - Save) stack on phones.
 - Auth pages keep the language switcher out of the brand row.
 - History grid rows on phones grow from 20 px to 24 px (WCAG 2.5.8
-  minimum).
+  minimum). Ranges over 7 days use the calendar of days on phones; the
+  hour grid with 30 day columns was unreadable.
+- The custom period popover stacks its two dates on phones. Date and
+  time inputs drop the native iOS look so they fit their column.
 
 ### Phone formatting
 
@@ -159,6 +162,10 @@ dark, in each app style:
 - Device and Account tabs fit the screen, icon above label, nothing cut
   off; device details read as label / value rows.
 - A device with a long name: the hero shows the whole name in every style.
+- Month and custom ranges over 7 days in the Grid view on a phone show
+  the calendar of days; a week shows the hour grid.
+- Custom period on a phone: both dates fit inside the popover, and the
+  quiet hours fields fit in device settings.
 - Desktop with a mouse at full width looks the same as before.
 - Phone field with Ukraine: `671234567`, `0671234567`, `380671234567`
   and `+380671234567` all show a formatted number.

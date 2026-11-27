@@ -150,7 +150,13 @@ the touch size, and `compact:` restores the desktop size.
   Safari doesn't zoom on focus.
 - Below 640 px, dialogs and alert dialogs are bottom sheets: full width,
   attached to the bottom, scrollable, padded for the home indicator.
-- Popovers are never wider than the screen.
+- Popovers are never wider than the screen. Fields side by side in a
+  popover stack below 640 px.
+- Native date and time inputs drop the native look on touch devices
+  (`styles.css`), so iOS Safari lets them shrink to their column.
+- Charts and grids pick a phone form instead of shrinking: the history
+  grid shows hours by day for up to 7 days on a phone (31 on wider
+  screens) and a calendar of days beyond that.
 - Segmented controls fill one row on phones and scroll sideways only
   when they can't fit. Line tabs share the width equally, icon above a
   wrapping label.
